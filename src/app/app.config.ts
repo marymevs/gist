@@ -19,6 +19,6 @@ export const appConfig: ApplicationConfig = {
     provideFunctions(() => getFunctions()),
     provideMessaging(() => getMessaging()),
     provideStorage(() => getStorage()),
-    provideRouter(routes)
+    provideRouter(routes), provideFirebaseApp(() => initializeApp({"projectId":"gist-ab4e8","appId":"1:46121169736:web:12b677570dc805f0efb97d","storageBucket":"gist-ab4e8.firebasestorage.app","apiKey":"AIzaSyAK29USenxgvdh9qYKiM7ibepPB9rkWLYM","authDomain":"gist-ab4e8.firebaseapp.com","messagingSenderId":"46121169736","measurementId":"G-VJ1XNNM6M5","projectNumber":"46121169736","version":"2"})), provideAuth(() => getAuth()), provideAnalytics(() => getAnalytics()), ScreenTrackingService, UserTrackingService, provideFirestore(() => getFirestore()), provideFunctions(() => getFunctions()), provideMessaging(() => getMessaging()), provideStorage(() => getStorage())
   ],
 };
