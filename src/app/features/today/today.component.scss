@@ -1,14 +1,73 @@
-.wrap {
-  max-width: var(--max);
-  margin: 0 auto;
-  padding: 24px 16px 64px;
+.today {
+  padding: 28px 28px 22px;
+}
+.mast {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.mast h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+.meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.status {
+  justify-self: end;
+  border: 1px solid var(--border);
+  background: #f7f7f5;
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-.card {
-  background: var(--surface);
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+button {
+  appearance: none;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 9px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
   box-shadow: var(--shadow);
+  color: var(--text);
+  transition: transform 0.06s ease, background 0.2s ease;
+}
+button:hover {
+  transform: translateY(-1px);
+}
+button.secondary {
+  color: var(--muted);
+}
+button.danger {
+  color: var(--bad);
+}
+button.primary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: start;
 }
 
 .paper {

@@ -1,0 +1,140 @@
+<section class="card">
+  <div class="today">
+    <div class="mast">
+      <div>
+        <h1>Morning Gist</h1>
+
+        <div class="meta">
+          {{ metaText }}
+        </div>
+
+        <div class="actions" aria-label="Actions">
+          <button class="secondary" type="button" (click)="onPrint()">
+            Print
+          </button>
+
+          <button class="secondary" type="button" (click)="onResend()">
+            Resend
+          </button>
+
+          <button class="secondary" type="button" (click)="onEditTomorrow()">
+            Edit tomorrow
+          </button>
+
+          <button
+            class="secondary"
+            type="button"
+            (click)="toggleSerif()"
+            [attr.aria-pressed]="isSerif"
+          >
+            {{ isSerif ? "Serif" : "Sans" }}
+          </button>
+        </div>
+      </div>
+
+      <div class="status">
+        {{ statusText }}
+      </div>
+    </div>
+
+    <div class="grid">
+      <div
+        class="paper"
+        [class.serif]="isSerif"
+        aria-label="Morning Gist (print-native)"
+      >
+        <p class="kicker">Today at a glance</p>
+        <p><b>Weather:</b> 38° / 51° • light rain after 2pm</p>
+        <p><b>First event:</b> 10:00 AM — Writing block (90 min)</p>
+
+        <h2>Your day</h2>
+        <ul>
+          <li>
+            <b>10:00–11:30</b> Writing block
+            <div class="why">
+              Keep phone in another room. Open one tab only.
+            </div>
+          </li>
+          <li>
+            <b>12:30–1:15</b> Lunch + walk
+            <div class="why">No headphones for first 10 minutes.</div>
+          </li>
+          <li>
+            <b>3:00–4:00</b> Admin hour
+            <div class="why">Batch messages, then stop.</div>
+          </li>
+          <li>
+            <b>7:30</b> Dinner plans
+            <div class="why">Leave by 7:10.</div>
+          </li>
+        </ul>
+
+        <h2>The world</h2>
+        <ul>
+          <li>
+            Headline placeholder — one-line implication.
+            <div class="why">
+              Why it matters: a plain-language takeaway that prevents
+              doomscrolling.
+            </div>
+          </li>
+          <li>
+            Headline placeholder — one-line implication.
+            <div class="why">
+              Why it matters: signal vs noise in one sentence.
+            </div>
+          </li>
+          <li>
+            Headline placeholder — one-line implication.
+            <div class="why">Why it matters: what to do (or ignore).</div>
+          </li>
+        </ul>
+
+        <h2>The gist</h2>
+        <ul>
+          <li>
+            Two or three synthesis bullets that feel executive, not chatty.
+          </li>
+          <li>A framing that reduces anxiety and narrows attention.</li>
+          <li>One line that connects your day to the outside world.</li>
+        </ul>
+
+        <h2>One thing</h2>
+        <p>
+          <b>Send one message</b> that removes uncertainty today (then stop
+          checking for replies).
+        </p>
+        <p class="why">
+          Constraint: If it can’t fit on paper, it doesn’t belong.
+        </p>
+      </div>
+
+      <aside class="card side" aria-label="Delivery snapshot">
+        <h3>Delivery</h3>
+
+        <div class="kv">
+          <span>Mode</span><b>Fax + Web</b> <span>Fax</span
+          ><b>(•••) •••-1234</b> <span>Schedule</span
+          ><b>Weekdays 7:30 AM ET</b> <span>Format</span
+          ><b>Standard • 2 pages max</b>
+        </div>
+
+        <div class="log" aria-label="Delivery log">
+          <div class="row" *ngFor="let entry of deliveryLog">
+            <span>{{ entry.when }}</span>
+            <span [class.ok]="entry.tone === 'ok'">{{ entry.status }}</span>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top: 12px">
+          <button class="secondary" type="button" (click)="goToDelivery()">
+            Change schedule
+          </button>
+          <button class="secondary" type="button" (click)="goToDelivery()">
+            Update fax
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

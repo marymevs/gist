@@ -1,0 +1,55 @@
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brand .name {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 18px;
+}
+.brand .tag {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 60ch;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.tab {
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+  transition: transform 0.06s ease, background 0.2s ease;
+  user-select: none;
+  cursor: pointer;
+}
+.tab:hover {
+  transform: translateY(-1px);
+}
+.tab[aria-current="page"] {
+  background: #f3f2ef;
+}
+
+.wrap {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}

@@ -1,0 +1,292 @@
+<section class="card page">
+  <div class="mast" style="margin-bottom: 10px">
+    <div>
+      <h1>Evening Gist</h1>
+      <div class="meta">
+        Set intentions on paper. Fax it back. An agent handles the digital
+        world.
+      </div>
+
+      <div class="actions">
+        <button class="secondary" type="button" (click)="onPrint()">
+          Print sheet
+        </button>
+
+        <button class="secondary" type="button" (click)="onSimulateFax()">
+          Simulate fax received
+        </button>
+
+        <button class="secondary" type="button" (click)="onReset()">
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <div class="pill noPrint">
+      <span class="badge">{{ faxStateLabel }}</span>
+      <span class="mono">GIST-ID: {{ gistId }}</span>
+    </div>
+  </div>
+
+  <div class="twoCol">
+    <!-- Printable Evening Sheet -->
+    <div class="card today" style="padding: 22px">
+      <div class="paper serif" style="border-top: none; padding-top: 0">
+        <p class="kicker">Evening sheet (fax-back)</p>
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: baseline;
+          "
+        >
+          <p style="margin: 0"><b>Date:</b> Jan 10</p>
+          <p style="margin: 0"><b>Fax back to:</b> (•••) •••-9876</p>
+          <p style="margin: 0" class="mono"><b>GIST-ID:</b> {{ gistId }}</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- A: Tomorrow -->
+        <div class="formBlock" style="margin-top: 10px">
+          <div class="formTitle">
+            <b>Tomorrow’s outcomes</b>
+            <span class="formHint">Write clearly. One outcome per line.</span>
+          </div>
+
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>
+              <b>#1</b> ________________________________________________
+            </div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>
+              <b>#2</b> ________________________________________________
+            </div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>
+              <b>#3</b> ________________________________________________
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="formTitle">
+            <b>Calendar preferences</b>
+            <span class="formHint">Check what you want protected.</span>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Protect deep work (90 min)</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Movement / workout</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Early start</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="formTitle">
+            <b>Constraints</b>
+            <span class="formHint">This makes the agent safer.</span>
+          </div>
+          <div style="font-size: 14px; margin-top: 8px">
+            <b>Must do before noon:</b> ________________________________
+          </div>
+          <div style="font-size: 14px; margin-top: 10px">
+            <b>Cannot happen tomorrow:</b> _____________________________
+          </div>
+        </div>
+
+        <!-- B: Agent tasks -->
+        <div class="formBlock" style="margin-top: 14px">
+          <div class="formTitle">
+            <b>Agent tasks</b>
+            <span class="formHint"
+              >Check to run. Cross out to skip. One task per row.</span
+            >
+          </div>
+
+          <div class="why" style="margin: 0 0 10px">
+            If you want the agent to ask before sending/booking, check
+            <b>Confirm?</b>
+          </div>
+
+          <table class="taskTable" aria-label="Agent tasks table">
+            <thead>
+              <tr>
+                <th style="width: 36px">Run</th>
+                <th>Task (write clearly)</th>
+                <th style="width: 140px">App/Domain</th>
+                <th style="width: 110px">Deadline</th>
+                <th style="width: 92px">Confirm?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let _ of [0, 1, 2, 3, 4, 5, 6, 7]">
+                <td><div class="box"></div></td>
+                <td>
+                  ________________________________________
+                  <div class="taskCellLines"></div>
+                </td>
+                <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                <td>________</td>
+                <td><div class="box"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- C: Permissions -->
+        <div class="formBlock" style="margin-top: 14px">
+          <div class="formTitle">
+            <b>Permissions</b>
+            <span class="formHint">Daily consent knobs.</span>
+          </div>
+
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Draft only (never send)</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Send emails/messages</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Schedule calendar events</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Make purchases/payments (OFF by default)</div>
+          </div>
+          <div class="checkRow">
+            <div class="box"></div>
+            <div>Log into new websites (OFF by default)</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-size: 14px">
+            <b>Daily spend limit:</b>
+            <span
+              class="circle"
+              style="display: inline-block; margin-left: 10px"
+            ></span>
+            $0
+            <span
+              class="circle"
+              style="display: inline-block; margin-left: 14px"
+            ></span>
+            $25
+            <span
+              class="circle"
+              style="display: inline-block; margin-left: 14px"
+            ></span>
+            $100
+          </div>
+        </div>
+
+        <!-- D: Reflection -->
+        <div class="formBlock" style="margin-top: 14px">
+          <div class="formTitle">
+            <b>Reflection</b>
+            <span class="formHint">Optional. Sticky.</span>
+          </div>
+          <div style="font-size: 14px; margin-top: 8px">
+            <b>One win today:</b> ______________________________________
+          </div>
+          <div style="font-size: 14px; margin-top: 10px">
+            <b>One thing to release:</b> _________________________________
+          </div>
+          <div style="font-size: 14px; margin-top: 10px">
+            <b>Intention for tomorrow:</b> _______________________________
+          </div>
+        </div>
+
+        <p class="why" style="margin-top: 12px">
+          Fax this page back. Gist will parse your marks, create a safe plan,
+          and (depending on permissions) execute tasks.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: ingest + agent pipeline status -->
+    <aside
+      class="card side noPrint"
+      aria-label="Fax ingestion and agent status"
+    >
+      <h3>Fax → Agent</h3>
+
+      <div class="stateBox">
+        <div><b>Status:</b> {{ faxStateLabel }}</div>
+        <div style="margin-top: 8px" class="mono">
+          <b>GIST-ID:</b> {{ gistId }}
+        </div>
+        <div style="margin-top: 8px">
+          <b>Next:</b> When received, we’ll parse checkboxes and convert rows
+          into task objects.
+        </div>
+      </div>
+
+      <div class="log" aria-label="Pipeline log">
+        <div class="row" *ngFor="let step of steps; let i = index">
+          <span>{{ i + 1 }}) {{ step.label }}</span>
+          <span [class]="getStepClass(step)">{{
+            getStepStatusText(step)
+          }}</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px">
+        <div class="badge">MVP recommendation: draft-only by default</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Parsed (demo)</h3>
+      <div class="stateBox">
+        <div *ngIf="parsedMessage" style="color: var(--muted)">
+          {{ parsedMessage }}
+        </div>
+
+        <div *ngIf="!parsedMessage">
+          <div><b>Detected:</b> {{ parsedTasks.length }} runnable tasks</div>
+          <div class="divider"></div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div *ngFor="let task of parsedTasks">
+              <span class="badge">{{ task.type }}</span>
+              <div style="margin-top: 6px">
+                <b>{{ task.confirm ? "Confirm" : "Draft" }}</b>
+                {{ task.title }}
+              </div>
+              <div
+                style="color: var(--muted); font-size: 12px; margin-top: 2px"
+              >
+                Confirm? {{ task.confirm ? "Yes" : "No" }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top: 12px">
+        <button class="secondary" type="button" (click)="onViewTomorrow()">
+          View tomorrow’s morning gist
+        </button>
+      </div>
+    </aside>
+  </div>
+</section>
