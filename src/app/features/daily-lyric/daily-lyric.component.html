@@ -1,0 +1,71 @@
+<section class="daily">
+  <header class="daily__top-bar">
+   
+
+    <div class="daily__title-wrapper">
+      <h1 class="daily__title">Drake Of The Day</h1>
+      <p class="daily__date">{{ currentDateKey }}</p>
+      <button
+        type="button"
+        class="daily__nav-link"
+        (click)="seeYesterday()"
+      >
+        ← See yesterday
+      </button>
+
+      @if (!isOnToday) {
+        <button
+          type="button"
+          class="daily__nav-link"
+          (click)="seeToday()"
+        >
+          See Today
+        </button>
+    }
+    </div>
+
+    <!-- spacer to balance the flex layout -->
+    <span class="daily__spacer"></span>
+  </header>
+
+  @if (currentLyric$ | async; as entry) {
+    @if (entry) {
+      <!-- Lyric card -->
+      <article class="daily__card daily__card--lyric">
+        <p class="daily__lyric">“{{ entry.lyric }}”</p>
+        <p class="daily__meta">
+          — {{ entry.songTitle }}
+          <span *ngIf="entry.albumTitle"> · {{ entry.albumTitle }}</span>
+        </p>
+      </article>
+
+      <!-- Button to toggle analysis -->
+      <div class="daily__actions">
+        <button
+          type="button"
+          class="daily__analysis-button"
+          (click)="toggleAnalysis()"
+        >
+          {{ showAnalysis ? 'Hide analysis' : 'Show analysis' }}
+        </button>
+      </div>
+
+      <!-- Analysis card -->
+      @if (showAnalysis) {
+        <article class="daily__card daily__card--analysis">
+          <p class="daily__analysis-text">
+            {{ entry.analysis }}
+          </p>
+        </article>
+      }
+    } @else {
+      <p class="daily__message">
+        No lyric has been posted yet for {{ currentDateKey }}.
+        Check out yesterday.
+      </p>
+    }
+  } @else {
+    <p class="daily__message">Loading Drake for this day…</p>
+  }
+</section>
+

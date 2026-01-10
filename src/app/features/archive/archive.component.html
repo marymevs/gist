@@ -1,0 +1,37 @@
+<section class="archive">
+  <header>
+    <p class="archive__subtitle">
+      Drakes of Past Days
+    </p>
+  </header>
+
+  @if (lyrics$ | async; as items) {
+    @if (items.length > 0) {
+      <ul class="archive__list">
+        @for (entry of items; track entry.dateKey) { 
+          <li class="archive__item">
+            <div class="archive__date">
+              {{ entry.dateKey }}
+            </div>
+            <div class="archive__content">
+              <div class="archive__lyric">
+                “{{ entry.lyric }}”
+              </div>
+              <div class="archive__meta">
+                — {{ entry.songTitle }}
+                <span *ngIf="entry.albumTitle"> · {{ entry.albumTitle }}</span>
+              </div>
+              <div>
+                          {{entry.analysis}}
+              </div> 
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p>No entries yet. Once you add some, they’ll show up here.</p>
+    }
+  } @else {
+    <p>Loading archive…</p>
+  }
+</section>

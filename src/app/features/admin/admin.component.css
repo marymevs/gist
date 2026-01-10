@@ -1,0 +1,54 @@
+:host {
+  outline: 6px solid red !important;
+}
+.admin {
+  &__subtitle {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 1.25rem;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.85rem;
+      gap: 0.35rem;
+      width: 100%;           /*didn't seem to work */
+    }
+
+    input,
+    textarea {
+      font: inherit;
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      width: 100%;                 /*didn't seem to work */
+      box-sizing: border-box;       /*didn't seem to work */
+    }
+
+    button {
+      align-self: flex-start;
+      margin-top: 0.5rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      border: none;
+      font: inherit;
+      cursor: pointer;
+    }
+  }
+
+  &__success {
+    font-size: 0.85rem;
+    color: green;
+  }
+
+  &__error {
+    font-size: 0.85rem;
+    color: red;
+  }
+}
