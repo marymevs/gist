@@ -1,15 +1,1476 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Gist</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <!--not working for some reason-->
     <link rel="icon" type="image/x-icon" href="./g-favicon.png" />
   </head>
   <body>
     <p>hello there</p>
   </body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gist — mygist.app</title>
+    <meta
+      name="description"
+      content="A daily personal operating brief — paper-forward, screen-minimizing."
+    />
+    <style>
+      :root {
+        --bg: #fbfbfa;
+        --surface: #ffffff;
+        --text: #111111;
+        --muted: #6b6b6b;
+        --border: #e8e7e4;
+        --shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+        --radius: 18px;
+        --radius-sm: 12px;
+        --max: 1040px;
+        --ok: #2f6b2f;
+        --warn: #9b6a12;
+        --bad: #9a3a3a;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        --serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        color: var(--text);
+        background: var(--bg);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Arial;
+        line-height: 1.45;
+      }
+
+      .wrap {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .brand .name {
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        font-size: 18px;
+      }
+      .brand .tag {
+        color: var(--muted);
+        font-size: 13px;
+        max-width: 60ch;
+      }
+
+      nav {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .tab {
+        text-decoration: none;
+        color: var(--text);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        padding: 10px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        box-shadow: var(--shadow);
+        transition: transform 0.06s ease, background 0.2s ease;
+        user-select: none;
+        cursor: pointer;
+      }
+      .tab:hover {
+        transform: translateY(-1px);
+      }
+      .tab[aria-current="page"] {
+        background: #f3f2ef;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      /* ROUTES */
+      [data-route] {
+        display: none;
+      }
+      [data-route].active {
+        display: block;
+      }
+
+      /* TODAY */
+      .today {
+        padding: 28px 28px 22px;
+      }
+      .mast {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px 16px;
+        align-items: start;
+        margin-bottom: 16px;
+      }
+      .mast h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 6px;
+      }
+      .status {
+        justify-self: end;
+        border: 1px solid var(--border);
+        background: #f7f7f5;
+        border-radius: 999px;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 6px 0 0;
+      }
+      button {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        padding: 9px 11px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        color: var(--text);
+        transition: transform 0.06s ease, background 0.2s ease;
+      }
+      button:hover {
+        transform: translateY(-1px);
+      }
+      button.secondary {
+        color: var(--muted);
+      }
+      button.danger {
+        color: var(--bad);
+      }
+      button.primary {
+        background: #111;
+        color: #fff;
+        border-color: #111;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 16px;
+        align-items: start;
+      }
+
+      /* Print-native “paper” */
+      .paper {
+        margin-top: 18px;
+        border-top: 1px solid var(--border);
+        padding-top: 18px;
+        max-width: 78ch;
+      }
+      .paper.serif {
+        font-family: var(--serif);
+      }
+      .kicker {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+      .paper h2 {
+        margin: 18px 0 8px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #2a2a2a;
+        font-family: inherit;
+      }
+      .paper p {
+        margin: 0 0 10px;
+        font-size: 15px;
+      }
+      .paper ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 15px;
+      }
+      .paper li {
+        margin: 8px 0;
+      }
+      .why {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      /* Side panels */
+      .side {
+        padding: 18px;
+        border-radius: var(--radius);
+      }
+      .side h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #2a2a2a;
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: 98px 1fr;
+        gap: 8px 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .kv b {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .log {
+        margin-top: 14px;
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border);
+      }
+      .row:last-child {
+        border-bottom: none;
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .warn {
+        color: var(--warn);
+      }
+      .bad {
+        color: var(--bad);
+      }
+
+      /* Generic page */
+      .page {
+        padding: 18px;
+      }
+      .page h1 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+
+      /* Archive */
+      .archive {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .list {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: var(--surface);
+      }
+      .item {
+        padding: 12px 12px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: var(--muted);
+      }
+      .item strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .item:last-child {
+        border-bottom: none;
+      }
+      .item[aria-selected="true"] {
+        background: #f3f2ef;
+      }
+
+      /* Delivery table */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: var(--muted);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .table th,
+      .table td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      .table th {
+        font-weight: 600;
+        color: var(--text);
+        background: #f7f7f5;
+      }
+      .table tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Evening specific */
+      .twoCol {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 16px;
+        align-items: start;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        background: #f7f7f5;
+        border-radius: 999px;
+        padding: 8px 10px;
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .mono {
+        font-family: var(--mono);
+      }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 12px 0;
+      }
+
+      /* “Form” look on paper */
+      .formBlock {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        background: #fff;
+      }
+      .formTitle {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin: 0 0 8px;
+      }
+      .formTitle b {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #2a2a2a;
+      }
+      .formHint {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .line {
+        border-bottom: 1px solid var(--border);
+        height: 18px;
+        margin: 8px 0;
+      }
+      .checkRow {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin: 8px 0;
+        font-size: 14px;
+      }
+      .box {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #cfcfcf;
+        border-radius: 3px;
+        margin-top: 2px;
+        flex: 0 0 auto;
+      }
+      .circle {
+        width: 14px;
+        height: 14px;
+        border: 1px solid #cfcfcf;
+        border-radius: 999px;
+        margin-top: 3px;
+        flex: 0 0 auto;
+      }
+
+      .taskTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: #2a2a2a;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        background: #fff;
+      }
+      .taskTable th,
+      .taskTable td {
+        padding: 8px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .taskTable th {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        background: #f7f7f5;
+      }
+      .taskTable tr:last-child td {
+        border-bottom: none;
+      }
+      .taskCellLines {
+        height: 14px;
+        border-bottom: 1px solid var(--border);
+        margin-top: 6px;
+      }
+
+      .stateBox {
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .stateBox b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--muted);
+        background: #fff;
+      }
+
+      /* Mobile */
+      @media (max-width: 980px) {
+        nav {
+          justify-content: flex-start;
+        }
+        .grid,
+        .twoCol {
+          grid-template-columns: 1fr;
+        }
+        .archive {
+          grid-template-columns: 1fr;
+        }
+        .status {
+          justify-self: start;
+        }
+        .today {
+          padding: 20px 18px 16px;
+        }
+        .paper {
+          max-width: none;
+        }
+      }
+
+      /* Print: route-specific */
+      @media print {
+        body {
+          background: #fff;
+        }
+        header,
+        nav,
+        .actions,
+        .side,
+        .noPrint {
+          display: none !important;
+        }
+        .wrap {
+          max-width: none;
+          padding: 0;
+        }
+        .card {
+          border: none;
+          box-shadow: none;
+        }
+        .today,
+        .page {
+          padding: 0;
+        }
+        .paper {
+          border-top: none;
+          padding-top: 0;
+          max-width: none;
+        }
+        .formBlock,
+        .taskTable,
+        .stateBox {
+          border-color: #ccc;
+        }
+        .pill {
+          border-color: #ccc;
+          background: #fff;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <div class="name">Gist</div>
+          <div class="tag">
+            A daily personal operating brief — paper-forward, screen-minimizing.
+          </div>
+        </div>
+
+        <nav aria-label="Primary navigation">
+          <a class="tab" href="#/today" data-link>Today</a>
+          <a class="tab" href="#/evening" data-link>Evening</a>
+          <a class="tab" href="#/archive" data-link>Archive</a>
+          <a class="tab" href="#/delivery" data-link>Delivery</a>
+          <a class="tab" href="#/account" data-link>Account</a>
+        </nav>
+      </header>
+
+      <!-- TODAY -->
+      <section class="card active" data-route="today">
+        <div class="today">
+          <div class="mast">
+            <div>
+              <h1>Morning Gist</h1>
+              <div class="meta">
+                Saturday, Jan 10 • New York, NY • Scheduled 7:30 AM ET
+              </div>
+              <div class="actions" aria-label="Actions">
+                <button class="secondary" onclick="window.print()">
+                  Print
+                </button>
+                <button class="secondary" id="resendMorningBtn">Resend</button>
+                <button class="secondary" id="editMorningBtn">
+                  Edit tomorrow
+                </button>
+                <button
+                  class="secondary"
+                  id="toggleSerifBtn"
+                  aria-pressed="false"
+                >
+                  Serif
+                </button>
+              </div>
+            </div>
+            <div class="status" id="morningStatusPill">
+              Delivered at 7:32 AM • Fax • 2 pages
+            </div>
+          </div>
+
+          <div class="grid">
+            <div
+              class="paper serif"
+              id="morningPaper"
+              aria-label="Morning Gist (print-native)"
+            >
+              <p class="kicker">Today at a glance</p>
+              <p><b>Weather:</b> 38° / 51° • light rain after 2pm</p>
+              <p><b>First event:</b> 10:00 AM — Writing block (90 min)</p>
+
+              <h2>Your day</h2>
+              <ul>
+                <li>
+                  <b>10:00–11:30</b> Writing block
+                  <div class="why">
+                    Keep phone in another room. Open one tab only.
+                  </div>
+                </li>
+                <li>
+                  <b>12:30–1:15</b> Lunch + walk
+                  <div class="why">No headphones for first 10 minutes.</div>
+                </li>
+                <li>
+                  <b>3:00–4:00</b> Admin hour
+                  <div class="why">Batch messages, then stop.</div>
+                </li>
+                <li>
+                  <b>7:30</b> Dinner plans
+                  <div class="why">Leave by 7:10.</div>
+                </li>
+              </ul>
+
+              <h2>The world</h2>
+              <ul>
+                <li>
+                  Headline placeholder — one-line implication.
+                  <div class="why">
+                    Why it matters: a plain-language takeaway that prevents
+                    doomscrolling.
+                  </div>
+                </li>
+                <li>
+                  Headline placeholder — one-line implication.
+                  <div class="why">
+                    Why it matters: signal vs noise in one sentence.
+                  </div>
+                </li>
+                <li>
+                  Headline placeholder — one-line implication.
+                  <div class="why">Why it matters: what to do (or ignore).</div>
+                </li>
+              </ul>
+
+              <h2>The gist</h2>
+              <ul>
+                <li>
+                  Two or three synthesis bullets that feel executive, not
+                  chatty.
+                </li>
+                <li>A framing that reduces anxiety and narrows attention.</li>
+                <li>One line that connects your day to the outside world.</li>
+              </ul>
+
+              <h2>One thing</h2>
+              <p>
+                <b>Send one message</b> that removes uncertainty today (then
+                stop checking for replies).
+              </p>
+              <p class="why">
+                Constraint: If it can’t fit on paper, it doesn’t belong.
+              </p>
+            </div>
+
+            <aside class="card side" aria-label="Delivery snapshot">
+              <h3>Delivery</h3>
+              <div class="kv">
+                <span>Mode</span><b>Fax + Web</b> <span>Fax</span
+                ><b>(•••) •••-1234</b> <span>Schedule</span
+                ><b>Weekdays 7:30 AM ET</b> <span>Format</span
+                ><b>Standard • 2 pages max</b>
+              </div>
+
+              <div class="log" aria-label="Delivery log">
+                <div class="row">
+                  <span>Jan 10 • 7:32</span><span class="ok">Delivered</span>
+                </div>
+                <div class="row">
+                  <span>Jan 09 • 7:31</span><span class="ok">Delivered</span>
+                </div>
+                <div class="row">
+                  <span>Jan 08 • 7:33</span><span class="ok">Delivered</span>
+                </div>
+              </div>
+
+              <div class="actions" style="margin-top: 12px">
+                <button class="secondary" id="changeScheduleBtn">
+                  Change schedule
+                </button>
+                <button class="secondary" id="updateFaxBtn">Update fax</button>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- EVENING -->
+      <section class="card page" data-route="evening">
+        <div class="mast" style="margin-bottom: 10px">
+          <div>
+            <h1>Evening Gist</h1>
+            <div class="meta">
+              Set intentions on paper. Fax it back. An agent handles the digital
+              world.
+            </div>
+            <div class="actions">
+              <button class="secondary" onclick="window.print()">
+                Print sheet
+              </button>
+              <button class="secondary" id="simulateFaxBtn">
+                Simulate fax received
+              </button>
+              <button class="secondary" id="resetFaxBtn">Reset</button>
+            </div>
+          </div>
+          <div class="pill noPrint">
+            <span class="badge" id="faxStateBadge">Waiting for fax</span>
+            <span class="mono" id="gistIdText">GIST-ID: MG-7Q2K9</span>
+          </div>
+        </div>
+
+        <div class="twoCol">
+          <!-- Printable Evening Sheet -->
+          <div class="card today" style="padding: 22px">
+            <div
+              class="paper serif"
+              id="eveningPaper"
+              style="border-top: none; padding-top: 0"
+            >
+              <p class="kicker">Evening sheet (fax-back)</p>
+
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                  align-items: baseline;
+                "
+              >
+                <p style="margin: 0"><b>Date:</b> Jan 10</p>
+                <p style="margin: 0"><b>Fax back to:</b> (•••) •••-9876</p>
+                <p style="margin: 0" class="mono"><b>GIST-ID:</b> MG-7Q2K9</p>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- A: Tomorrow -->
+              <div class="formBlock" style="margin-top: 10px">
+                <div class="formTitle">
+                  <b>Tomorrow’s outcomes</b>
+                  <span class="formHint"
+                    >Write clearly. One outcome per line.</span
+                  >
+                </div>
+
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>
+                    <b>#1</b> ________________________________________________
+                  </div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>
+                    <b>#2</b> ________________________________________________
+                  </div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>
+                    <b>#3</b> ________________________________________________
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="formTitle">
+                  <b>Calendar preferences</b>
+                  <span class="formHint">Check what you want protected.</span>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Protect deep work (90 min)</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Movement / workout</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Early start</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="formTitle">
+                  <b>Constraints</b>
+                  <span class="formHint">This makes the agent safer.</span>
+                </div>
+                <div style="font-size: 14px; margin-top: 8px">
+                  <b>Must do before noon:</b> ________________________________
+                </div>
+                <div style="font-size: 14px; margin-top: 10px">
+                  <b>Cannot happen tomorrow:</b> _____________________________
+                </div>
+              </div>
+
+              <!-- B: Agent tasks -->
+              <div class="formBlock" style="margin-top: 14px">
+                <div class="formTitle">
+                  <b>Agent tasks</b>
+                  <span class="formHint"
+                    >Check to run. Cross out to skip. One task per row.</span
+                  >
+                </div>
+
+                <div class="why" style="margin: 0 0 10px">
+                  If you want the agent to ask before sending/booking, check
+                  <b>Confirm?</b>
+                </div>
+
+                <table class="taskTable" aria-label="Agent tasks table">
+                  <thead>
+                    <tr>
+                      <th style="width: 36px">Run</th>
+                      <th>Task (write clearly)</th>
+                      <th style="width: 140px">App/Domain</th>
+                      <th style="width: 110px">Deadline</th>
+                      <th style="width: 92px">Confirm?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- 8 rows -->
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                    <tr>
+                      <td><div class="box"></div></td>
+                      <td>
+                        ________________________________________
+                        <div class="taskCellLines"></div>
+                      </td>
+                      <td>☐ Email ☐ Cal ☐ Web ☐ Other</td>
+                      <td>________</td>
+                      <td><div class="box"></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- C: Permissions -->
+              <div class="formBlock" style="margin-top: 14px">
+                <div class="formTitle">
+                  <b>Permissions</b>
+                  <span class="formHint">Daily consent knobs.</span>
+                </div>
+
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Draft only (never send)</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Send emails/messages</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Schedule calendar events</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Make purchases/payments (OFF by default)</div>
+                </div>
+                <div class="checkRow">
+                  <div class="box"></div>
+                  <div>Log into new websites (OFF by default)</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div style="font-size: 14px">
+                  <b>Daily spend limit:</b>
+                  <span
+                    class="circle"
+                    style="display: inline-block; margin-left: 10px"
+                  ></span>
+                  $0
+                  <span
+                    class="circle"
+                    style="display: inline-block; margin-left: 14px"
+                  ></span>
+                  $25
+                  <span
+                    class="circle"
+                    style="display: inline-block; margin-left: 14px"
+                  ></span>
+                  $100
+                </div>
+              </div>
+
+              <!-- D: Reflection -->
+              <div class="formBlock" style="margin-top: 14px">
+                <div class="formTitle">
+                  <b>Reflection</b>
+                  <span class="formHint">Optional. Sticky.</span>
+                </div>
+                <div style="font-size: 14px; margin-top: 8px">
+                  <b>One win today:</b> ______________________________________
+                </div>
+                <div style="font-size: 14px; margin-top: 10px">
+                  <b>One thing to release:</b> _________________________________
+                </div>
+                <div style="font-size: 14px; margin-top: 10px">
+                  <b>Intention for tomorrow:</b> _______________________________
+                </div>
+              </div>
+
+              <p class="why" style="margin-top: 12px">
+                Fax this page back. Gist will parse your marks, create a safe
+                plan, and (depending on permissions) execute tasks.
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: ingest + agent pipeline status -->
+          <aside
+            class="card side noPrint"
+            aria-label="Fax ingestion and agent status"
+          >
+            <h3>Fax → Agent</h3>
+
+            <div class="stateBox" id="faxStateBox">
+              <div>
+                <b>Status:</b> <span id="faxStateText">Waiting for fax</span>
+              </div>
+              <div style="margin-top: 8px" class="mono">
+                <b>GIST-ID:</b> MG-7Q2K9
+              </div>
+              <div style="margin-top: 8px">
+                <b>Next:</b> When received, we’ll parse checkboxes and convert
+                rows into task objects.
+              </div>
+            </div>
+
+            <div class="log" aria-label="Pipeline log">
+              <div class="row">
+                <span>1) Receive</span
+                ><span id="stepReceive" class="warn">Pending</span>
+              </div>
+              <div class="row">
+                <span>2) Parse</span
+                ><span id="stepParse" class="warn">Pending</span>
+              </div>
+              <div class="row">
+                <span>3) Plan</span
+                ><span id="stepPlan" class="warn">Pending</span>
+              </div>
+              <div class="row">
+                <span>4) Execute</span
+                ><span id="stepExec" class="warn">Pending</span>
+              </div>
+              <div class="row">
+                <span>5) Summary</span
+                ><span id="stepSummary" class="warn">Pending</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 14px">
+              <div class="badge">MVP recommendation: draft-only by default</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h3>Parsed (demo)</h3>
+            <div class="stateBox" id="parsedBox">
+              <div style="color: var(--muted)">No fax received yet.</div>
+            </div>
+
+            <div class="actions" style="margin-top: 12px">
+              <button class="secondary" id="viewTomorrowBtn">
+                View tomorrow’s morning gist
+              </button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ARCHIVE -->
+      <section class="card page" data-route="archive">
+        <h1>Archive</h1>
+        <div class="sub">A quiet record. Not a feed.</div>
+
+        <div class="archive">
+          <div class="list" role="listbox" aria-label="Gist dates">
+            <div class="item" aria-selected="true">
+              <span><strong>Jan 10</strong><br />Morning delivered</span
+              ><span class="ok">✓</span>
+            </div>
+            <div class="item">
+              <span><strong>Jan 09</strong><br />Morning delivered</span
+              ><span class="ok">✓</span>
+            </div>
+            <div class="item">
+              <span><strong>Jan 08</strong><br />Morning delivered</span
+              ><span class="ok">✓</span>
+            </div>
+            <div class="item">
+              <span><strong>Jan 07</strong><br />Evening received</span
+              ><span class="ok">✓</span>
+            </div>
+            <div class="item">
+              <span><strong>Jan 06</strong><br />Delivery failed</span
+              ><span class="bad">!</span>
+            </div>
+          </div>
+
+          <div class="card today" style="padding: 18px">
+            <div class="meta" style="margin-top: 0">Selected: Jan 10</div>
+            <div class="paper serif" style="border-top: none; padding-top: 6px">
+              <p class="kicker">Morning gist</p>
+              <p><b>Weather:</b> 38° / 51° • light rain after 2pm</p>
+              <p>
+                <b>The gist:</b> One calm page you can print. Archive exists for
+                continuity, not engagement.
+              </p>
+
+              <h2>Evening gist</h2>
+              <ul>
+                <li>Printable fax-back sheet with structured rows.</li>
+                <li>Parsed tasks become a safe execution plan.</li>
+                <li>Summary returns next morning (no notifications needed).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DELIVERY -->
+      <section class="card page" data-route="delivery">
+        <h1>Delivery</h1>
+        <div class="sub">
+          Trust and logistics. Clear logs. One-click resend.
+        </div>
+
+        <table class="table" aria-label="Delivery log table">
+          <thead>
+            <tr>
+              <th style="width: 160px">When</th>
+              <th style="width: 120px">Type</th>
+              <th style="width: 120px">Method</th>
+              <th>Status</th>
+              <th style="width: 120px">Pages</th>
+              <th style="width: 140px">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Jan 10, 7:32 AM</td>
+              <td>Morning</td>
+              <td>Fax</td>
+              <td class="ok">Delivered</td>
+              <td>2</td>
+              <td><button class="secondary">Resend</button></td>
+            </tr>
+            <tr>
+              <td>Jan 09, 7:31 AM</td>
+              <td>Morning</td>
+              <td>Fax</td>
+              <td class="ok">Delivered</td>
+              <td>2</td>
+              <td><button class="secondary">Resend</button></td>
+            </tr>
+            <tr>
+              <td>Jan 07, 10:14 PM</td>
+              <td>Evening</td>
+              <td>Inbound fax</td>
+              <td class="ok">Received</td>
+              <td>1</td>
+              <td><button class="secondary">View</button></td>
+            </tr>
+            <tr>
+              <td>Jan 06, 7:33 AM</td>
+              <td>Morning</td>
+              <td>Fax</td>
+              <td class="bad">Failed</td>
+              <td>—</td>
+              <td><button class="secondary">Retry</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="height: 16px"></div>
+
+        <div class="card" style="padding: 16px">
+          <h1 style="font-size: 16px; margin: 0 0 6px">Delivery setup</h1>
+          <div class="sub" style="margin-bottom: 0">
+            Set it once. Forget it.
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              margin-top: 12px;
+            "
+          >
+            <div
+              class="card"
+              style="padding: 14px; border-radius: var(--radius-sm)"
+            >
+              <div style="font-weight: 600">Morning schedule</div>
+              <div class="sub">Weekdays • 7:30 AM ET</div>
+              <button class="secondary">Edit schedule</button>
+            </div>
+            <div
+              class="card"
+              style="padding: 14px; border-radius: var(--radius-sm)"
+            >
+              <div style="font-weight: 600">Inbound fax number</div>
+              <div class="sub">(•••) •••-9876 • Connected</div>
+              <button class="secondary">Update number</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACCOUNT -->
+      <section class="card page" data-route="account">
+        <h1>Account</h1>
+        <div class="sub">Set-and-forget preferences. Billing lives here.</div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: start;
+          "
+        >
+          <div class="card" style="padding: 16px">
+            <h1 style="font-size: 16px; margin: 0 0 10px">Inputs</h1>
+            <div class="sub">Personal context only. No inboxes.</div>
+            <div class="kv" style="grid-template-columns: 140px 1fr">
+              <span>Calendar</span><b>Connected</b> <span>Weather</span
+              ><b>New York, NY</b> <span>News domains</span
+              ><b>Tech, Business, Culture</b>
+            </div>
+            <div style="margin-top: 12px">
+              <button class="secondary">Manage connections</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 16px">
+            <h1 style="font-size: 16px; margin: 0 0 10px">Tone & length</h1>
+            <div class="sub">If it can’t fit on paper, it doesn’t belong.</div>
+            <div class="kv" style="grid-template-columns: 140px 1fr">
+              <span>Length</span><b>Standard (2 pages)</b> <span>Tone</span
+              ><b>Calm, direct</b> <span>Quiet days</span><b>Sat, Sun</b>
+            </div>
+            <div style="margin-top: 12px">
+              <button class="secondary">Edit preferences</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 16px">
+            <h1 style="font-size: 16px; margin: 0 0 10px">Billing</h1>
+            <div class="sub">Business-first and transparent.</div>
+            <div class="kv" style="grid-template-columns: 140px 1fr">
+              <span>Plan</span><b>Print</b> <span>Next invoice</span
+              ><b>Feb 10</b> <span>Included sends</span><b>30 / month</b>
+            </div>
+            <div
+              style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap"
+            >
+              <button class="secondary">Change plan</button>
+              <button class="secondary">View invoices</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 16px">
+            <h1 style="font-size: 16px; margin: 0 0 10px">Security</h1>
+            <div class="sub">Minimal, boring, safe.</div>
+            <div class="kv" style="grid-template-columns: 140px 1fr">
+              <span>Email</span><b>you@domain.com</b> <span>2FA</span
+              ><b>Not enabled</b> <span>Data</span><b>Export available</b>
+            </div>
+            <div style="margin-top: 12px">
+              <button class="secondary">Manage security</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // Tiny hash router
+      const routes = ["today", "evening", "archive", "delivery", "account"];
+      function setActiveRoute() {
+        const hash = (location.hash || "#/today").replace("#/", "");
+        const route = routes.includes(hash) ? hash : "today";
+        document.querySelectorAll("[data-route]").forEach((el) => {
+          el.classList.toggle(
+            "active",
+            el.getAttribute("data-route") === route
+          );
+        });
+        document.querySelectorAll("[data-link]").forEach((a) => {
+          const hrefRoute = a.getAttribute("href").replace("#/", "");
+          if (hrefRoute === route) a.setAttribute("aria-current", "page");
+          else a.removeAttribute("aria-current");
+        });
+      }
+      window.addEventListener("hashchange", setActiveRoute);
+      setActiveRoute();
+
+      // Morning demo buttons
+      const morningStatusPill = document.getElementById("morningStatusPill");
+      document
+        .getElementById("resendMorningBtn")
+        ?.addEventListener("click", () => {
+          morningStatusPill.textContent = "Queued… • Fax";
+          setTimeout(
+            () => (morningStatusPill.textContent = "Delivered • Fax • 2 pages"),
+            900
+          );
+        });
+      document
+        .getElementById("editMorningBtn")
+        ?.addEventListener("click", () => {
+          alert("Demo: this would open 'tomorrow' preferences.");
+        });
+
+      // Serif toggle (print-like calm)
+      const morningPaper = document.getElementById("morningPaper");
+      const toggleSerifBtn = document.getElementById("toggleSerifBtn");
+      toggleSerifBtn?.addEventListener("click", () => {
+        const isSerif = morningPaper.classList.toggle("serif");
+        toggleSerifBtn.setAttribute("aria-pressed", String(isSerif));
+        toggleSerifBtn.textContent = isSerif ? "Serif" : "Sans";
+      });
+
+      // Link convenience
+      document
+        .getElementById("changeScheduleBtn")
+        ?.addEventListener("click", () => (location.hash = "#/delivery"));
+      document
+        .getElementById("updateFaxBtn")
+        ?.addEventListener("click", () => (location.hash = "#/delivery"));
+
+      // Evening: simulate fax pipeline
+      const faxStateBadge = document.getElementById("faxStateBadge");
+      const faxStateText = document.getElementById("faxStateText");
+      const faxStateBox = document.getElementById("faxStateBox");
+      const parsedBox = document.getElementById("parsedBox");
+
+      const steps = {
+        receive: document.getElementById("stepReceive"),
+        parse: document.getElementById("stepParse"),
+        plan: document.getElementById("stepPlan"),
+        exec: document.getElementById("stepExec"),
+        summary: document.getElementById("stepSummary"),
+      };
+
+      function setStep(el, state) {
+        if (!el) return;
+        el.classList.remove("ok", "warn", "bad");
+        if (state === "ok") {
+          el.classList.add("ok");
+          el.textContent = "Done";
+        } else if (state === "bad") {
+          el.classList.add("bad");
+          el.textContent = "Failed";
+        } else {
+          el.classList.add("warn");
+          el.textContent = "Pending";
+        }
+      }
+
+      function resetEvening() {
+        faxStateBadge.textContent = "Waiting for fax";
+        faxStateText.textContent = "Waiting for fax";
+        faxStateBox.querySelector("div").innerHTML =
+          "<b>Status:</b> <span id='faxStateText'>Waiting for fax</span>";
+        // restore reference after innerHTML change
+        // (simple: re-find after reset)
+        setTimeout(() => {
+          // no-op; we keep the visible text elsewhere too
+        }, 0);
+
+        setStep(steps.receive, "pending");
+        setStep(steps.parse, "pending");
+        setStep(steps.plan, "pending");
+        setStep(steps.exec, "pending");
+        setStep(steps.summary, "pending");
+
+        parsedBox.innerHTML =
+          "<div style='color: var(--muted);'>No fax received yet.</div>";
+      }
+
+      function simulateFax() {
+        // Stage 1: Received
+        faxStateBadge.textContent = "Fax received";
+        faxStateText.textContent = "Fax received";
+        setStep(steps.receive, "ok");
+
+        // Stage 2: Parse
+        setTimeout(() => {
+          faxStateBadge.textContent = "Parsing";
+          setStep(steps.parse, "ok");
+
+          // Parsed preview (demo)
+          parsedBox.innerHTML = `
+          <div><b>Detected:</b> 3 runnable tasks</div>
+          <div class="divider"></div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div>
+              <span class="badge">Email</span>
+              <div style="margin-top:6px;"><b>Draft</b> email to Alex: confirm dinner time + address.</div>
+              <div style="color:var(--muted); font-size:12px; margin-top:2px;">Confirm? Yes</div>
+            </div>
+            <div>
+              <span class="badge">Calendar</span>
+              <div style="margin-top:6px;"><b>Hold</b> 90-min deep work block tomorrow morning.</div>
+              <div style="color:var(--muted); font-size:12px; margin-top:2px;">Confirm? No</div>
+            </div>
+            <div>
+              <span class="badge">Web</span>
+              <div style="margin-top:6px;"><b>Find</b> 3 nearby dry cleaners + hours; add best option to notes.</div>
+              <div style="color:var(--muted); font-size:12px; margin-top:2px;">Confirm? No</div>
+            </div>
+          </div>
+        `;
+        }, 700);
+
+        // Stage 3: Plan
+        setTimeout(() => {
+          faxStateBadge.textContent = "Planned";
+          setStep(steps.plan, "ok");
+        }, 1400);
+
+        // Stage 4: Execute (demo: draft-only safe default)
+        setTimeout(() => {
+          faxStateBadge.textContent = "Executing (draft-only)";
+          setStep(steps.exec, "ok");
+        }, 2100);
+
+        // Stage 5: Summary
+        setTimeout(() => {
+          faxStateBadge.textContent = "Complete";
+          setStep(steps.summary, "ok");
+        }, 2800);
+      }
+
+      document
+        .getElementById("simulateFaxBtn")
+        ?.addEventListener("click", simulateFax);
+      document
+        .getElementById("resetFaxBtn")
+        ?.addEventListener("click", resetEvening);
+      document
+        .getElementById("viewTomorrowBtn")
+        ?.addEventListener("click", () => {
+          alert(
+            "Demo: tomorrow’s Morning Gist would include an execution summary (Completed / Needs review / Failed)."
+          );
+        });
+
+      // Initialize evening steps
+      setStep(steps.receive, "pending");
+      setStep(steps.parse, "pending");
+      setStep(steps.plan, "pending");
+      setStep(steps.exec, "pending");
+      setStep(steps.summary, "pending");
+    </script>
+  </body>
 </html>
+
+<!-- buttons look weird, fix those -->

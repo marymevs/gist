@@ -6,17 +6,13 @@
   "hosting": [
     {
       "source": ".",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "frameworksBackend": {
         "region": "us-central1"
       }
     },
     {
-      "target": "friendlychat",
+      "target": "gist",
       "source": ".",
       "frameworksBackend": {}
     }
@@ -55,9 +51,7 @@
         "firebase-debug.log",
         "firebase-debug.*.log"
       ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint"
-      ]
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run lint"]
     }
   ]
 }
