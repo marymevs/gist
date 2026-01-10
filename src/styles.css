@@ -36,3 +36,64 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
   line-height: 1.45;
 }
+
+@media (max-width: 980px) {
+  nav {
+    justify-content: flex-start;
+  }
+  .grid,
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+  .archive {
+    grid-template-columns: 1fr;
+  }
+  .status {
+    justify-self: start;
+  }
+  .today {
+    padding: 20px 18px 16px;
+  }
+  .paper {
+    max-width: none;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  header,
+  nav,
+  .actions,
+  .side,
+  .noPrint {
+    display: none !important;
+  }
+  .wrap {
+    max-width: none;
+    padding: 0;
+  }
+  .card {
+    border: none;
+    box-shadow: none;
+  }
+  .today,
+  .page {
+    padding: 0;
+  }
+  .paper {
+    border-top: none;
+    padding-top: 0;
+    max-width: none;
+  }
+  .formBlock,
+  .taskTable,
+  .stateBox {
+    border-color: #ccc;
+  }
+  .pill {
+    border-color: #ccc;
+    background: #fff;
+  }
+}

@@ -1,0 +1,77 @@
+<section class="card page" data-route="delivery">
+  <h1>Delivery</h1>
+  <div class="sub">Trust and logistics. Clear logs. One-click resend.</div>
+
+  <table class="table" aria-label="Delivery log table">
+    <thead>
+      <tr>
+        <th style="width: 160px">When</th>
+        <th style="width: 120px">Type</th>
+        <th style="width: 120px">Method</th>
+        <th>Status</th>
+        <th style="width: 120px">Pages</th>
+        <th style="width: 140px">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Jan 10, 7:32 AM</td>
+        <td>Morning</td>
+        <td>Fax</td>
+        <td class="ok">Delivered</td>
+        <td>2</td>
+        <td><button class="secondary">Resend</button></td>
+      </tr>
+      <tr>
+        <td>Jan 09, 7:31 AM</td>
+        <td>Morning</td>
+        <td>Fax</td>
+        <td class="ok">Delivered</td>
+        <td>2</td>
+        <td><button class="secondary">Resend</button></td>
+      </tr>
+      <tr>
+        <td>Jan 07, 10:14 PM</td>
+        <td>Evening</td>
+        <td>Inbound fax</td>
+        <td class="ok">Received</td>
+        <td>1</td>
+        <td><button class="secondary">View</button></td>
+      </tr>
+      <tr>
+        <td>Jan 06, 7:33 AM</td>
+        <td>Morning</td>
+        <td>Fax</td>
+        <td class="bad">Failed</td>
+        <td>—</td>
+        <td><button class="secondary">Retry</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="height: 16px"></div>
+
+  <div class="card" style="padding: 16px">
+    <h1 style="font-size: 16px; margin: 0 0 6px">Delivery setup</h1>
+    <div class="sub" style="margin-bottom: 0">Set it once. Forget it.</div>
+    <div
+      style="
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      "
+    >
+      <div class="card" style="padding: 14px; border-radius: var(--radius-sm)">
+        <div style="font-weight: 600">Morning schedule</div>
+        <div class="sub">Weekdays • 7:30 AM ET</div>
+        <button class="secondary">Edit schedule</button>
+      </div>
+      <div class="card" style="padding: 14px; border-radius: var(--radius-sm)">
+        <div style="font-weight: 600">Inbound fax number</div>
+        <div class="sub">(•••) •••-9876 • Connected</div>
+        <button class="secondary">Update number</button>
+      </div>
+    </div>
+  </div>
+</section>

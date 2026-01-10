@@ -1,0 +1,81 @@
+<section class="card page">
+  <h1>Account</h1>
+  <div class="sub">Set-and-forget preferences. Billing lives here.</div>
+
+  <div class="accountGrid">
+    <!-- Inputs -->
+    <div class="card" style="padding: 16px">
+      <h2 style="font-size: 16px; margin: 0 0 10px">Inputs</h2>
+      <div class="sub">Personal context only. No inboxes.</div>
+
+      <div class="kv" style="grid-template-columns: 140px 1fr">
+        <span>Calendar</span><b>{{ inputs.calendarStatus }}</b>
+        <span>Weather</span><b>{{ inputs.weatherLocation }}</b>
+        <span>News domains</span><b>{{ inputs.newsDomains }}</b>
+      </div>
+
+      <div style="margin-top: 12px">
+        <button class="secondary" type="button" (click)="onManageConnections()">
+          Manage connections
+        </button>
+      </div>
+    </div>
+
+    <!-- Tone & length -->
+    <div class="card" style="padding: 16px">
+      <h2 style="font-size: 16px; margin: 0 0 10px">Tone &amp; length</h2>
+      <div class="sub">If it can’t fit on paper, it doesn’t belong.</div>
+
+      <div class="kv" style="grid-template-columns: 140px 1fr">
+        <span>Length</span><b>{{ prefs.lengthLabel }}</b> <span>Tone</span
+        ><b>{{ prefs.toneLabel }}</b> <span>Quiet days</span
+        ><b>{{ prefs.quietDays }}</b>
+      </div>
+
+      <div style="margin-top: 12px">
+        <button class="secondary" type="button" (click)="onEditPreferences()">
+          Edit preferences
+        </button>
+      </div>
+    </div>
+
+    <!-- Billing -->
+    <div class="card" style="padding: 16px">
+      <h2 style="font-size: 16px; margin: 0 0 10px">Billing</h2>
+      <div class="sub">Business-first and transparent.</div>
+
+      <div class="kv" style="grid-template-columns: 140px 1fr">
+        <span>Plan</span><b>{{ billing.planLabel }}</b> <span>Next invoice</span
+        ><b>{{ billing.nextInvoiceLabel }}</b> <span>Included sends</span
+        ><b>{{ billing.includedSendsLabel }}</b>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
+        <button class="secondary" type="button" (click)="onChangePlan()">
+          Change plan
+        </button>
+        <button class="secondary" type="button" (click)="onViewInvoices()">
+          View invoices
+        </button>
+      </div>
+    </div>
+
+    <!-- Security -->
+    <div class="card" style="padding: 16px">
+      <h2 style="font-size: 16px; margin: 0 0 10px">Security</h2>
+      <div class="sub">Minimal, boring, safe.</div>
+
+      <div class="kv" style="grid-template-columns: 140px 1fr">
+        <span>Email</span><b>{{ security.email }}</b> <span>2FA</span
+        ><b>{{ security.twoFaStatus }}</b> <span>Data</span
+        ><b>{{ security.dataStatus }}</b>
+      </div>
+
+      <div style="margin-top: 12px">
+        <button class="secondary" type="button" (click)="onManageSecurity()">
+          Manage security
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
