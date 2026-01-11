@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
+import { FormsModule } from '@angular/forms';
+import { GistPlan } from '../../core/models/plan.model';
+
 import {
   Firestore,
   doc,
@@ -15,15 +18,20 @@ import {
 
 @Component({
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './signup.component.html',
   styleUrls: ['./auth.shared.scss'],
 })
 export class SignupComponent {
   email = '';
   password = '';
-  selectedPlan: 'web' | 'print' | 'loop' = 'print';
+  selectedPlan: GistPlan = 'print';
   loading = false;
   error = '';
+
+  pickPlan(plan: GistPlan): void {
+    this.selectedPlan = plan;
+  }
 
   constructor(
     private auth: Auth,

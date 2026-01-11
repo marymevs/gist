@@ -1,17 +1,23 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { Auth, user } from '@angular/fire/auth';
+import { signOut } from 'firebase/auth';
+import { AccountDataService } from '../../core/services/account-data.service';
+import { GistUser } from '../../core/models/user.model';
+import { Observable } from 'rxjs';
 
 type Plan = 'web' | 'paper' | 'loop';
 
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
 })
 export class AccountComponent {
-  // --- View model (stubbed for now; later comes from Firestore/Auth/Stripe) ---
+  userDoc$: Observable<GistUser | null> = this.accountData.currentUserDoc$();
+  authUser$ = user(this.auth);
 
   inputs = {
     calendarStatus: 'Not connected',
@@ -38,13 +44,25 @@ export class AccountComponent {
     dataStatus: 'Export available',
   };
 
-  constructor(private router: Router) {}
+  constructor(private auth: Auth, private accountData: AccountDataService) {}
 
   // --- Click handlers (wire these later) ---
 
   onManageConnections(): void {
     // Later: route to a Connections page or open a modal
     alert('Demo: Manage connections (Calendar / Weather / News sources).');
+  }
+
+  planLabel(plan: GistUser['plan']): string {
+    if (plan === 'web') return 'Web';
+    if (plan === 'print') return 'Print';
+    return 'Loop';
+  }
+
+  planPrice(plan: GistUser['plan']): string {
+    if (plan === 'web') return '$12/mo';
+    if (plan === 'print') return '$25/mo';
+    return '$45/mo';
   }
 
   onEditPreferences(): void {
@@ -65,6 +83,15 @@ export class AccountComponent {
   onManageSecurity(): void {
     // Later: route to security settings; 2FA depends on auth provider
     alert('Demo: Manage security (email / 2FA / export).');
+  }
+
+  async logout(): Promise<void> {
+    await signOut(this.auth);
+  }
+
+  // Optional: call this from template if you detect missing doc
+  async ensureDoc(uid: string, email: string | null): Promise<void> {
+    await this.accountData.ensureUserDoc({ uid, email });
   }
 
   // Optional: if you want to navigate instead of alerts, use these patterns:

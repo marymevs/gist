@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
+import { FormsModule } from '@angular/forms';
+
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -9,6 +11,7 @@ import {
 
 @Component({
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './login.component.html',
   styleUrls: ['./auth.shared.scss'],
 })
