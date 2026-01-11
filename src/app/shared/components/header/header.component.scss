@@ -26,7 +26,7 @@ nav {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 .tab {
   text-decoration: none;
@@ -44,8 +44,13 @@ nav {
 .tab:hover {
   transform: translateY(-1px);
 }
-.tab[aria-current="page"] {
+.tab.active {
   background: #f3f2ef;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--border);
+  outline-offset: 2px;
 }
 
 .wrap {

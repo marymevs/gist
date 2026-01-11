@@ -60,7 +60,7 @@ body {
 }
 
 button {
-  appearance: none;
+  /* appearance: none; */
   border: 1px solid var(--border);
   background: var(--surface);
   padding: 9px 11px;
@@ -84,6 +84,10 @@ button.primary {
   background: #111;
   color: #fff;
   border-color: #111;
+}
+button:active {
+  background: #ecebe7;
+  transform: translateY(0);
 }
 
 /* Text helpers + status */

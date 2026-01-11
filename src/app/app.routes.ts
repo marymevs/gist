@@ -8,6 +8,12 @@ import { AccountComponent } from './features/account/account.component';
 export const routes: Routes = [
   {
     path: '',
+    redirectTo: 'today',
+    pathMatch: 'full',
+  },
+
+  {
+    path: 'today',
     component: TodayComponent,
     title: 'Gist — mygist.app',
   },
