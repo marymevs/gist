@@ -28,7 +28,6 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 
 ## Next Steps
 
-- review and integrate agent-task model []
 - review and integrate delivery-log model []
 - review and integrate evening-gist model []
 - review and integrate morning-gist model []
@@ -62,16 +61,23 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 - review header.component.html []
 - review header.component.scss []
 - review header.component.ts []
-- complete firebase codelab wrt this project []
-  - looks like i have implemented sign in? needs review []
-  - see if i have a logout []
-  - see if i have a user$ = user(this.auth) []
-  - implement a way to see own profile []
-  - create functions that write to the models []
-    - add to user []
-    - generate morning briefs, evening briefs []
-    - update delivery logs []
-    - update agent tasks []
-  - load today page from database []
-  - integrate with weather api []
-  - update database permissions after set up read/write []
+- review sign in []
+- see if i have a logout []
+- see if i have a user$ = user(this.auth) []
+- implement a way to see own profile []
+- create functions that write to the models []
+  - add to user []
+  - generate morning briefs, evening briefs []
+  - update delivery logs []
+  - update agent tasks []
+- load today page from database []
+- integrate with weather api []
+- update database permissions after set up read/write []
+
+## Doing
+
+- review and integrate agent-task model []
+
+## Done
+
+- complete firebase codelab wrt this project [x]
