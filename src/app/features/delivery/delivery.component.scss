@@ -8,6 +8,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
 }
+
 .table th,
 .table td {
   padding: 10px 10px;
@@ -15,11 +16,13 @@
   text-align: left;
   vertical-align: top;
 }
+
 .table th {
   font-weight: 600;
   color: var(--text);
   background: #f7f7f5;
 }
+
 .table tr:last-child td {
   border-bottom: none;
 }

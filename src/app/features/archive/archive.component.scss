@@ -4,12 +4,14 @@
   gap: 16px;
   align-items: start;
 }
+
 .list {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--surface);
 }
+
 .item {
   padding: 12px 12px;
   border-bottom: 1px solid var(--border);
@@ -20,13 +22,16 @@
   gap: 10px;
   color: var(--muted);
 }
+
 .item strong {
   color: var(--text);
   font-weight: 600;
 }
+
 .item:last-child {
   border-bottom: none;
 }
+
 .item[aria-selected="true"] {
   background: #f3f2ef;
 }
