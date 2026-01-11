@@ -1,0 +1,141 @@
+<section class="card page landing">
+  <div class="hero">
+    <div>
+      <h1 class="heroTitle">Your day, on paper.</h1>
+      <p class="heroSub">
+        Gist is a daily personal operating brief — paper-forward,
+        screen-minimizing. Get the essentials without opening ten apps.
+      </p>
+
+      <div class="actions">
+        <button class="primary" type="button" (click)="goToSignup()">
+          Get started
+        </button>
+        <button class="secondary" type="button" (click)="goToLogin()">
+          Log in
+        </button>
+      </div>
+
+      <div class="micro">
+        Built for individuals first. Business-first from day one.
+      </div>
+    </div>
+
+    <div class="card preview">
+      <div class="previewTop">
+        <div>
+          <div class="previewKicker">Sample morning gist</div>
+          <div class="previewMeta">Weekdays • 7:30 AM • Fax + Web</div>
+        </div>
+        <div class="badge">2 pages max</div>
+      </div>
+
+      <div class="paper serif" style="margin-top: 12px">
+        <p class="kicker">Today at a glance</p>
+        <p><b>Weather:</b> 38° / 51° • light rain after 2pm</p>
+        <p><b>First event:</b> 10:00 AM — Writing block (90 min)</p>
+
+        <h2>The gist</h2>
+        <ul>
+          <li>Three bullets that reduce anxiety and narrow attention.</li>
+          <li>No feeds. No timelines. No doomscrolling.</li>
+          <li>One action that meaningfully moves your day.</li>
+        </ul>
+
+        <h2>One thing</h2>
+        <p><b>Send one message</b> that removes uncertainty today.</p>
+        <p class="why">
+          Constraint: if it can’t fit on paper, it doesn’t belong.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <h2>How it works</h2>
+
+    <div class="steps">
+      <div class="card step">
+        <div class="stepNum">1</div>
+        <div>
+          <div class="stepTitle">Morning Gist</div>
+          <div class="sub">
+            A calm briefing: your calendar, weather, and a short “world”
+            summary. Delivered as fax + web.
+          </div>
+        </div>
+      </div>
+
+      <div class="card step">
+        <div class="stepNum">2</div>
+        <div>
+          <div class="stepTitle">Evening Gist</div>
+          <div class="sub">
+            Mark up a paper sheet with outcomes + tasks. Fax it back.
+          </div>
+        </div>
+      </div>
+
+      <div class="card step">
+        <div class="stepNum">3</div>
+        <div>
+          <div class="stepTitle">Agent (safe by default)</div>
+          <div class="sub">
+            Draft-only by default. Explicit permissions for sending, booking,
+            and spending.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section two">
+    <div class="card block">
+      <h2>Paper-first, not anti-tech</h2>
+      <p class="sub">
+        Gist doesn’t shame your screens. It compresses your digital life into a
+        single daily page — and lets you choose paper when you want calm.
+      </p>
+      <ul class="bullets">
+        <li>One screen instead of ten</li>
+        <li>A daily printout that feels like a ritual</li>
+        <li>Less anxiety, more direction</li>
+      </ul>
+    </div>
+
+    <div class="card block">
+      <h2>Trust posture</h2>
+      <p class="sub">
+        You control what the agent can do. Every action has a permission.
+      </p>
+      <ul class="bullets">
+        <li><b>Draft-only</b> is the default</li>
+        <li>Explicit “Confirm?” checkboxes</li>
+        <li>Spend limits and off-switches</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="cta">
+    <div>
+      <h2>Try it with your morning routine</h2>
+      <div class="sub">
+        Start with web-only. Add fax/print when you’re ready.
+      </div>
+    </div>
+    <button class="primary" type="button" (click)="goToLogin()">
+      Get started
+    </button>
+  </div>
+
+  <div class="footer">
+    <div class="sub">© {{ currentYear }} Gist • mygist.app</div>
+    <div class="sub">No feeds. No timelines. Just the gist.</div>
+  </div>
+</section>
