@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "friendlychat": {
+    "gist": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -17,12 +17,12 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/friendlychat",
+            "outputPath": "dist/gist",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
-            "assets": ["src/favicon.ico", "src/assets"],
+            "assets": ["src/assets"],
             "styles": ["src/styles.css"],
             "scripts": []
           },
@@ -55,10 +55,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "friendlychat:build:production"
+              "buildTarget": "gist:build:production"
             },
             "development": {
-              "buildTarget": "friendlychat:build:development"
+              "buildTarget": "gist:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -66,7 +66,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "friendlychat:build"
+            "buildTarget": "gist:build"
           }
         },
         "test": {
@@ -74,7 +74,7 @@
           "options": {
             "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
-            "assets": ["src/favicon.ico", "src/assets"],
+            "assets": ["src/assets"],
             "styles": ["src/styles.css"],
             "scripts": []
           }
@@ -83,7 +83,7 @@
           "builder": "@angular/fire:deploy",
           "options": {
             "version": 2,
-            "browserTarget": "friendlychat:build:production"
+            "browserTarget": "gist:build:production"
           }
         }
       }

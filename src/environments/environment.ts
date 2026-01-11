@@ -1,11 +1,11 @@
 export const environment = {
   firebase: {
-    apiKey: "AIzaSyA3d5usK2EdbvLQVKdhl6ZoWy9XC0dj-qg",
-    authDomain: "drake-of-the-day.firebaseapp.com",
-    projectId: "drake-of-the-day",
-    storageBucket: "drake-of-the-day.firebasestorage.app",
-    messagingSenderId: "851125930388",
-    appId: "1:851125930388:web:12aa18571ff77239a8e781",
-    measurementId: "G-PHV85TQMNX",
+    apiKey: 'AIzaSyAK29USenxgvdh9qYKiM7ibepPB9rkWLYM',
+    authDomain: 'gist-ab4e8.firebaseapp.com',
+    projectId: 'gist-ab4e8',
+    storageBucket: 'gist-ab4e8.firebasestorage.app',
+    messagingSenderId: '46121169736',
+    appId: '1:46121169736:web:12b677570dc805f0efb97d',
+    measurementId: 'G-VJ1XNNM6M5',
   },
 };
