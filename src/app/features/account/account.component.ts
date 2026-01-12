@@ -32,8 +32,7 @@ export class AccountComponent {
   };
 
   billing = {
-    plan: 'paper' as Plan,
-    planLabel: 'Print',
+    planLabel: 'print',
     nextInvoiceLabel: 'Feb 10',
     includedSendsLabel: '30 / month',
   };
