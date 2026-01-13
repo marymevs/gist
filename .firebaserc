@@ -2,6 +2,14 @@
   "projects": {
     "default": "gist-ab4e8"
   },
-  "targets": {},
+  "targets": {
+    "gist-ab4e8": {
+      "hosting": {
+        "gist": [
+          "gist-ab4e8"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
