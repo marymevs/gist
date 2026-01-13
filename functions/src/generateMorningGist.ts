@@ -2,6 +2,11 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import {
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  fetchCalendarItems,
+} from './integrations/googleCalendar';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 
 initializeApp();
@@ -98,32 +103,6 @@ function estimatePages(maxPages?: number): number {
 }
 
 /** === Stub integrations (replace later) === */
-
-async function fetchCalendarItems(
-  userId: string,
-  dateKey: string,
-  timeZone: string
-): Promise<Array<{ time?: string; title: string; note?: string }>> {
-  // TODO: integrate Google Calendar via OAuth tokens stored per user
-  // MVP: placeholder items
-  return [
-    {
-      time: '10:00–11:30',
-      title: 'Writing block',
-      note: 'Keep phone in another room. One tab only.',
-    },
-    {
-      time: '12:30–1:15',
-      title: 'Lunch + walk',
-      note: 'No headphones for first 10 minutes.',
-    },
-    {
-      time: '3:00–4:00',
-      title: 'Admin hour',
-      note: 'Batch messages, then stop.',
-    },
-  ];
-}
 
 async function fetchWorldItems(
   domains: string[]
@@ -304,7 +283,11 @@ export const generateMorningGist = onSchedule(
     schedule: '30 7 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    secrets: [WEATHERAPI_KEY],
+    secrets: [
+      WEATHERAPI_KEY,
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
+    ],
   },
   async () => {
     logger.info('Morning Gist scheduler started');
