@@ -38,80 +38,97 @@
     </div>
 
     <div class="grid">
-      <div
-        class="paper"
-        [class.serif]="isSerif"
-        aria-label="Morning Gist (print-native)"
-      >
-        <p class="kicker">Today at a glance</p>
-        <p><b>Weather:</b> 38° / 51° • light rain after 2pm</p>
-        <p><b>First event:</b> 10:00 AM — Writing block (90 min)</p>
+      <!-- MAIN PAPER -->
+      <ng-container *ngIf="gist$ | async as gist; else noGist">
+        <div
+          class="paper"
+          [class.serif]="isSerif"
+          aria-label="Morning Gist (print-native)"
+        >
+          <p class="kicker">Today at a glance</p>
 
-        <h2>Your day</h2>
-        <ul>
-          <li>
-            <b>10:00–11:30</b> Writing block
-            <div class="why">
-              Keep phone in another room. Open one tab only.
-            </div>
-          </li>
-          <li>
-            <b>12:30–1:15</b> Lunch + walk
-            <div class="why">No headphones for first 10 minutes.</div>
-          </li>
-          <li>
-            <b>3:00–4:00</b> Admin hour
-            <div class="why">Batch messages, then stop.</div>
-          </li>
-          <li>
-            <b>7:30</b> Dinner plans
-            <div class="why">Leave by 7:10.</div>
-          </li>
-        </ul>
+          <p><b>Weather:</b> {{ gist.weatherSummary }}</p>
 
-        <h2>The world</h2>
-        <ul>
-          <li>
-            Headline placeholder — one-line implication.
-            <div class="why">
-              Why it matters: a plain-language takeaway that prevents
-              doomscrolling.
-            </div>
-          </li>
-          <li>
-            Headline placeholder — one-line implication.
-            <div class="why">
-              Why it matters: signal vs noise in one sentence.
-            </div>
-          </li>
-          <li>
-            Headline placeholder — one-line implication.
-            <div class="why">Why it matters: what to do (or ignore).</div>
-          </li>
-        </ul>
+          <p *ngIf="gist.firstEvent; else noFirstEvent">
+            <b>First event:</b> {{ gist.firstEvent }}
+          </p>
+          <ng-template #noFirstEvent>
+            <p><b>First event:</b> —</p>
+          </ng-template>
 
-        <h2>The gist</h2>
-        <ul>
-          <li>
-            Two or three synthesis bullets that feel executive, not chatty.
-          </li>
-          <li>A framing that reduces anxiety and narrows attention.</li>
-          <li>One line that connects your day to the outside world.</li>
-        </ul>
+          <h2>Your day</h2>
+          <ul>
+            <li *ngIf="!gist.dayItems?.length" style="color: var(--muted)">
+              No day items yet.
+            </li>
 
-        <h2>One thing</h2>
-        <p>
-          <b>Send one message</b> that removes uncertainty today (then stop
-          checking for replies).
-        </p>
-        <p class="why">
-          Constraint: If it can’t fit on paper, it doesn’t belong.
-        </p>
-      </div>
+            <li *ngFor="let item of gist.dayItems">
+              <ng-container *ngIf="item.time as t; else noTime">
+                <b>{{ t }}</b>
+              </ng-container>
+              <ng-template #noTime>
+                <b>—</b>
+              </ng-template>
 
+              {{ item.title }}
+
+              <div class="why" *ngIf="item.note">
+                {{ item.note }}
+              </div>
+            </li>
+          </ul>
+
+          <h2>The world</h2>
+          <ul>
+            <li *ngIf="!gist.worldItems?.length" style="color: var(--muted)">
+              No world items yet.
+            </li>
+
+            <li *ngFor="let w of gist.worldItems">
+              {{ w.headline }}
+              <div class="why">{{ w.implication }}</div>
+            </li>
+          </ul>
+
+          <h2>The gist</h2>
+          <ul>
+            <li *ngIf="!gist.gistBullets?.length" style="color: var(--muted)">
+              No gist bullets yet.
+            </li>
+
+            <li *ngFor="let b of gist.gistBullets">
+              {{ b }}
+            </li>
+          </ul>
+
+          <h2>One thing</h2>
+          <p *ngIf="gist.oneThing; else noOneThing">
+            <b>{{ gist.oneThing }}</b>
+          </p>
+          <ng-template #noOneThing>
+            <p><b>—</b></p>
+          </ng-template>
+
+          <p class="why">
+            Constraint: If it can’t fit on paper, it doesn’t belong.
+          </p>
+        </div>
+      </ng-container>
+
+      <ng-template #noGist>
+        <div class="card" style="padding: 16px">
+          <div style="font-weight: 650">No Morning Gist found.</div>
+          <div class="sub" style="margin: 8px 0 0">
+            Generate one (scheduled or “Run now”), then refresh.
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- DELIVERY SNAPSHOT -->
       <aside class="card side" aria-label="Delivery snapshot">
         <h3>Delivery</h3>
 
+        <!-- You can keep this static for now; we can wire it from user doc later -->
         <div class="kv">
           <span>Mode</span><b>Fax + Web</b> <span>Fax</span
           ><b>(•••) •••-1234</b> <span>Schedule</span
@@ -120,10 +137,28 @@
         </div>
 
         <div class="log" aria-label="Delivery log">
-          <div class="row" *ngFor="let entry of deliveryLog">
-            <span>{{ entry.when }}</span>
-            <span [class.ok]="entry.tone === 'ok'">{{ entry.status }}</span>
-          </div>
+          <ng-container *ngIf="deliveryLogs$ | async as logs; else logsLoading">
+            <div *ngIf="logs.length === 0" style="color: var(--muted)">
+              No delivery events yet.
+            </div>
+
+            <div class="row" *ngFor="let entry of logs">
+              <span>{{ entry.createdAtLabel }}</span>
+              <span
+                [ngClass]="{
+                  ok: entry.statusClass === 'ok',
+                  warn: entry.statusClass === 'warn',
+                  bad: entry.statusClass === 'bad'
+                }"
+              >
+                {{ entry.status }}
+              </span>
+            </div>
+          </ng-container>
+
+          <ng-template #logsLoading>
+            <div style="color: var(--muted)">Loading…</div>
+          </ng-template>
         </div>
 
         <div class="actions" style="margin-top: 12px">
