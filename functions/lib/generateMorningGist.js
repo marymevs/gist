@@ -6,6 +6,7 @@ const scheduler_1 = require("firebase-functions/v2/scheduler");
 const firebase_functions_1 = require("firebase-functions");
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
+const weather_1 = require("./integrations/weather");
 (0, app_1.initializeApp)();
 const db = (0, firestore_1.getFirestore)();
 /** === Helpers === */
@@ -42,11 +43,6 @@ function estimatePages(maxPages) {
     return 2;
 }
 /** === Stub integrations (replace later) === */
-async function fetchWeatherSummary(city, timeZone) {
-    // TODO: call a real weather API with secrets (OpenWeather/Apple WeatherKit/etc.)
-    // Use `defineSecret` + Secret Manager in gen2 when you wire it.
-    return `38° / 51° • light rain after 2pm`;
-}
 async function fetchCalendarItems(userId, dateKey, timeZone) {
     // TODO: integrate Google Calendar via OAuth tokens stored per user
     // MVP: placeholder items
@@ -135,8 +131,14 @@ async function generateMorningGistForUser(user, now) {
     const city = user.prefs?.city ?? 'New York, NY';
     const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
     const pages = estimatePages(user.prefs?.maxPages);
-    const [weather, dayItems, worldItems] = await Promise.all([
-        fetchWeatherSummary(city, timezone),
+    const weatherResp = await (0, weather_1.fetchWeatherSummary)({
+        q: city, // e.g. "New York, NY"
+        days: 1,
+        aqi: false,
+        alerts: true, // optional; turn on if you want “Heat Advisory”
+    });
+    const weather = weatherResp.summary;
+    const [dayItems, worldItems] = await Promise.all([
         fetchCalendarItems(user.uid, dateKey, timezone),
         fetchWorldItems(domains),
     ]);
@@ -149,7 +151,7 @@ async function generateMorningGistForUser(user, now) {
         domains,
     });
     const gist = {
-        id: dateKey,
+        id: crypto.randomUUID(),
         userId: user.uid,
         date: dateKey,
         timezone,
@@ -190,9 +192,10 @@ async function generateMorningGistForUser(user, now) {
 /** === Scheduled job: generates for all eligible users === */
 exports.generateMorningGist = (0, scheduler_1.onSchedule)({
     // Every day at 07:30 America/New_York (MVP default)
-    schedule: '30 7 * * *',
+    schedule: '30 7 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
+    secrets: [weather_1.WEATHERAPI_KEY],
 }, async () => {
     firebase_functions_1.logger.info('Morning Gist scheduler started');
     // MVP selection: all users on non-web plan OR any users with delivery.method defined

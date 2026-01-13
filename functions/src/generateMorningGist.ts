@@ -2,6 +2,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 
 initializeApp();
 const db = getFirestore();
@@ -38,7 +39,7 @@ type UserDoc = {
 };
 
 type MorningGist = {
-  id: string; // dateKey
+  id: string;
   userId: string;
   date: string; // YYYY-MM-DD
   timezone: string;
@@ -97,15 +98,6 @@ function estimatePages(maxPages?: number): number {
 }
 
 /** === Stub integrations (replace later) === */
-
-async function fetchWeatherSummary(
-  city: string,
-  timeZone: string
-): Promise<string> {
-  // TODO: call a real weather API with secrets (OpenWeather/Apple WeatherKit/etc.)
-  // Use `defineSecret` + Secret Manager in gen2 when you wire it.
-  return `38° / 51° • light rain after 2pm`;
-}
 
 async function fetchCalendarItems(
   userId: string,
@@ -231,8 +223,16 @@ export async function generateMorningGistForUser(
   const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
   const pages = estimatePages(user.prefs?.maxPages);
 
-  const [weather, dayItems, worldItems] = await Promise.all([
-    fetchWeatherSummary(city, timezone),
+  const weatherResp = await fetchWeatherSummary({
+    q: city, // e.g. "New York, NY"
+    days: 1,
+    aqi: false,
+    alerts: true, // optional; turn on if you want “Heat Advisory”
+  });
+
+  const weather = weatherResp.summary;
+
+  const [dayItems, worldItems] = await Promise.all([
     fetchCalendarItems(user.uid, dateKey, timezone),
     fetchWorldItems(domains),
   ]);
@@ -248,7 +248,7 @@ export async function generateMorningGistForUser(
   });
 
   const gist: MorningGist = {
-    id: dateKey,
+    id: crypto.randomUUID(),
     userId: user.uid,
     date: dateKey,
     timezone,
@@ -301,9 +301,10 @@ export async function generateMorningGistForUser(
 export const generateMorningGist = onSchedule(
   {
     // Every day at 07:30 America/New_York (MVP default)
-    schedule: '30 7 * * *',
+    schedule: '30 7 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
+    secrets: [WEATHERAPI_KEY],
   },
   async () => {
     logger.info('Morning Gist scheduler started');
