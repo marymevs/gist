@@ -7,12 +7,8 @@ const firebase_functions_1 = require("firebase-functions");
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const weather_1 = require("./integrations/weather");
-// import {
-//   GOOGLE_CLIENT_ID,
-//   GOOGLE_CLIENT_SECRET,
-//   fetchCalendarItems,
-// } from './integrations/googleCalendar';
 (0, app_1.initializeApp)();
+const googleCalendarInt_1 = require("./integrations/googleCalendarInt");
 const db = (0, firestore_1.getFirestore)();
 /** === Helpers === */
 function toDateKeyISO(date, timeZone) {
@@ -123,15 +119,12 @@ async function generateMorningGistForUser(user, now) {
     });
     const weather = weatherResp.summary;
     const [dayItems, worldItems] = await Promise.all([
-        // fetchCalendarItems(user.uid, dateKey, timezone),
-        // fetchWorldItems(domains),
-        [{ time: '330', title: '15', note: '16' }],
-        [{ headline: '330', implication: '15' }],
+        (0, googleCalendarInt_1.fetchCalendarItems)(user.uid, dateKey, timezone),
+        fetchWorldItems(domains),
     ]);
-    // const firstEvent = dayItems[0]?.time
-    //   ? `${dayItems[0].time} — ${dayItems[0].title}`
-    //   : dayItems[0]?.title;
-    const firstEvent = 'hii';
+    const firstEvent = dayItems[0]?.time
+        ? `${dayItems[0].time} — ${dayItems[0].title}`
+        : dayItems[0]?.title;
     const gistBullets = synthesizeGistBullets({
         weather,
         firstEvent,
@@ -182,7 +175,7 @@ exports.generateMorningGist = (0, scheduler_1.onSchedule)({
     schedule: '*/5 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    secrets: [weather_1.WEATHERAPI_KEY] /*GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET],*/,
+    secrets: [weather_1.WEATHERAPI_KEY, googleCalendarInt_1.GOOGLE_CLIENT_ID, googleCalendarInt_1.GOOGLE_CLIENT_SECRET],
 }, async () => {
     firebase_functions_1.logger.info('Morning Gist scheduler started');
     // MVP selection: all users on non-web plan OR any users with delivery.method defined

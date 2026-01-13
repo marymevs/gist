@@ -3,13 +3,15 @@ import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
+
+initializeApp();
+
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   fetchCalendarItems,
-} from './integrations/googleCalendar';
+} from './integrations/googleCalendarInt';
 
-initializeApp();
 const db = getFirestore();
 
 /** === Types (keep close to the function for now; later move to /shared) === */
