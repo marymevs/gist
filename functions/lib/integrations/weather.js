@@ -1,28 +1,8 @@
 "use strict";
-// import { defineSecret } from 'firebase-functions/params';
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WEATHERAPI_KEY = void 0;
 exports.summarizeForecast = summarizeForecast;
 exports.fetchWeatherSummary = fetchWeatherSummary;
-// export const OPENWEATHER_KEY = defineSecret('OPENWEATHER_KEY');
-// export async function fetchWeatherSummary(
-//   city: string,
-//   timeZone: string
-// ): Promise<string> {
-//   const key = OPENWEATHER_KEY.value();
-//   const summary = '';
-//   // TODO: call One Call 3.0 (you’ll map the response into your short summary)
-//   // Keep it short so it fits on paper.
-//   return summary;
-// }
-// async function fetchWeatherSummary(
-//   city: string,
-//   timeZone: string
-// ): Promise<string> {
-//   // TODO: call a real weather API with secrets (OpenWeather/Apple WeatherKit/etc.)
-//   // Use `defineSecret` + Secret Manager in gen2 when you wire it.
-//   return `38° / 51° • light rain after 2pm`;
-// }
 const params_1 = require("firebase-functions/params");
 exports.WEATHERAPI_KEY = (0, params_1.defineSecret)('WEATHERAPI_KEY');
 /** Helpers */
