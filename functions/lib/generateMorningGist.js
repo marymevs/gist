@@ -7,6 +7,11 @@ const firebase_functions_1 = require("firebase-functions");
 const app_1 = require("firebase-admin/app");
 const firestore_1 = require("firebase-admin/firestore");
 const weather_1 = require("./integrations/weather");
+// import {
+//   GOOGLE_CLIENT_ID,
+//   GOOGLE_CLIENT_SECRET,
+//   fetchCalendarItems,
+// } from './integrations/googleCalendar';
 (0, app_1.initializeApp)();
 const db = (0, firestore_1.getFirestore)();
 /** === Helpers === */
@@ -43,27 +48,6 @@ function estimatePages(maxPages) {
     return 2;
 }
 /** === Stub integrations (replace later) === */
-async function fetchCalendarItems(userId, dateKey, timeZone) {
-    // TODO: integrate Google Calendar via OAuth tokens stored per user
-    // MVP: placeholder items
-    return [
-        {
-            time: '10:00–11:30',
-            title: 'Writing block',
-            note: 'Keep phone in another room. One tab only.',
-        },
-        {
-            time: '12:30–1:15',
-            title: 'Lunch + walk',
-            note: 'No headphones for first 10 minutes.',
-        },
-        {
-            time: '3:00–4:00',
-            title: 'Admin hour',
-            note: 'Batch messages, then stop.',
-        },
-    ];
-}
 async function fetchWorldItems(domains) {
     // TODO: wire real news sources; avoid doomscrolling by summarizing 1 line + why it matters
     return [
@@ -139,12 +123,15 @@ async function generateMorningGistForUser(user, now) {
     });
     const weather = weatherResp.summary;
     const [dayItems, worldItems] = await Promise.all([
-        fetchCalendarItems(user.uid, dateKey, timezone),
-        fetchWorldItems(domains),
+        // fetchCalendarItems(user.uid, dateKey, timezone),
+        // fetchWorldItems(domains),
+        [{ time: '330', title: '15', note: '16' }],
+        [{ headline: '330', implication: '15' }],
     ]);
-    const firstEvent = dayItems[0]?.time
-        ? `${dayItems[0].time} — ${dayItems[0].title}`
-        : dayItems[0]?.title;
+    // const firstEvent = dayItems[0]?.time
+    //   ? `${dayItems[0].time} — ${dayItems[0].title}`
+    //   : dayItems[0]?.title;
+    const firstEvent = 'hii';
     const gistBullets = synthesizeGistBullets({
         weather,
         firstEvent,
@@ -192,10 +179,10 @@ async function generateMorningGistForUser(user, now) {
 /** === Scheduled job: generates for all eligible users === */
 exports.generateMorningGist = (0, scheduler_1.onSchedule)({
     // Every day at 07:30 America/New_York (MVP default)
-    schedule: '30 7 * * * *',
+    schedule: '*/5 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    secrets: [weather_1.WEATHERAPI_KEY],
+    secrets: [weather_1.WEATHERAPI_KEY] /*GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET],*/,
 }, async () => {
     firebase_functions_1.logger.info('Morning Gist scheduler started');
     // MVP selection: all users on non-web plan OR any users with delivery.method defined

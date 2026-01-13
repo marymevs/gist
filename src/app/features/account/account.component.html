@@ -10,9 +10,19 @@
         <div class="sub">Personal context only. No inboxes.</div>
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Calendar</span><b>{{ inputs.calendarStatus }}</b>
+          <span>Calendar</span><b>{{ calendarStatus(user) }}</b>
           <span>Weather</span><b>{{ inputs.weatherLocation }}</b>
           <span>News domains</span><b>{{ inputs.newsDomains }}</b>
+        </div>
+
+        <div style="margin-top: 12px">
+          <button
+            class="secondary"
+            type="button"
+            (click)="onConnectGoogleCalendar()"
+          >
+            Connect Google Calendar
+          </button>
         </div>
 
         <div style="margin-top: 12px">

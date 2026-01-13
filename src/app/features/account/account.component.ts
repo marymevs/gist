@@ -2,10 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Auth, user } from '@angular/fire/auth';
-import { signOut } from 'firebase/auth';
 import { AccountDataService } from '../../core/services/account-data.service';
 import { GistUser } from '../../core/models/user.model';
 import { Observable } from 'rxjs';
+import {
+  Firestore,
+  doc,
+  serverTimestamp,
+  setDoc,
+} from '@angular/fire/firestore';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 type Plan = 'web' | 'paper' | 'loop';
 
@@ -43,13 +49,55 @@ export class AccountComponent {
     dataStatus: 'Export available',
   };
 
-  constructor(private auth: Auth, private accountData: AccountDataService) {}
-
+  constructor(
+    private auth: Auth,
+    private accountData: AccountDataService,
+    private firestore: Firestore
+  ) {}
   // --- Click handlers (wire these later) ---
 
   onManageConnections(): void {
     // Later: route to a Connections page or open a modal
     alert('Demo: Manage connections (Calendar / Weather / News sources).');
+  }
+
+  calendarStatus(user: GistUser | null): string {
+    const integration = user?.calendarIntegration;
+    if (!integration) return 'Not connected';
+    if (integration.accessToken || integration.authorizationCode) {
+      return 'Connected';
+    }
+    return 'Not connected';
+  }
+
+  async onConnectGoogleCalendar(): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      alert('Please sign in before connecting your calendar.');
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    provider.setCustomParameters({ prompt: 'consent' });
+
+    const result = await signInWithPopup(this.auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const accessToken = credential?.accessToken ?? null;
+
+    const ref = doc(this.firestore, 'users', currentUser.uid);
+    await setDoc(
+      ref,
+      {
+        calendarIntegration: {
+          provider: 'google',
+          accessToken,
+          connectedAt: serverTimestamp(),
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
   }
 
   planLabel(plan: GistUser['plan']): string {
