@@ -192,6 +192,54 @@ function cleanNote(
   return notes.join(' • ');
 }
 
+const MAX_ERROR_BODY_LENGTH = 1000;
+
+async function extractGoogleApiError(
+  response: Response
+): Promise<{
+  status: number;
+  statusText: string;
+  bodyText?: string;
+  bodyJson?: unknown;
+  headers: Record<string, string>;
+}> {
+  const headers: Record<string, string> = {};
+  const headerNames = [
+    'www-authenticate',
+    'x-request-id',
+    'x-goog-request-id',
+    'x-guploader-uploadid',
+  ];
+  for (const name of headerNames) {
+    const value = response.headers.get(name);
+    if (value) headers[name] = value;
+  }
+
+  let bodyText: string | undefined;
+  let bodyJson: unknown;
+
+  try {
+    bodyJson = await response.clone().json();
+  } catch {
+    bodyJson = undefined;
+  }
+
+  try {
+    const text = await response.text();
+    if (text) bodyText = text.slice(0, MAX_ERROR_BODY_LENGTH);
+  } catch {
+    bodyText = undefined;
+  }
+
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    bodyText,
+    bodyJson,
+    headers,
+  };
+}
+
 async function refreshAccessToken(
   tokens: StoredGoogleTokens,
   oauth: { clientId: string; clientSecret: string }
@@ -212,10 +260,10 @@ async function refreshAccessToken(
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
+    const errorDetails = await extractGoogleApiError(response);
     logger.warn('Google OAuth token refresh failed.', {
-      status: response.status,
-      text,
+      ...errorDetails,
+      grantType: 'refresh_token',
     });
     return null;
   }
@@ -267,6 +315,7 @@ async function listCalendarEvents(params: {
   timeMin: string;
   timeMax: string;
   timeZone: string;
+  userId: string;
 }): Promise<{
   items: Array<{
     summary?: string | null;
@@ -291,8 +340,19 @@ async function listCalendarEvents(params: {
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`Calendar API ${response.status}: ${text.slice(0, 200)}`);
+    const errorDetails = await extractGoogleApiError(response);
+    logger.warn('Google Calendar API request failed.', {
+      ...errorDetails,
+      userId: params.userId,
+      timeMin: params.timeMin,
+      timeMax: params.timeMax,
+      timeZone: params.timeZone,
+    });
+    const error = new Error(
+      `Calendar API ${response.status}: ${response.statusText}`
+    );
+    (error as Error & { details?: unknown }).details = errorDetails;
+    throw error;
   }
 
   return (await response.json()) as {
@@ -351,6 +411,7 @@ export async function fetchCalendarItems(
         timeMin,
         timeMax,
         timeZone,
+        userId,
       });
     } catch (error) {
       if (tokens.refreshToken) {
@@ -365,6 +426,7 @@ export async function fetchCalendarItems(
             timeMin,
             timeMax,
             timeZone,
+            userId,
           });
         } else {
           throw error;
@@ -399,7 +461,15 @@ export async function fetchCalendarItems(
       };
     });
   } catch (error) {
-    logger.warn('Failed to fetch Google Calendar events.', { error, userId });
+    const errorDetails =
+      error instanceof Error
+        ? (error as Error & { details?: unknown }).details
+        : undefined;
+    logger.warn('Failed to fetch Google Calendar events.', {
+      error,
+      errorDetails,
+      userId,
+    });
     return [];
   }
 }
