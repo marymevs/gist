@@ -211,7 +211,21 @@ export async function generateMorningGistForUser(
     alerts: true, // optional; turn on if you want “Heat Advisory”
   });
 
-  const weather = weatherResp.summary;
+  let weather = 'Weather unavailable';
+  try {
+    const weatherResp = await fetchWeatherSummary({
+      q: city, // e.g. "New York, NY"
+      days: 1,
+      aqi: false,
+      alerts: true, // optional; turn on if you want “Heat Advisory”
+    });
+    weather = weatherResp.summary;
+  } catch (error) {
+    logger.warn('Failed to fetch weather summary.', {
+      error,
+      userId: user.uid,
+    });
+  }
 
   const [dayItems, worldItems] = await Promise.all([
     fetchCalendarItems(user.uid, dateKey, timezone),
@@ -298,10 +312,11 @@ export const generateMorningGist = onSchedule(
 
     usersSnap.forEach((docSnap) => {
       const data = docSnap.data() as Partial<UserDoc>;
-      if (!data.uid) return;
+      const uid = data.uid ?? docSnap.id;
+      if (!uid) return;
 
       const user: UserDoc = {
-        uid: data.uid,
+        uid,
         email: data.email ?? null,
         plan: (data.plan as GistPlan) ?? 'print',
         prefs: data.prefs ?? {},

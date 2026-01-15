@@ -46,6 +46,10 @@ async function loadStoredTokens(userId) {
     if (nested?.accessToken || nested?.refreshToken) {
         return { tokens: nested, location: { kind: 'user', userId } };
     }
+    const legacy = userData?.calendarIntegration;
+    if (legacy?.accessToken || legacy?.refreshToken) {
+        return { tokens: legacy, location: { kind: 'user', userId } };
+    }
     return { tokens: null, location: null };
 }
 async function persistTokens(location, tokens) {

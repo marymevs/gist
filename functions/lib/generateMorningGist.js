@@ -117,7 +117,22 @@ async function generateMorningGistForUser(user, now) {
         aqi: false,
         alerts: true, // optional; turn on if you want “Heat Advisory”
     });
-    const weather = weatherResp.summary;
+    let weather = 'Weather unavailable';
+    try {
+        const weatherResp = await (0, weather_1.fetchWeatherSummary)({
+            q: city, // e.g. "New York, NY"
+            days: 1,
+            aqi: false,
+            alerts: true, // optional; turn on if you want “Heat Advisory”
+        });
+        weather = weatherResp.summary;
+    }
+    catch (error) {
+        firebase_functions_1.logger.warn('Failed to fetch weather summary.', {
+            error,
+            userId: user.uid,
+        });
+    }
     const [dayItems, worldItems] = await Promise.all([
         (0, googleCalendarInt_1.fetchCalendarItems)(user.uid, dateKey, timezone),
         fetchWorldItems(domains),
@@ -184,10 +199,11 @@ exports.generateMorningGist = (0, scheduler_1.onSchedule)({
     const tasks = [];
     usersSnap.forEach((docSnap) => {
         const data = docSnap.data();
-        if (!data.uid)
+        const uid = data.uid ?? docSnap.id;
+        if (!uid)
             return;
         const user = {
-            uid: data.uid,
+            uid,
             email: data.email ?? null,
             plan: data.plan ?? 'print',
             prefs: data.prefs ?? {},
