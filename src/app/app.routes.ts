@@ -7,6 +7,7 @@ import { AccountComponent } from './features/account/account.component';
 import { LandingComponent } from './features/landing/landing.component';
 import { SignupComponent } from './features/auth/signup.component';
 import { LoginComponent } from './features/auth/login.component';
+import { PrivacyPolicyComponent } from './features/privacy-policy/privacy-policy.component';
 
 export const routes: Routes = [
   {
@@ -55,6 +56,12 @@ export const routes: Routes = [
     path: 'account',
     component: AccountComponent,
     title: 'Account',
+  },
+
+  {
+    path: 'privacy',
+    component: PrivacyPolicyComponent,
+    title: 'Privacy Policy — Gist',
   },
 
   {
