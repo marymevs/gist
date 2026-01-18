@@ -23,7 +23,7 @@ type TokenStorageLocation =
 const db = getFirestore();
 
 function getSecretValue(
-  secret: ReturnType<typeof defineSecret>
+  secret: ReturnType<typeof defineSecret>,
 ): string | null {
   try {
     const value = secret.value();
@@ -88,7 +88,7 @@ async function loadStoredTokens(userId: string): Promise<{
 
 async function persistTokens(
   location: TokenStorageLocation | null,
-  tokens: StoredGoogleTokens
+  tokens: StoredGoogleTokens,
 ): Promise<void> {
   if (!location) return;
   const payload = {
@@ -125,7 +125,7 @@ function getTimeZoneOffset(date: Date, timeZone: string): number {
   });
   const parts = dtf.formatToParts(date);
   const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value])
+    parts.map((part) => [part.type, part.value]),
   );
   const formatted = `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}Z`;
   const tzDate = new Date(formatted);
@@ -134,7 +134,7 @@ function getTimeZoneOffset(date: Date, timeZone: string): number {
 
 function buildTimeBounds(
   dateKey: string,
-  timeZone: string
+  timeZone: string,
 ): {
   timeMin: string;
   timeMax: string;
@@ -162,7 +162,7 @@ function buildTimeBounds(
 function formatTimeLabel(
   start: Date,
   end: Date | null,
-  timeZone: string
+  timeZone: string,
 ): string {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -177,7 +177,7 @@ function formatTimeLabel(
 
 function cleanNote(
   location?: string | null,
-  description?: string | null
+  description?: string | null,
 ): string | undefined {
   const notes: string[] = [];
   if (location?.trim()) notes.push(location.trim());
@@ -194,9 +194,7 @@ function cleanNote(
 
 const MAX_ERROR_BODY_LENGTH = 1000;
 
-async function extractGoogleApiError(
-  response: Response
-): Promise<{
+async function extractGoogleApiError(response: Response): Promise<{
   status: number;
   statusText: string;
   bodyText?: string;
@@ -242,7 +240,7 @@ async function extractGoogleApiError(
 
 async function refreshAccessToken(
   tokens: StoredGoogleTokens,
-  oauth: { clientId: string; clientSecret: string }
+  oauth: { clientId: string; clientSecret: string },
 ): Promise<StoredGoogleTokens | null> {
   if (!tokens.refreshToken) return null;
 
@@ -293,7 +291,7 @@ async function refreshAccessToken(
 async function ensureFreshAccessToken(
   tokens: StoredGoogleTokens,
   oauth: { clientId: string; clientSecret: string },
-  location: TokenStorageLocation | null
+  location: TokenStorageLocation | null,
 ): Promise<StoredGoogleTokens | null> {
   if (!tokens.accessToken) {
     const refreshed = await refreshAccessToken(tokens, oauth);
@@ -326,7 +324,7 @@ async function listCalendarEvents(params: {
   }>;
 }> {
   const url = new URL(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events'
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
   );
   url.searchParams.set('singleEvents', 'true');
   url.searchParams.set('orderBy', 'startTime');
@@ -349,7 +347,7 @@ async function listCalendarEvents(params: {
       timeZone: params.timeZone,
     });
     const error = new Error(
-      `Calendar API ${response.status}: ${response.statusText}`
+      `Calendar API ${response.status}: ${response.statusText}`,
     );
     (error as Error & { details?: unknown }).details = errorDetails;
     throw error;
@@ -369,7 +367,7 @@ async function listCalendarEvents(params: {
 export async function fetchCalendarItems(
   userId: string,
   dateKey: string,
-  timeZone: string
+  timeZone: string,
 ): Promise<CalendarItem[]> {
   const { clientId, clientSecret } = getOAuthConfig();
   if (!clientId || !clientSecret) {
@@ -387,7 +385,7 @@ export async function fetchCalendarItems(
     const refreshedTokens = await ensureFreshAccessToken(
       tokens,
       { clientId, clientSecret },
-      location
+      location,
     );
     if (!refreshedTokens?.accessToken) {
       logger.warn('No valid Google Calendar access token.', { userId });

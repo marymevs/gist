@@ -326,7 +326,9 @@ async function fetchCalendarItems(userId, dateKey, timeZone) {
         });
     }
     catch (error) {
-        const errorDetails = error instanceof Error ? error.details : undefined;
+        const errorDetails = error instanceof Error
+            ? error.details
+            : undefined;
         firebase_functions_1.logger.warn('Failed to fetch Google Calendar events.', {
             error,
             errorDetails,

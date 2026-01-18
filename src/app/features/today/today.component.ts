@@ -15,7 +15,7 @@ import {
   Timestamp,
 } from '@angular/fire/firestore';
 
-import { Observable, of, combineLatest } from 'rxjs';
+import { Observable, of, combineLatest, tap } from 'rxjs';
 import { map, switchMap, startWith } from 'rxjs/operators';
 
 type DayItem = { time?: string; title: string; note?: string };
@@ -98,19 +98,20 @@ export class TodayComponent {
 
   // === Firestore-backed streams for template ===
   gist$: Observable<MorningGist | null> = authState(this.auth).pipe(
+    tap((u) => console.log('authState emitted:', u?.uid ?? null)),
     switchMap((user) => {
       if (!user) return of(null);
 
       const dateKey = todayDateKeyNY(); // 'YYYY-MM-DD'
       const gistDocRef = doc(
         this.db,
-        `users/${user.uid}/morningGists/${dateKey}`
+        `users/${user.uid}/morningGists/${dateKey}`,
       );
 
       return docData(gistDocRef, { idField: 'id' }).pipe(
-        map((data) => (data as MorningGist) ?? null)
+        map((data) => (data as MorningGist) ?? null),
       );
-    })
+    }),
   );
 
   deliveryLogs$: Observable<DeliveryLogRow[]> = authState(this.auth).pipe(
@@ -121,9 +122,9 @@ export class TodayComponent {
       const q = query(logsCol, orderBy('createdAt', 'desc'), limit(4));
 
       return collectionData(q, { idField: 'id' }).pipe(
-        map((rows) => (rows as DeliveryLog[]).map((r) => this.toLogRow(r)))
+        map((rows) => (rows as DeliveryLog[]).map((r) => this.toLogRow(r))),
       );
-    })
+    }),
   );
 
   constructor() {
@@ -171,7 +172,7 @@ export class TodayComponent {
 
     const createdAtLabel = createdAtDate
       ? // ex: "Jan 12 • 7:32 AM"
-        this.datePipe.transform(createdAtDate, 'MMM d • h:mm a') ?? '—'
+        (this.datePipe.transform(createdAtDate, 'MMM d • h:mm a') ?? '—')
       : '—';
 
     const statusClass = this.statusToClass(log.status);
@@ -193,7 +194,7 @@ export class TodayComponent {
 
   private computeHeaderText(
     gist: MorningGist | null,
-    logs: DeliveryLogRow[]
+    logs: DeliveryLogRow[],
   ): { metaText: string; statusText: string } {
     // Meta line: "Saturday, Jan 10 • New York, NY • Scheduled 7:30 AM ET"
     // MVP: use gist.date, gist.timezone, and a default schedule string.
@@ -218,7 +219,7 @@ export class TodayComponent {
       null;
 
     const timeLabel = deliveredAt
-      ? this.datePipe.transform(deliveredAt, 'h:mm a') ?? ''
+      ? (this.datePipe.transform(deliveredAt, 'h:mm a') ?? '')
       : '';
 
     const baseStatus = (
@@ -230,8 +231,8 @@ export class TodayComponent {
       (method ?? '').toLowerCase() === 'fax'
         ? 'Fax'
         : (method ?? '').toLowerCase() === 'web'
-        ? 'Web'
-        : `${method}`.toUpperCase();
+          ? 'Web'
+          : `${method}`.toUpperCase();
 
     const pagesLabel = pages ? `${pages} page${pages === 1 ? '' : 's'}` : '—';
 

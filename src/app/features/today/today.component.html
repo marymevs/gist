@@ -131,9 +131,8 @@
         <!-- You can keep this static for now; we can wire it from user doc later -->
         <div class="kv">
           <span>Mode</span><b>Fax + Web</b> <span>Fax</span
-          ><b>(•••) •••-1234</b> <span>Schedule</span
-          ><b>Weekdays 7:30 AM ET</b> <span>Format</span
-          ><b>Standard • 2 pages max</b>
+          ><b>(•••) •••-1234</b> <span>Schedule</span><b>Weekdays 7:30 AM ET</b>
+          <span>Format</span><b>Standard • 2 pages max</b>
         </div>
 
         <div class="log" aria-label="Delivery log">
@@ -148,7 +147,7 @@
                 [ngClass]="{
                   ok: entry.statusClass === 'ok',
                   warn: entry.statusClass === 'warn',
-                  bad: entry.statusClass === 'bad'
+                  bad: entry.statusClass === 'bad',
                 }"
               >
                 {{ entry.status }}
