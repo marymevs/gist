@@ -9,5 +9,5 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./privacy-policy.component.scss'],
 })
 export class PrivacyPolicyComponent {
-  lastUpdated = 'March 10, 2025';
+  lastUpdated = 'January 18, 2026';
 }
