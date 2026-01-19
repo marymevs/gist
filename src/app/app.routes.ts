@@ -8,6 +8,7 @@ import { LandingComponent } from './features/landing/landing.component';
 import { SignupComponent } from './features/auth/signup.component';
 import { LoginComponent } from './features/auth/login.component';
 import { PrivacyPolicyComponent } from './features/privacy-policy/privacy-policy.component';
+import { TermsOfServiceComponent } from './features/terms-of-service/terms-of-service.component';
 
 export const routes: Routes = [
   {
@@ -62,6 +63,12 @@ export const routes: Routes = [
     path: 'privacy',
     component: PrivacyPolicyComponent,
     title: 'Privacy Policy — Gist',
+  },
+
+  {
+    path: 'terms',
+    component: TermsOfServiceComponent,
+    title: 'Terms of Service — Gist',
   },
 
   {
