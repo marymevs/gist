@@ -280,6 +280,197 @@ class TodayComponent {
 }
 ```
 
+### functions/src
+
+#### generateMorningGist.ts
+
+```typescript
+// Note that we initialize the app and then we import the google secrets. Could that have something to do with auth errors?
+
+// get the db reference
+
+type DeliveryMethod = 'web' | 'fax';
+
+type GistPlan = 'web' | 'print' | 'loop';
+
+type UserPrefs = {
+  timezone?: string;
+  city?: string;
+  newsDomains?: string;
+  tone?: string;
+  maxPages?: number;
+};
+
+type UserDelivery = {
+  method?: DeliveryMethod;
+  faxNumber?: string;
+  schedule? {
+    hour?: number;
+    minute?: number;
+    weekdaysOnly?: boolean;
+  };
+}
+
+type UserDoc = {
+  uid: string;
+  email: string | null;
+  plan: GistPlan;
+  prefs?: UserPrefs;
+  delivery?: UserDelivery;
+}
+
+type MorningGist = {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  timezone: string;
+
+  weatherSummary: string;
+  firstEvent?: string;
+
+  dayItems: { time?: string; title: string; note?: string }[];
+  worldItems: { headline: string; implication: string }[];
+  gistBullets: string[];
+  oneThing: string;
+
+  delivery: {
+    method: DeliveryMethod;
+    pages: number;
+    status: 'queued' | 'delivered' | 'failed';
+    deliveredAt?: Timestamp;
+  };
+    createdAt: Timestamp;
+};
+
+function toDateKeyISO(date: Date, timeZone: string): string {
+  /**
+   * produces YYYY-MM-DD in the user's timezone
+   * (this is the Canadian date format)
+  */
+}
+
+function safeTimezone(tz?: string | undefined): string {
+  /**
+   * tries to create a Date with the passed in timezone,
+   * if it works, then return that timezone (it's safe)
+   * if not, then return EST
+  */
+}
+
+function estimatePages(maxPages?: number | undefined): number {
+  /**
+   * if no maxPages, then set to 2, but doesn't allow for a max higher than 3
+  */
+}
+
+function fetchWorldItems(domains: string[]): Promise<{
+    headline: string;
+    implication: string;
+}[]> {
+  /**
+   * Mocked out function to return news items
+  */
+}
+
+function synthesizeGistBullets(input: {
+    weather: string;
+    firstEvent?: string | undefined;
+    domains: string[];
+}): string[] {
+  /**
+   * mocked out right now, but looks like the function to say the topline items on the morning briefing
+   * weather, first event, focus for the day
+  */
+}
+
+function computeOneThing(): string {
+  /**
+   * the 'oneThing' message
+   * mocked to be 'Send one message that removes uncertainty today (then stop checking for replies).'
+  */
+}
+
+async function queueFaxIfNeeded(params: {
+    userId: string;
+    faxNumber?: string | undefined;
+    dateKey: string;
+}): Promise<void> {
+  /**
+   * TODO: integrate Twilio Programmable Fax / Phaxio / SRFax etc.
+   * if there's no faxNumber passed in, return
+   * Otherwise add to a faxQueue collection on the db
+  */
+}
+
+
+function writeDeliveryLog(userId: string, payload: {
+    type: "morning";
+    method: DeliveryMethod;
+    status: string;
+    pages?: number;
+}): Promise<void> {
+  /**
+   * Write a delivery log row
+  */
+}
+
+export async function generateMorningGistForUser(user: UserDoc, now: Date): Promise<void> {
+  /**
+   * create a timezone variable using safeTimezone
+   * and a dateKey using dateKeyForISO
+   * grab delivery method -- either the method on user's delivery object
+   * or web if the user's plan is web, or fax
+   *
+   * grab the city from user.prefs?.city
+   * if not there, use NYC --> note that city isn't a preference, the user's location should be one of their attributes
+   *
+   * grab the news domains from the user preferences
+   * grab the number of pages by running estimate pages using user prefs
+   *
+   * set weather to 'weather unavailable' and then attempt to fetch weather from the api --> note, do this for calendar too
+   *
+   * ok, now I see why it wasn't in a try/catch, but I've put essentially the rest of the function in the try catch
+   *
+   * moving forward, want to separate calendar call and news call so i can put each in its own try catch and isolate the problem if things aren't working
+   *
+   * try to create the gist
+   *  the calendar items, the world items, the first thing, the one thing,
+   *
+   * store it in the db at users/{userId}/morningGists/{YYYY-MM-DD}
+   *
+   * then write the delivery log
+   * then queue fax if needed
+   * then log 'Generated morning gist { userId, dateKey, method }
+  */
+
+ export const generateMorningGist: ScheduleFunction {
+    /**
+     * This is actual cloud schedule function
+     * Currently runs them every 5 minutes
+     * pulls in the necessary secrets -- the weatherApiKey, the googleClientId, the googleClientSecret
+     * logs 'Morning Gist scheduler started'
+     *
+     * get all the users
+     * get each user's data
+     * if they don't have a userId, return
+     * otherwise press on --
+     * create a userDoc and generate a gist for that userDoc
+     *
+    */
+ }
+
+}
+
+
+
+
+
+
+
+
+
+```
+
 ### functions/src/integrations
 
 #### googleCalendarInt.ts

@@ -43,7 +43,7 @@ function estimatePages(maxPages) {
         return Math.min(maxPages, 3);
     return 2;
 }
-/** === Stub integrations (replace later) === */
+/* === Stub integrations (replace later) === */
 async function fetchWorldItems(domains) {
     // TODO: wire real news sources; avoid doomscrolling by summarizing 1 line + why it matters
     return [
@@ -111,12 +111,6 @@ async function generateMorningGistForUser(user, now) {
     const city = user.prefs?.city ?? 'New York, NY';
     const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
     const pages = estimatePages(user.prefs?.maxPages);
-    const weatherResp = await (0, weather_1.fetchWeatherSummary)({
-        q: city, // e.g. "New York, NY"
-        days: 1,
-        aqi: false,
-        alerts: true, // optional; turn on if you want “Heat Advisory”
-    });
     let weather = 'Weather unavailable';
     try {
         const weatherResp = await (0, weather_1.fetchWeatherSummary)({
@@ -133,42 +127,50 @@ async function generateMorningGistForUser(user, now) {
             userId: user.uid,
         });
     }
-    const [dayItems, worldItems] = await Promise.all([
-        (0, googleCalendarInt_1.fetchCalendarItems)(user.uid, dateKey, timezone),
-        fetchWorldItems(domains),
-    ]);
-    const firstEvent = dayItems[0]?.time
-        ? `${dayItems[0].time} — ${dayItems[0].title}`
-        : dayItems[0]?.title;
-    const gistBullets = synthesizeGistBullets({
-        weather,
-        firstEvent,
-        domains,
-    });
-    const gist = {
-        id: crypto.randomUUID(),
-        userId: user.uid,
-        date: dateKey,
-        timezone,
-        weatherSummary: weather,
-        firstEvent,
-        dayItems,
-        worldItems,
-        gistBullets,
-        oneThing: computeOneThing(),
-        delivery: {
-            method,
-            pages,
-            status: 'queued',
-        },
-        createdAt: firestore_1.Timestamp.now(),
-    };
-    const gistRef = db
-        .collection('users')
-        .doc(user.uid)
-        .collection('morningGists')
-        .doc(dateKey);
-    await gistRef.set(gist, { merge: true });
+    try {
+        const [dayItems, worldItems] = await Promise.all([
+            (0, googleCalendarInt_1.fetchCalendarItems)(user.uid, dateKey, timezone),
+            fetchWorldItems(domains),
+        ]);
+        const firstEvent = dayItems[0]?.time
+            ? `${dayItems[0].time} — ${dayItems[0].title}`
+            : dayItems[0]?.title;
+        const gistBullets = synthesizeGistBullets({
+            weather,
+            firstEvent,
+            domains,
+        });
+        const gist = {
+            id: crypto.randomUUID(),
+            userId: user.uid,
+            date: dateKey,
+            timezone,
+            weatherSummary: weather,
+            firstEvent,
+            dayItems,
+            worldItems,
+            gistBullets,
+            oneThing: computeOneThing(),
+            delivery: {
+                method,
+                pages,
+                status: 'queued',
+            },
+            createdAt: firestore_1.Timestamp.now(),
+        };
+        const gistRef = db
+            .collection('users')
+            .doc(user.uid)
+            .collection('morningGists')
+            .doc(dateKey);
+        await gistRef.set(gist, { merge: true });
+    }
+    catch (error) {
+        firebase_functions_1.logger.warn('Failed to fetch calendar items and world items', {
+            error,
+            userId: user.uid,
+        });
+    }
     await writeDeliveryLog(user.uid, {
         type: 'morning',
         method,

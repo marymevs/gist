@@ -104,10 +104,10 @@ function estimatePages(maxPages?: number): number {
   return 2;
 }
 
-/** === Stub integrations (replace later) === */
+/* === Stub integrations (replace later) === */
 
 async function fetchWorldItems(
-  domains: string[]
+  domains: string[],
 ): Promise<Array<{ headline: string; implication: string }>> {
   // TODO: wire real news sources; avoid doomscrolling by summarizing 1 line + why it matters
   return [
@@ -170,7 +170,7 @@ async function writeDeliveryLog(
     method: DeliveryMethod;
     status: string;
     pages?: number;
-  }
+  },
 ) {
   const ref = db
     .collection('users')
@@ -189,7 +189,7 @@ async function writeDeliveryLog(
 /** === Core generator (callable from schedule or HTTP later) === */
 export async function generateMorningGistForUser(
   user: UserDoc,
-  now: Date
+  now: Date,
 ): Promise<void> {
   const timezone = safeTimezone(user.prefs?.timezone);
   const dateKey = toDateKeyISO(now, timezone);
@@ -197,19 +197,12 @@ export async function generateMorningGistForUser(
   const method: DeliveryMethod = user.delivery?.method
     ? user.delivery.method
     : user.plan === 'web'
-    ? 'web'
-    : 'fax';
+      ? 'web'
+      : 'fax';
 
   const city = user.prefs?.city ?? 'New York, NY';
   const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
   const pages = estimatePages(user.prefs?.maxPages);
-
-  const weatherResp = await fetchWeatherSummary({
-    q: city, // e.g. "New York, NY"
-    days: 1,
-    aqi: false,
-    alerts: true, // optional; turn on if you want “Heat Advisory”
-  });
 
   let weather = 'Weather unavailable';
   try {
@@ -227,52 +220,59 @@ export async function generateMorningGistForUser(
     });
   }
 
-  const [dayItems, worldItems] = await Promise.all([
-    fetchCalendarItems(user.uid, dateKey, timezone),
-    fetchWorldItems(domains),
-  ]);
+  try {
+    const [dayItems, worldItems] = await Promise.all([
+      fetchCalendarItems(user.uid, dateKey, timezone),
+      fetchWorldItems(domains),
+    ]);
 
-  const firstEvent = dayItems[0]?.time
-    ? `${dayItems[0].time} — ${dayItems[0].title}`
-    : dayItems[0]?.title;
+    const firstEvent = dayItems[0]?.time
+      ? `${dayItems[0].time} — ${dayItems[0].title}`
+      : dayItems[0]?.title;
 
-  const gistBullets = synthesizeGistBullets({
-    weather,
-    firstEvent,
-    domains,
-  });
+    const gistBullets = synthesizeGistBullets({
+      weather,
+      firstEvent,
+      domains,
+    });
 
-  const gist: MorningGist = {
-    id: crypto.randomUUID(),
-    userId: user.uid,
-    date: dateKey,
-    timezone,
+    const gist: MorningGist = {
+      id: crypto.randomUUID(),
+      userId: user.uid,
+      date: dateKey,
+      timezone,
 
-    weatherSummary: weather,
-    firstEvent,
+      weatherSummary: weather,
+      firstEvent,
 
-    dayItems,
-    worldItems,
+      dayItems,
+      worldItems,
 
-    gistBullets,
-    oneThing: computeOneThing(),
+      gistBullets,
+      oneThing: computeOneThing(),
 
-    delivery: {
-      method,
-      pages,
-      status: 'queued',
-    },
+      delivery: {
+        method,
+        pages,
+        status: 'queued',
+      },
 
-    createdAt: Timestamp.now(),
-  };
+      createdAt: Timestamp.now(),
+    };
 
-  const gistRef = db
-    .collection('users')
-    .doc(user.uid)
-    .collection('morningGists')
-    .doc(dateKey);
+    const gistRef = db
+      .collection('users')
+      .doc(user.uid)
+      .collection('morningGists')
+      .doc(dateKey);
 
-  await gistRef.set(gist, { merge: true });
+    await gistRef.set(gist, { merge: true });
+  } catch (error) {
+    logger.warn('Failed to fetch calendar items and world items', {
+      error,
+      userId: user.uid,
+    });
+  }
 
   await writeDeliveryLog(user.uid, {
     type: 'morning',
@@ -331,5 +331,5 @@ export const generateMorningGist = onSchedule(
     await Promise.allSettled(tasks);
 
     logger.info('Morning Gist scheduler finished', { users: usersSnap.size });
-  }
+  },
 );
