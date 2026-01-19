@@ -9,8 +9,6 @@ import { Router } from '@angular/router';
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent {
-  currentYear = new Date().getFullYear();
-
   constructor(private router: Router) {}
 
   goToLogin(): void {

@@ -131,29 +131,6 @@
   background: #fff;
 }
 
-.footer {
-  margin-top: 14px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-}
-
-.footerLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.footerLinks a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 @media (max-width: 980px) {
   .hero {
     grid-template-columns: 1fr;
