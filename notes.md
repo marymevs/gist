@@ -280,6 +280,64 @@ class TodayComponent {
 }
 ```
 
+### src/app/features/auth
+
+#### login.component.ts
+
+```typescript
+(method) LoginComponent.loginWithGoogle(): Promise<void> {
+  /**
+   * Hm, why is this a method and not a function?
+   *
+   * Tries to log in with google using signInWithPopup() [a google]
+   * signInWithPopup takes a new GoogleAuthProvider, which create the OAuth credentials needed
+   * should navigate to 'today' page if successful
+  */
+}
+
+(method) LoginComponent.loginWithEmail(): Promise<void> {
+  /**
+   * attempts to sign in with an email and password
+   * routes to /today if successful
+   * throws an error if not
+  */
+}
+```
+
+#### signup.component.ts
+
+```typescript
+
+(method) SignupComponent.pickPlan(plan: GistPlan): void {
+  /**
+   * Pick a plan
+   * */
+}
+
+(method) SignupComponent.signupWithEmail(): Promise<void> {
+  /**
+   * Sign up with email
+  */
+}
+
+(method) SignupComponent.signupWithGoogle(): Promise<void> {
+  /**
+   * Sign up with Google
+  */
+}
+
+(method) SignupComponent.saveProfile(uid: string, email: string | null): Promise<void> {
+  /**
+   * Save profile to database at users/{userId}
+  */
+}
+
+
+
+
+
+```
+
 ### functions/src
 
 #### generateMorningGist.ts

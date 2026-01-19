@@ -36,7 +36,7 @@ export class SignupComponent {
   constructor(
     private auth: Auth,
     private firestore: Firestore,
-    private router: Router
+    private router: Router,
   ) {}
 
   async signupWithEmail(): Promise<void> {
@@ -47,7 +47,7 @@ export class SignupComponent {
       const cred = await createUserWithEmailAndPassword(
         this.auth,
         this.email,
-        this.password
+        this.password,
       );
 
       await this.saveProfile(cred.user.uid, cred.user.email);
@@ -85,7 +85,7 @@ export class SignupComponent {
         updatedAt: serverTimestamp(),
         stripeSubscriptionStatus: 'demo',
       },
-      { merge: true }
+      { merge: true },
     );
   }
 }
