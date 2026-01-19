@@ -322,6 +322,255 @@ function getOAuthConfig(): {
    * Use getSecretValue to get the clientId and the clientSecret
    * */
 }
+
+async function loadStoredTokens(userId) {
+  /**
+   * gets an integration reference which is at
+   * 'users/{userId}/integrations/googleCalendar'
+   * [
+   *      TODO: confirm this in db [x]
+   *      that is not where it is!
+   *      update user in firestore to match above structure [x]
+   *      did that, still not loading calendar details
+   * ]
+   *
+   * get an integrationSnap which awaits to integrationRef
+   * if the document has an access token or a reference token
+   * we return a struct that has that token it's location
+   *
+   * if we don't find a token that way
+   * we define a userSnap that gets the user from the database
+   * and then pull out that data by calling userSnap.data()
+   *
+   * and then we essentially try and find the data the same way?
+   * by creating a nested variable
+   * and assigning it to userData?.integrations?.googleCalendar
+   *
+   * if we find the data this way, we return a struct with the access or refresh token, and user (rather than integration) as the location
+   *
+   * OH, we were still finding the access token, it's in the legacy pathway
+   * if we can't find the access toke the above two ways, we create a variable called legacy
+   * we assign legacy to userData?.calendarIntegration
+   * and then if legacy?.accessToken || legacy?.refreshToken
+   * return a struct with the tokens and location as user
+   * (like option B)
+   *
+   * otherwise, return { tokens: null, location: null }
+   *
+   * */
+}
+
+async function persistTokens(locations, tokens) {
+  /**
+   * If there's no location, return
+   * create a struct payload, like below:
+   *
+   * payload = {
+   *  accessToken: tokens.accessToken ?? null,
+   *  refreshToken: tokens.refreshToken ?? null,
+   *  scope: tokens.scope ?? null,
+   *  tokenType: tokens.tokenType ?? null,
+   *  expiryDate: tokens.expiryDate ?? null,
+   *  idToken: tokens.idToken ?? null,
+   *  updatedAt: new Date().toISOString(),
+   * }
+   *
+   * if the location kind is integration,
+   * add the payload to the accessToken at that location
+   * otherwise, update the token at the user path
+   *
+   * debugging:
+   * [
+   *      doesn't seem like this ever ran,
+   *      no updatedAt on the token in calendarIntegrations
+   * ]
+   * */
+}
+
+function getTimeZoneOffset(date: Date, timezone: string): number {
+  /**
+   * Get date time format by calling new Intl.DateTimeFormat
+   * We want it to be a US format,
+   * year as a number
+   * 2 digit month, day, hour, minute, and second
+   *
+   * then break the date into parts
+   *
+   * then extract the actual values (the year, month, hour, etc)
+   * and then map that onto a formatted date
+   * and then get a new date object from those values
+   *
+   * then return the difference between the formattedDate's time and the passed in date's time
+   *
+   */
+}
+
+function buildTimeBounds(
+  dateKey: string,
+  timeZone: string,
+): {
+  timeMin: string;
+  timeMax: string;
+} {
+  /**
+   * I'm not sure what function this serves, but it builds some of upperbound and lower bound
+   */
+}
+
+function formatTimeLabel(start: Date, end: Date | null, timeZone: string): string {
+  /**
+   * Format's the time label for the calendar events,
+   * gives a start time and end time and
+   * returns a time like `${startLabel}-${endLabel}`
+   */
+}
+
+function cleanNote(location?: string | null | undefined, description?: string | null | undefined): string | undefined {
+  /**
+   * Turns the event location and description into a note on fetch calendar items
+   */
+}
+
+async function extractGoogleApiError(response: Response): Promise<{
+  status: number;
+  statusText: string;
+  bodyText?: string | undefined;
+  bodyJson?: unknown;
+  headers: Record<string, string>;
+}> {
+  /**
+   * Takes in a response object
+   * Looks through the headers in the response object
+   * Maps the value of that header onto a record objec that tracks the headers and values in the error response
+   *
+   * then clones the response json into a variable called bodyJson
+   *
+   * then copies the text of the response into an object called bodyText, up to 1000 characters
+   *
+   * returns the above struct
+   */
+}
+
+async function refreshAccessToken(
+  tokens: StoredGoogleTokens,
+  oauth: {
+    clientId: string;
+    clientSecret: string;
+  },
+): Promise<StoredGoogleTokens | null>;
+{
+  /**
+   * Takes in token and an oauth object which is the clientId and the clientSecret
+   *
+   * if the token object doesn't have a refresh token, returns null
+   *
+   * creates a an object 'body' that's a URLSearchParams
+   * made up of the oauth's clientId, clientSecret, the token's refresh token, and a 'grant_type' of 'refresh_token'
+   *
+   * the response awaits making a post request to oauth2.googleapis.com/token [seems like maybe not the right url]
+   *
+   * if we don't get the response, log 'Oauth Google token refresh failed' and return null  --> I'll note that I haven't seen this
+   *
+   * if we do get a response, turn the response's json into a data struct
+   *
+   * if the accessToken on the data struct is null, return null
+   *
+   * other wise, return the following
+   */
+  { accessToken: data.access_token,
+    refreshToken: tokens.refreshToken,
+    scope: data.scope ?? tokens.scope,
+    tokenType: data.token_type ?? tokens.tokenType,
+    expiryDate: data.expires_in
+      ? Date.now() + data.expires_in * 1000
+      : tokens.expiryDate,
+    idToken: data.id_token ?? tokens.idToken,
+  }
+}
+
+async function ensureFreshAccessToken(tokens: StoredGoogleTokens, oauth: {
+    clientId: string;
+    clientSecret: string;
+}, location: TokenStorageLocation | null): Promise<StoredGoogleTokens | null> {
+  /**
+   * takes in a StoredGoogleTokens object, and an oauth object holding the clientId and clientSecret, and a TokenStorageLocation object
+   *
+   * if tokens doesn't have an access token, refresh the accessToken and persist the refreshedToken
+   * return the refreshedToken
+   *
+   * if the tokens has no expiration date, or won't expire for at least another minute, then return that token
+   *
+   * otherwise, refresh the token and return the refreshed token
+  */
+}
+
+async function listCalendarEvents(params: {
+    accessToken: string;
+    timeMin: string;
+    timeMax: string;
+    timeZone: string;
+    userId: string;
+}): Promise<{
+    items: {
+        summary?: string | null | undefined;
+        location?: string | null | undefined;
+        description?: string | null | undefined;
+        start?: {
+            date?: string | null | undefined;
+            dateTime?: string | null | undefined;
+        } | null | undefined;
+        end?: {
+            date?: string | null | undefined;
+            dateTime?: string | null | undefined;
+        } | null | undefined;
+    }[];
+}> {
+  /**
+   * Define the URL that we call, which is 'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+   * set parameters such as 'single_event' and the time bounds of the events we care about
+   *
+   * call the api with the access token
+   *
+   * if the response doesn't come back ok
+   * log 'Google Calendar API request failed, along with the error details (calling extractGoogleApiError) ==> I have seen this one a bunch
+   * and then throw an error
+   *
+   * otherwise, reeturn the list of calendar events
+   * */
+}
+
+export async function fetchCalendarItems(userId: string, dateKey: string, timeZone: string): Promise<CalendarItem[]> {
+  /**
+   *
+   * get the clientId and clientSecret by calling getOauthConfig()
+   * if there's no id or secret, log 'Google Calendar OAuth configuration missing'
+   * and return empty array
+   *
+   * then get the tokens by calling loadStoredTokens(userId)
+   * if no tokens, log 'No Google Calendar tokens available for this user'
+   * return empty array
+   *
+   * then check for the freshness of the token
+   * if not fresh enough log 'No valid Google Calendar access token'
+   * return empty array
+   *
+   * if we haven't returned yet, we're good to go
+   * create the timeBounds by calling buildTimeBounds(dateKey, timeZone)
+   * create a data struct
+   * let that data struct be equal to the result of listCalendarEvents
+   * catch token errors and try and refresh them if needed
+   *
+   * then iterate through the items in the data struct (if they exist)
+   * turn each calendar event into a {time, title, note}
+   *
+  */
+}
+
+
+
+
+
+
 ```
 
 ### Debugging
@@ -345,6 +594,10 @@ Debugging the no gist problem:
 5. Deleted old web app credentials in API manager, was thinking it was perhaps pointing to the wrong thing, and google said it's not good to have more than one OAuth Clients
 
 TODO: Create a wrapper around calendar items so that we still get a gist even if calendar connection is broken
+
+TODO: See if I can trace getOAuthConfig
+
+Documentation: https://developers.google.com/identity/sign-in/web/sign-in
 
 
 
@@ -416,11 +669,3 @@ authState(this.auth).pipe(
   switchMap(user => {
 
 ```
-
-### embed itunes
-
-```html
-<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/station/apple-music-chill/ra.1740614260"></iframe>
-```
-
-hello
