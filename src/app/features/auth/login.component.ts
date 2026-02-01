@@ -21,7 +21,10 @@ export class LoginComponent {
   error = '';
   loading = false;
 
-  constructor(private auth: Auth, private router: Router) {}
+  constructor(
+    private auth: Auth,
+    private router: Router,
+  ) {}
 
   async loginWithGoogle(): Promise<void> {
     this.error = '';
@@ -36,6 +39,16 @@ export class LoginComponent {
       this.loading = false;
     }
   }
+
+  /*
+  login() {
+    signInWithPopup(this.auth, this.provider).then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        this.router.navigate(['/', 'chat']);
+        return credential;
+    })
+}
+  */
 
   async loginWithEmail(): Promise<void> {
     this.error = '';

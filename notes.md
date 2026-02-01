@@ -918,3 +918,11 @@ authState(this.auth).pipe(
   switchMap(user => {
 
 ```
+
+Local Running
+
+- Google Cloud CLI
+- G Cloud Run
+- "How to get google cloud to run locally"
+- Use Docker --> better if working on a team, not necessary for solo dev
+- setting up google cloud to run locally
