@@ -67,7 +67,7 @@
       <a class="link" routerLink="/login">Already have an account? Log in</a>
     </div>
 
-    <div class="error" *ngIf="error">{{ error }}</div>
+    <div class="error" ngIf="error">{{ error }}</div>
 
     <div class="fineprint">
       Demo billing for now. Next step: connect Stripe Checkout per plan.

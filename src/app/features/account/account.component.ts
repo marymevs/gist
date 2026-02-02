@@ -52,7 +52,7 @@ export class AccountComponent {
   constructor(
     private auth: Auth,
     private accountData: AccountDataService,
-    private firestore: Firestore
+    private firestore: Firestore,
   ) {}
   // --- Click handlers (wire these later) ---
 
@@ -96,7 +96,7 @@ export class AccountComponent {
         },
         updatedAt: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   }
 

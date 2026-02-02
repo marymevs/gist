@@ -22,12 +22,24 @@
   <form (ngSubmit)="loginWithEmail()" class="form">
     <label class="field">
       <span>Email</span>
-      <input type="email" name="email" [(ngModel)]="email" required />
+      <input
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        autocomplete="username"
+        required
+      />
     </label>
 
     <label class="field">
       <span>Password</span>
-      <input type="password" name="password" [(ngModel)]="password" required />
+      <input
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        autocomplete="current-password"
+        required
+      />
     </label>
 
     <div class="actions" style="margin-top: 10px">
@@ -35,6 +47,6 @@
       <a class="link" routerLink="/signup">New here? Create an account</a>
     </div>
 
-    <div class="error" *ngIf="error">{{ error }}</div>
+    <div class="error" ngif="error">{{ error }}</div>
   </form>
 </section>

@@ -40,16 +40,6 @@ export class LoginComponent {
     }
   }
 
-  /*
-  login() {
-    signInWithPopup(this.auth, this.provider).then((result) => {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        this.router.navigate(['/', 'chat']);
-        return credential;
-    })
-}
-  */
-
   async loginWithEmail(): Promise<void> {
     this.error = '';
     this.loading = true;
