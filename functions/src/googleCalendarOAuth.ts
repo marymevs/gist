@@ -39,7 +39,7 @@ async function resolveUid(req: Request): Promise<string> {
   }
 
   throw new Error(
-    'Missing user identifier. Provide Authorization bearer token or uid.'
+    'Missing user identifier. Provide Authorization bearer token or uid.',
   );
 }
 
@@ -97,7 +97,7 @@ export const exchangeGoogleCalendarCode = onRequest(
 
       const tokenJson = (await tokenResponse.json()) as GoogleTokenResponse;
       const expiresAt = Timestamp.fromMillis(
-        Date.now() + tokenJson.expires_in * 1000
+        Date.now() + tokenJson.expires_in * 1000,
       );
 
       await db
@@ -114,7 +114,7 @@ export const exchangeGoogleCalendarCode = onRequest(
             expiresAt,
             updatedAt: FieldValue.serverTimestamp(),
           },
-          { merge: true }
+          { merge: true },
         );
 
       res.status(200).json({ success: true });
@@ -122,5 +122,5 @@ export const exchangeGoogleCalendarCode = onRequest(
       logger.error('Google OAuth exchange error', error);
       res.status(500).json({ error: 'Unexpected error exchanging code' });
     }
-  }
+  },
 );
