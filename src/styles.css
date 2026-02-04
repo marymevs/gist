@@ -7,11 +7,16 @@
    Design tokens
    ========================= */
 :root {
+  color-scheme: light;
   --bg: #fbfbfa;
   --surface: #ffffff;
+  --surface-alt: #f7f7f5;
+  --surface-muted: #f3f2ef;
   --text: #111111;
+  --text-strong: #2a2a2a;
   --muted: #6b6b6b;
   --border: #e8e7e4;
+  --border-strong: #cfcfcf;
   --shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
   --radius: 18px;
   --radius-sm: 12px;
@@ -19,9 +24,51 @@
   --ok: #2f6b2f;
   --warn: #9b6a12;
   --bad: #9a3a3a;
+  --accent: #111111;
+  --accent-contrast: #ffffff;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
   --serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1113;
+  --surface: #15181b;
+  --surface-alt: #1b1f23;
+  --surface-muted: #23282e;
+  --text: #f2f2f0;
+  --text-strong: #f7f7f3;
+  --muted: #a0a6ad;
+  --border: #2a2f34;
+  --border-strong: #3a424a;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --ok: #6acb6a;
+  --warn: #f1b86a;
+  --bad: #f08989;
+  --accent: #f2f2f0;
+  --accent-contrast: #101113;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #0f1113;
+    --surface: #15181b;
+    --surface-alt: #1b1f23;
+    --surface-muted: #23282e;
+    --text: #f2f2f0;
+    --text-strong: #f7f7f3;
+    --muted: #a0a6ad;
+    --border: #2a2f34;
+    --border-strong: #3a424a;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --ok: #6acb6a;
+    --warn: #f1b86a;
+    --bad: #f08989;
+    --accent: #f2f2f0;
+    --accent-contrast: #101113;
+  }
 }
 
 /* =========================
@@ -82,12 +129,12 @@ button.danger {
   color: var(--bad);
 }
 button.primary {
-  background: #111;
-  color: #fff;
-  border-color: #111;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 button:active {
-  background: #ecebe7;
+  background: var(--surface-muted);
   transform: translateY(0);
 }
 
@@ -147,7 +194,7 @@ button:active {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #2a2a2a;
+  color: var(--text-strong);
   font-family: inherit;
 }
 .paper p {
@@ -178,7 +225,7 @@ button:active {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #2a2a2a;
+  color: var(--text-strong);
 }
 .kv {
   display: grid;
@@ -224,7 +271,7 @@ button:active {
   border-radius: 999px;
   font-size: 12px;
   color: var(--muted);
-  background: #fff;
+  background: var(--surface);
 }
 
 /* Responsive (shared) */

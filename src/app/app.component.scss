@@ -56,7 +56,7 @@ nav {
 }
 
 .tab.active {
-  background: #f3f2ef;
+  background: var(--surface-muted);
 }
 
 @media (max-width: 980px) {

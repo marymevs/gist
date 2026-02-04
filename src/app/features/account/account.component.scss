@@ -35,7 +35,7 @@
 .status {
   justify-self: end;
   border: 1px solid var(--border);
-  background: #f7f7f5;
+  background: var(--surface-alt);
   border-radius: 999px;
   padding: 8px 10px;
   font-size: 13px;
@@ -71,9 +71,9 @@ button.danger {
   color: var(--bad);
 }
 button.primary {
-  background: #111;
-  color: #fff;
-  border-color: #111;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 
 .grid {
@@ -104,7 +104,7 @@ button.primary {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #2a2a2a;
+  color: var(--text-strong);
   font-family: inherit;
 }
 .paper p {
@@ -135,7 +135,7 @@ button.primary {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #2a2a2a;
+  color: var(--text-strong);
 }
 .kv {
   display: grid;

@@ -27,6 +27,7 @@ nav {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-start;
+  align-items: center;
 }
 .tab {
   text-decoration: none;
@@ -45,7 +46,11 @@ nav {
   transform: translateY(-1px);
 }
 .tab.active {
-  background: #f3f2ef;
+  background: var(--surface-muted);
+}
+
+.themeToggle {
+  font-weight: 600;
 }
 
 .tab:focus-visible {
