@@ -6,8 +6,8 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-const GOOGLE_OAUTH_CLIENT_ID = defineSecret('GOOGLE_OAUTH_CLIENT_ID');
-const GOOGLE_OAUTH_CLIENT_SECRET = defineSecret('GOOGLE_OAUTH_CLIENT_SECRET');
+const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
+const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
 const GOOGLE_OAUTH_REDIRECT_URI = defineSecret('GOOGLE_OAUTH_REDIRECT_URI');
 
 if (!getApps().length) {
@@ -47,8 +47,8 @@ export const exchangeGoogleCalendarCode = onRequest(
   {
     cors: true,
     secrets: [
-      GOOGLE_OAUTH_CLIENT_ID,
-      GOOGLE_OAUTH_CLIENT_SECRET,
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
       GOOGLE_OAUTH_REDIRECT_URI,
     ],
   },
@@ -69,8 +69,8 @@ export const exchangeGoogleCalendarCode = onRequest(
       const tokenEndpoint = 'https://oauth2.googleapis.com/token';
       const body = new URLSearchParams({
         code: code.trim(),
-        client_id: GOOGLE_OAUTH_CLIENT_ID.value(),
-        client_secret: GOOGLE_OAUTH_CLIENT_SECRET.value(),
+        client_id: GOOGLE_CLIENT_ID.value(),
+        client_secret: GOOGLE_CLIENT_SECRET.value(),
         redirect_uri: GOOGLE_OAUTH_REDIRECT_URI.value(),
         grant_type: 'authorization_code',
       });
