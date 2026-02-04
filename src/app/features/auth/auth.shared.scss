@@ -18,8 +18,8 @@
 }
 
 .plan.selected {
-  border-color: #cfcfcf;
-  background: #f7f7f5;
+  border-color: var(--border-strong);
+  background: var(--surface-alt);
 }
 
 .planTop {
@@ -87,7 +87,8 @@ input {
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 14px;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .link {
