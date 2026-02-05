@@ -266,12 +266,29 @@ export async function generateMorningGistForUser(
       .collection('morningGists')
       .doc(dateKey);
 
-    await gistRef.set(gist, { merge: true });
+    const cleanDayItems = dayItems.map((item) => ({
+      title: item.title,
+      ...(item.time !== undefined ? { time: item.time } : {}),
+      ...(item.note !== undefined ? { note: item.note } : {}),
+    }));
+
+    const gistDoc = {
+      ...gist,
+      dayItems: cleanDayItems,
+      ...(firstEvent !== undefined ? { firstEvent } : {}),
+    };
+
+    await gistRef.set(gistDoc, { merge: true });
   } catch (error) {
-    logger.warn('Failed to fetch calendar items and world items', {
-      error,
-      userId: user.uid,
-    });
+    if (error instanceof Error) {
+      logger.error('Failed to build/save gist', {
+        message: error.message,
+        stack: error.stack,
+        userId: user.uid,
+      });
+    } else {
+      logger.error('Failed to build/save gist', { error, userId: user.uid });
+    }
   }
 
   await writeDeliveryLog(user.uid, {

@@ -32,7 +32,8 @@ type OAuthStatePayload = {
   issuedAtMs: number;
 };
 
-const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+const GOOGLE_CALENDAR_SCOPE =
+  'https://www.googleapis.com/auth/calendar.readonly';
 const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
 
 function asNonEmptyString(value: unknown): string | null {
@@ -67,7 +68,9 @@ function parseQueryValue(value: unknown): string | null {
 }
 
 function signState(encodedPayload: string, secret: string): string {
-  return createHmac('sha256', secret).update(encodedPayload).digest('base64url');
+  return createHmac('sha256', secret)
+    .update(encodedPayload)
+    .digest('base64url');
 }
 
 function createStateToken(payload: OAuthStatePayload, secret: string): string {
@@ -205,17 +208,20 @@ async function persistTokensForUser(
     );
 
   // Keep lightweight status on the user doc for UI rendering.
-  await db.collection('users').doc(uid).set(
-    {
-      calendarIntegration: {
-        provider: 'google',
-        status: 'connected',
-        connectedAt: FieldValue.serverTimestamp(),
+  await db
+    .collection('users')
+    .doc(uid)
+    .set(
+      {
+        calendarIntegration: {
+          provider: 'google',
+          status: 'connected',
+          connectedAt: FieldValue.serverTimestamp(),
+        },
+        updatedAt: FieldValue.serverTimestamp(),
       },
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true },
-  );
+      { merge: true },
+    );
 }
 
 function escapeHtml(value: string): string {
@@ -374,9 +380,8 @@ export const exchangeGoogleCalendarCode = onRequest(
           },
           GOOGLE_CLIENT_SECRET.value(),
         );
-        const callbackOrigin = new URL(
-          GOOGLE_OAUTH_REDIRECT_URI.value(),
-        ).origin;
+        const callbackOrigin = new URL(GOOGLE_OAUTH_REDIRECT_URI.value())
+          .origin;
 
         res.status(200).json({
           authorizationUrl: buildAuthorizationUrl(stateToken),
