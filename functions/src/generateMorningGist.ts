@@ -2,7 +2,6 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
-import { createHash } from 'crypto';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
 import {
@@ -64,7 +63,6 @@ type MorningGist = {
   worldItems: { headline: string; implication: string }[];
   gistBullets: string[];
   oneThing: string;
-  calendarFingerprint: string;
 
   delivery: {
     method: DeliveryMethod;
@@ -111,31 +109,14 @@ function estimatePages(maxPages?: number): number {
   return 2;
 }
 
-function toCalendarFingerprint(
+function normalizeDayItems(
   items: Array<{ time?: string; title: string; note?: string }>,
-): string {
-  const canonical = items.map((item) => ({
-    time: item.time?.trim() ?? '',
+): Array<{ time?: string; title: string; note?: string }> {
+  return items.map((item) => ({
     title: item.title.trim(),
-    note: item.note?.trim() ?? '',
+    ...(item.time?.trim() ? { time: item.time.trim() } : {}),
+    ...(item.note?.trim() ? { note: item.note.trim() } : {}),
   }));
-
-  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
-}
-
-function extractReusableSections(
-  data: Partial<MorningGist> | undefined,
-): { oneThing: string; gistBullets: string[] } | null {
-  if (!data) return null;
-
-  const oneThing = typeof data.oneThing === 'string' ? data.oneThing.trim() : '';
-  const gistBullets = Array.isArray(data.gistBullets)
-    ? data.gistBullets.filter((item): item is string => typeof item === 'string')
-    : [];
-
-  if (!oneThing || gistBullets.length !== 3) return null;
-
-  return { oneThing, gistBullets };
 }
 
 async function fetchWorldItems(): Promise<
@@ -243,35 +224,32 @@ export async function generateMorningGistForUser(
       ? `${dayItems[0].time} — ${dayItems[0].title}`
       : dayItems[0]?.title;
 
-    const calendarFingerprint = toCalendarFingerprint(dayItems);
+    const cleanDayItems = normalizeDayItems(dayItems);
     const existingSnap = await gistRef.get();
     const existingData = existingSnap.exists
       ? (existingSnap.data() as Partial<MorningGist>)
       : undefined;
 
-    const existingFingerprint =
-      typeof existingData?.calendarFingerprint === 'string'
-        ? existingData.calendarFingerprint
-        : existingData?.dayItems
-          ? toCalendarFingerprint(
-              existingData.dayItems.filter(
-                (
-                  item,
-                ): item is {
-                  time?: string;
-                  title: string;
-                  note?: string;
-                } =>
-                  typeof item === 'object' &&
-                  item !== null &&
-                  typeof (item as { title?: unknown }).title === 'string',
-              ),
-            )
-          : null;
+    const existingDayItems = normalizeDayItems(existingData?.dayItems ?? []);
+    const calendarUnchanged =
+      JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
-    const reusableSections = extractReusableSections(existingData);
+    const reusableOneThing =
+      typeof existingData?.oneThing === 'string' ? existingData.oneThing.trim() : '';
+    const reusableBullets = Array.isArray(existingData?.gistBullets)
+      ? existingData.gistBullets
+          .filter((item): item is string => typeof item === 'string')
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0)
+      : [];
+
+    const reusableSections =
+      reusableOneThing && reusableBullets.length === 3
+        ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
+        : null;
+
     const shouldReuseSections =
-      existingFingerprint === calendarFingerprint && reusableSections !== null;
+      calendarUnchanged && reusableSections !== null;
 
     const sections = shouldReuseSections
       ? reusableSections
@@ -305,7 +283,6 @@ export async function generateMorningGistForUser(
 
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
-      calendarFingerprint,
 
       delivery: {
         method,
@@ -317,12 +294,6 @@ export async function generateMorningGistForUser(
     };
 
     logger.log({ gist });
-
-    const cleanDayItems = dayItems.map((item) => ({
-      title: item.title,
-      ...(item.time !== undefined ? { time: item.time } : {}),
-      ...(item.note !== undefined ? { note: item.note } : {}),
-    }));
 
     const gistDoc = {
       ...gist,
