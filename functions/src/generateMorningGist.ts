@@ -4,6 +4,10 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
+import {
+  OPENAI_API_KEY,
+  generateDailyFocusSections,
+} from './integrations/openaiGist';
 
 initializeApp();
 
@@ -105,6 +109,16 @@ function estimatePages(maxPages?: number): number {
   return 2;
 }
 
+function normalizeDayItems(
+  items: Array<{ time?: string; title: string; note?: string }>,
+): Array<{ time?: string; title: string; note?: string }> {
+  return items.map((item) => ({
+    title: item.title.trim(),
+    ...(item.time?.trim() ? { time: item.time.trim() } : {}),
+    ...(item.note?.trim() ? { note: item.note.trim() } : {}),
+  }));
+}
+
 async function fetchWorldItems(): Promise<
   Array<{ headline: string; implication: string }>
 > {
@@ -117,27 +131,6 @@ async function fetchWorldItems(): Promise<
     logger.warn('Failed to fetch NYT world items.', { error });
     return [];
   }
-}
-
-function synthesizeGistBullets(input: {
-  weather: string;
-  firstEvent?: string;
-  domains: string[];
-}): string[] {
-  // TODO: replace with LLM call (OpenAI) via HTTPS function if you want
-  return [
-    'Keep your attention narrow: one high-leverage block beats five scattered tasks.',
-    'You’re allowed to ignore the noise—check the world once, then close it.',
-    `Start clean: ${
-      input.firstEvent
-        ? `protect ${input.firstEvent}`
-        : 'protect your first block'
-    }.`,
-  ];
-}
-
-function computeOneThing(): string {
-  return 'Send one message that removes uncertainty today (then stop checking for replies).';
 }
 
 /** Optional: queue fax delivery (stub) */
@@ -197,7 +190,6 @@ export async function generateMorningGistForUser(
       : 'fax';
 
   const city = user.prefs?.city ?? 'New York, NY';
-  const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
   const pages = estimatePages(user.prefs?.maxPages);
 
   let weather = 'Weather unavailable';
@@ -222,15 +214,60 @@ export async function generateMorningGistForUser(
       fetchWorldItems(),
     ]);
 
+    const gistRef = db
+      .collection('users')
+      .doc(user.uid)
+      .collection('morningGists')
+      .doc(dateKey);
+
     const firstEvent = dayItems[0]?.time
       ? `${dayItems[0].time} — ${dayItems[0].title}`
       : dayItems[0]?.title;
 
-    const gistBullets = synthesizeGistBullets({
-      weather,
-      firstEvent,
-      domains,
-    });
+    const cleanDayItems = normalizeDayItems(dayItems);
+    const existingSnap = await gistRef.get();
+    const existingData = existingSnap.exists
+      ? (existingSnap.data() as Partial<MorningGist>)
+      : undefined;
+
+    const existingDayItems = normalizeDayItems(existingData?.dayItems ?? []);
+    const calendarUnchanged =
+      JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
+
+    const reusableOneThing =
+      typeof existingData?.oneThing === 'string' ? existingData.oneThing.trim() : '';
+    const reusableBullets = Array.isArray(existingData?.gistBullets)
+      ? existingData.gistBullets
+          .filter((item): item is string => typeof item === 'string')
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0)
+      : [];
+
+    const reusableSections =
+      reusableOneThing && reusableBullets.length === 3
+        ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
+        : null;
+
+    const shouldReuseSections =
+      calendarUnchanged && reusableSections !== null;
+
+    const sections = shouldReuseSections
+      ? reusableSections
+      : await generateDailyFocusSections({
+          date: dateKey,
+          timezone,
+          weatherSummary: weather,
+          firstEvent,
+          dayItems,
+          worldItems,
+        });
+
+    if (shouldReuseSections) {
+      logger.info('Reusing existing daily focus sections (calendar unchanged).', {
+        userId: user.uid,
+        dateKey,
+      });
+    }
 
     const gist: MorningGist = {
       id: crypto.randomUUID(),
@@ -244,8 +281,8 @@ export async function generateMorningGistForUser(
       dayItems,
       worldItems,
 
-      gistBullets,
-      oneThing: computeOneThing(),
+      gistBullets: sections.gistBullets,
+      oneThing: sections.oneThing,
 
       delivery: {
         method,
@@ -256,17 +293,7 @@ export async function generateMorningGistForUser(
       createdAt: Timestamp.now(),
     };
 
-    const gistRef = db
-      .collection('users')
-      .doc(user.uid)
-      .collection('morningGists')
-      .doc(dateKey);
-
-    const cleanDayItems = dayItems.map((item) => ({
-      title: item.title,
-      ...(item.time !== undefined ? { time: item.time } : {}),
-      ...(item.note !== undefined ? { note: item.note } : {}),
-    }));
+    logger.log({ gist });
 
     const gistDoc = {
       ...gist,
@@ -317,6 +344,7 @@ export const generateMorningGist = onSchedule(
       NYT_API_KEY,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
+      OPENAI_API_KEY,
     ],
   },
   async () => {
