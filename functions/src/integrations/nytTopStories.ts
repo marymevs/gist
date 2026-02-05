@@ -57,7 +57,7 @@ export async function fetchNytTopStories(params?: {
   section?: string;
   limit?: number;
 }): Promise<WorldItem[]> {
-  const section = params?.section?.trim().toLowerCase() || 'world';
+  const section = params?.section?.trim().toLowerCase() || 'us';
   const limit = Math.max(1, Math.min(params?.limit ?? 3, 10));
 
   let apiKey: string;
