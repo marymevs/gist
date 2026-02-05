@@ -9,7 +9,9 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
-const GOOGLE_OAUTH_REDIRECT_URI = defineSecret('GOOGLE_OAUTH_REDIRECT_URI');
+const GOOGLE_CALENDAR_OAUTH_REDIRECT_URI = defineSecret(
+  'GOOGLE_CALENDAR_OAUTH_REDIRECT_URI',
+);
 
 if (!getApps().length) {
   initializeApp();
@@ -130,7 +132,10 @@ function verifyStateToken(
 function buildAuthorizationUrl(stateToken: string): string {
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', GOOGLE_CLIENT_ID.value());
-  url.searchParams.set('redirect_uri', GOOGLE_OAUTH_REDIRECT_URI.value());
+  url.searchParams.set(
+    'redirect_uri',
+    GOOGLE_CALENDAR_OAUTH_REDIRECT_URI.value(),
+  );
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', GOOGLE_CALENDAR_SCOPE);
   url.searchParams.set('access_type', 'offline');
@@ -148,7 +153,7 @@ async function exchangeAuthorizationCode(
     code,
     client_id: GOOGLE_CLIENT_ID.value(),
     client_secret: GOOGLE_CLIENT_SECRET.value(),
-    redirect_uri: GOOGLE_OAUTH_REDIRECT_URI.value(),
+    redirect_uri: GOOGLE_CALENDAR_OAUTH_REDIRECT_URI.value(),
     grant_type: 'authorization_code',
   });
 
@@ -292,7 +297,7 @@ export const exchangeGoogleCalendarCode = onRequest(
     secrets: [
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
-      GOOGLE_OAUTH_REDIRECT_URI,
+      GOOGLE_CALENDAR_OAUTH_REDIRECT_URI,
     ],
   },
   async (req, res) => {
@@ -380,7 +385,7 @@ export const exchangeGoogleCalendarCode = onRequest(
           },
           GOOGLE_CLIENT_SECRET.value(),
         );
-        const callbackOrigin = new URL(GOOGLE_OAUTH_REDIRECT_URI.value())
+        const callbackOrigin = new URL(GOOGLE_CALENDAR_OAUTH_REDIRECT_URI.value())
           .origin;
 
         res.status(200).json({
