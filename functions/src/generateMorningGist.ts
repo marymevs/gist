@@ -4,6 +4,10 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
+import {
+  OPENAI_API_KEY,
+  generateDailyFocusSections,
+} from './integrations/openaiGist';
 
 initializeApp();
 
@@ -119,27 +123,6 @@ async function fetchWorldItems(): Promise<
   }
 }
 
-function synthesizeGistBullets(input: {
-  weather: string;
-  firstEvent?: string;
-  domains: string[];
-}): string[] {
-  // TODO: replace with LLM call (OpenAI) via HTTPS function if you want
-  return [
-    'Keep your attention narrow: one high-leverage block beats five scattered tasks.',
-    'You’re allowed to ignore the noise—check the world once, then close it.',
-    `Start clean: ${
-      input.firstEvent
-        ? `protect ${input.firstEvent}`
-        : 'protect your first block'
-    }.`,
-  ];
-}
-
-function computeOneThing(): string {
-  return 'Send one message that removes uncertainty today (then stop checking for replies).';
-}
-
 /** Optional: queue fax delivery (stub) */
 async function queueFaxIfNeeded(params: {
   userId: string;
@@ -197,7 +180,6 @@ export async function generateMorningGistForUser(
       : 'fax';
 
   const city = user.prefs?.city ?? 'New York, NY';
-  const domains = user.prefs?.newsDomains ?? ['Tech', 'Business', 'Culture'];
   const pages = estimatePages(user.prefs?.maxPages);
 
   let weather = 'Weather unavailable';
@@ -226,10 +208,13 @@ export async function generateMorningGistForUser(
       ? `${dayItems[0].time} — ${dayItems[0].title}`
       : dayItems[0]?.title;
 
-    const gistBullets = synthesizeGistBullets({
-      weather,
+    const sections = await generateDailyFocusSections({
+      date: dateKey,
+      timezone,
+      weatherSummary: weather,
       firstEvent,
-      domains,
+      dayItems,
+      worldItems,
     });
 
     const gist: MorningGist = {
@@ -244,8 +229,8 @@ export async function generateMorningGistForUser(
       dayItems,
       worldItems,
 
-      gistBullets,
-      oneThing: computeOneThing(),
+      gistBullets: sections.gistBullets,
+      oneThing: sections.oneThing,
 
       delivery: {
         method,
@@ -255,6 +240,8 @@ export async function generateMorningGistForUser(
 
       createdAt: Timestamp.now(),
     };
+
+    logger.log({ gist });
 
     const gistRef = db
       .collection('users')
@@ -317,6 +304,7 @@ export const generateMorningGist = onSchedule(
       NYT_API_KEY,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
+      OPENAI_API_KEY,
     ],
   },
   async () => {
