@@ -334,8 +334,6 @@ async function listCalendarEvents(params: {
   url.searchParams.set('maxResults', '250');
 
   // Debugging
-  logger.warn('ACCESS TOKEN:', params.accessToken);
-
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${params.accessToken}` },
   });
