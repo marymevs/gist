@@ -130,6 +130,26 @@ function normalizeDayItems(
   }));
 }
 
+function normalizeEmailCards(cards: EmailCard[]): EmailCard[] {
+  return cards.map((card) => ({
+    id: card.id,
+    threadId: card.threadId,
+    messageId: card.messageId,
+    subject: card.subject,
+    snippet: card.snippet,
+    receivedAt: card.receivedAt,
+    category: card.category,
+    urgency: card.urgency,
+    importance: card.importance,
+    why: card.why,
+    ...(card.fromName !== undefined ? { fromName: card.fromName } : {}),
+    ...(card.fromEmail !== undefined ? { fromEmail: card.fromEmail } : {}),
+    ...(card.suggestedNextStep !== undefined
+      ? { suggestedNextStep: card.suggestedNextStep }
+      : {}),
+  }));
+}
+
 async function fetchWorldItems(): Promise<
   Array<{ headline: string; implication: string }>
 > {
@@ -242,6 +262,7 @@ export async function generateMorningGistForUser(
       : dayItems[0]?.title;
 
     const cleanDayItems = normalizeDayItems(dayItems);
+    const cleanEmailCards = normalizeEmailCards(emailCards);
     const existingSnap = await gistRef.get();
     const existingData = existingSnap.exists
       ? (existingSnap.data() as Partial<MorningGist>)
@@ -297,11 +318,11 @@ export async function generateMorningGistForUser(
       timezone,
 
       weatherSummary: weather,
-      firstEvent,
+      ...(firstEvent !== undefined ? { firstEvent } : {}),
 
       dayItems,
       worldItems,
-      emailCards,
+      emailCards: cleanEmailCards,
 
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
@@ -318,7 +339,6 @@ export async function generateMorningGistForUser(
     const gistDoc = {
       ...gist,
       dayItems: cleanDayItems,
-      ...(firstEvent !== undefined ? { firstEvent } : {}),
     };
 
     await gistRef.set(gistDoc, { merge: true });
