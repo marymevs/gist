@@ -190,6 +190,19 @@ export class AccountComponent {
       throw new Error('OAuth start response was missing required fields.');
     }
 
+    try {
+      const redirectUri = new URL(payload.authorizationUrl).searchParams.get(
+        'redirect_uri',
+      );
+      if (redirectUri) {
+        console.info('[calendar] Google OAuth redirect_uri', redirectUri);
+      } else {
+        console.warn('[calendar] Missing redirect_uri in authorization URL');
+      }
+    } catch {
+      console.warn('[calendar] Unable to parse authorization URL for redirect_uri');
+    }
+
     return {
       authorizationUrl: payload.authorizationUrl,
       callbackOrigin: payload.callbackOrigin,
