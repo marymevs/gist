@@ -2,6 +2,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { createHash } from 'crypto';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
 import {
@@ -63,6 +64,7 @@ type MorningGist = {
   worldItems: { headline: string; implication: string }[];
   gistBullets: string[];
   oneThing: string;
+  calendarFingerprint: string;
 
   delivery: {
     method: DeliveryMethod;
@@ -107,6 +109,33 @@ function estimatePages(maxPages?: number): number {
   // MVP: always 2 unless user wants 1
   if (maxPages && maxPages > 0) return Math.min(maxPages, 3);
   return 2;
+}
+
+function toCalendarFingerprint(
+  items: Array<{ time?: string; title: string; note?: string }>,
+): string {
+  const canonical = items.map((item) => ({
+    time: item.time?.trim() ?? '',
+    title: item.title.trim(),
+    note: item.note?.trim() ?? '',
+  }));
+
+  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
+}
+
+function extractReusableSections(
+  data: Partial<MorningGist> | undefined,
+): { oneThing: string; gistBullets: string[] } | null {
+  if (!data) return null;
+
+  const oneThing = typeof data.oneThing === 'string' ? data.oneThing.trim() : '';
+  const gistBullets = Array.isArray(data.gistBullets)
+    ? data.gistBullets.filter((item): item is string => typeof item === 'string')
+    : [];
+
+  if (!oneThing || gistBullets.length !== 3) return null;
+
+  return { oneThing, gistBullets };
 }
 
 async function fetchWorldItems(): Promise<
@@ -204,18 +233,63 @@ export async function generateMorningGistForUser(
       fetchWorldItems(),
     ]);
 
+    const gistRef = db
+      .collection('users')
+      .doc(user.uid)
+      .collection('morningGists')
+      .doc(dateKey);
+
     const firstEvent = dayItems[0]?.time
       ? `${dayItems[0].time} — ${dayItems[0].title}`
       : dayItems[0]?.title;
 
-    const sections = await generateDailyFocusSections({
-      date: dateKey,
-      timezone,
-      weatherSummary: weather,
-      firstEvent,
-      dayItems,
-      worldItems,
-    });
+    const calendarFingerprint = toCalendarFingerprint(dayItems);
+    const existingSnap = await gistRef.get();
+    const existingData = existingSnap.exists
+      ? (existingSnap.data() as Partial<MorningGist>)
+      : undefined;
+
+    const existingFingerprint =
+      typeof existingData?.calendarFingerprint === 'string'
+        ? existingData.calendarFingerprint
+        : existingData?.dayItems
+          ? toCalendarFingerprint(
+              existingData.dayItems.filter(
+                (
+                  item,
+                ): item is {
+                  time?: string;
+                  title: string;
+                  note?: string;
+                } =>
+                  typeof item === 'object' &&
+                  item !== null &&
+                  typeof (item as { title?: unknown }).title === 'string',
+              ),
+            )
+          : null;
+
+    const reusableSections = extractReusableSections(existingData);
+    const shouldReuseSections =
+      existingFingerprint === calendarFingerprint && reusableSections !== null;
+
+    const sections = shouldReuseSections
+      ? reusableSections
+      : await generateDailyFocusSections({
+          date: dateKey,
+          timezone,
+          weatherSummary: weather,
+          firstEvent,
+          dayItems,
+          worldItems,
+        });
+
+    if (shouldReuseSections) {
+      logger.info('Reusing existing daily focus sections (calendar unchanged).', {
+        userId: user.uid,
+        dateKey,
+      });
+    }
 
     const gist: MorningGist = {
       id: crypto.randomUUID(),
@@ -231,6 +305,7 @@ export async function generateMorningGistForUser(
 
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
+      calendarFingerprint,
 
       delivery: {
         method,
@@ -242,12 +317,6 @@ export async function generateMorningGistForUser(
     };
 
     logger.log({ gist });
-
-    const gistRef = db
-      .collection('users')
-      .doc(user.uid)
-      .collection('morningGists')
-      .doc(dateKey);
 
     const cleanDayItems = dayItems.map((item) => ({
       title: item.title,
