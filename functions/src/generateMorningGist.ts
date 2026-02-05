@@ -235,7 +235,9 @@ export async function generateMorningGistForUser(
       JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
     const reusableOneThing =
-      typeof existingData?.oneThing === 'string' ? existingData.oneThing.trim() : '';
+      typeof existingData?.oneThing === 'string'
+        ? existingData.oneThing.trim()
+        : '';
     const reusableBullets = Array.isArray(existingData?.gistBullets)
       ? existingData.gistBullets
           .filter((item): item is string => typeof item === 'string')
@@ -248,8 +250,7 @@ export async function generateMorningGistForUser(
         ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
         : null;
 
-    const shouldReuseSections =
-      calendarUnchanged && reusableSections !== null;
+    const shouldReuseSections = calendarUnchanged && reusableSections !== null;
 
     const sections = shouldReuseSections
       ? reusableSections
@@ -263,10 +264,13 @@ export async function generateMorningGistForUser(
         });
 
     if (shouldReuseSections) {
-      logger.info('Reusing existing daily focus sections (calendar unchanged).', {
-        userId: user.uid,
-        dateKey,
-      });
+      logger.info(
+        'Reusing existing daily focus sections (calendar unchanged).',
+        {
+          userId: user.uid,
+          dateKey,
+        },
+      );
     }
 
     const gist: MorningGist = {
@@ -292,8 +296,6 @@ export async function generateMorningGistForUser(
 
       createdAt: Timestamp.now(),
     };
-
-    logger.log({ gist });
 
     const gistDoc = {
       ...gist,
