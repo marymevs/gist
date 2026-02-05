@@ -1,5 +1,5 @@
 import { logger } from 'firebase-functions';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getDb } from '../firebaseAdmin';
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from './googleCalendarInt';
 import {
   classifyEmailCandidates,
@@ -111,7 +111,7 @@ type ScoredCandidate = EmailCandidate & {
   suggestedNextStep?: string;
 };
 
-const db = getFirestore();
+const db = getDb();
 
 const DEFAULT_MAX_CARDS = 5;
 const DEFAULT_LOOKBACK_HOURS = 24;
