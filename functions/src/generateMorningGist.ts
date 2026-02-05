@@ -3,6 +3,7 @@ import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
+import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
 
 initializeApp();
 
@@ -104,23 +105,18 @@ function estimatePages(maxPages?: number): number {
   return 2;
 }
 
-/* === Stub integrations (replace later) === */
-
-async function fetchWorldItems(
-  domains: string[],
-): Promise<Array<{ headline: string; implication: string }>> {
-  // TODO: wire real news sources; avoid doomscrolling by summarizing 1 line + why it matters
-  return [
-    {
-      headline: 'Headline placeholder — one-line implication.',
-      implication:
-        'Why it matters: a plain-language takeaway that prevents doomscrolling.',
-    },
-    {
-      headline: 'Headline placeholder — one-line implication.',
-      implication: 'Why it matters: signal vs noise in one sentence.',
-    },
-  ];
+async function fetchWorldItems(): Promise<
+  Array<{ headline: string; implication: string }>
+> {
+  try {
+    return await fetchNytTopStories({
+      section: 'world',
+      limit: 3,
+    });
+  } catch (error) {
+    logger.warn('Failed to fetch NYT world items.', { error });
+    return [];
+  }
 }
 
 function synthesizeGistBullets(input: {
@@ -223,7 +219,7 @@ export async function generateMorningGistForUser(
   try {
     const [dayItems, worldItems] = await Promise.all([
       fetchCalendarItems(user.uid, dateKey, timezone),
-      fetchWorldItems(domains),
+      fetchWorldItems(),
     ]);
 
     const firstEvent = dayItems[0]?.time
@@ -316,7 +312,12 @@ export const generateMorningGist = onSchedule(
     schedule: '*/5 * * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    secrets: [WEATHERAPI_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET],
+    secrets: [
+      WEATHERAPI_KEY,
+      NYT_API_KEY,
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
+    ],
   },
   async () => {
     logger.info('Morning Gist scheduler started');
