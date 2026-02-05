@@ -2,6 +2,7 @@ export type GistPlan = 'web' | 'print' | 'loop';
 
 export interface CalendarIntegration {
   provider?: 'google';
+  status?: 'connected' | 'disconnected';
   accessToken?: string | null;
   authorizationCode?: string | null;
   connectedAt?: any;
@@ -23,6 +24,7 @@ export interface GistUser {
 
   calendarIntegration?: {
     provider?: 'google';
+    status?: 'connected' | 'disconnected';
     accessToken?: string | null;
     authorizationCode?: string | null;
     connectedAt?: any;
