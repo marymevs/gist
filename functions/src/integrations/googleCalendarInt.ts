@@ -1,6 +1,6 @@
 import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getDb } from '../firebaseAdmin';
 
 export const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
 export const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
@@ -20,7 +20,7 @@ type TokenStorageLocation =
   | { kind: 'integration'; refPath: string }
   | { kind: 'user'; userId: string };
 
-const db = getFirestore();
+const db = getDb();
 
 function getSecretValue(
   secret: ReturnType<typeof defineSecret>,

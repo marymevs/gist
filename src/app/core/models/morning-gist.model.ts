@@ -19,6 +19,22 @@ export interface MorningGist {
     implication: string;
   }[];
 
+  emailCards: {
+    id: string;
+    threadId: string;
+    messageId: string;
+    fromName?: string;
+    fromEmail?: string;
+    subject: string;
+    snippet: string;
+    receivedAt: string;
+    category: 'Action' | 'WaitingOn' | 'FYI';
+    urgency: number;
+    importance: number;
+    why: string;
+    suggestedNextStep?: string;
+  }[];
+
   gistBullets: string[];
 
   oneThing: string;

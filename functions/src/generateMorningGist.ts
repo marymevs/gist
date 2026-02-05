@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
+import { fetchEmailCards, type EmailCard } from './integrations/gmailInt';
 import {
   OPENAI_API_KEY,
   generateDailyFocusSections,
@@ -30,6 +31,15 @@ type UserPrefs = {
   newsDomains?: string[]; // e.g. ["Tech","Business","Culture"]
   tone?: string; // e.g. "calm, direct"
   maxPages?: number; // e.g. 2
+  email?: {
+    vipSenders?: string[];
+    includeUnreadOnly?: boolean;
+    includeInboxOnly?: boolean;
+    maxCards?: number;
+    lookbackHours?: number;
+    maxCandidates?: number;
+    enableAi?: boolean;
+  };
 };
 
 type UserDelivery = {
@@ -61,6 +71,7 @@ type MorningGist = {
 
   dayItems: { time?: string; title: string; note?: string }[];
   worldItems: { headline: string; implication: string }[];
+  emailCards: EmailCard[];
   gistBullets: string[];
   oneThing: string;
 
@@ -209,9 +220,15 @@ export async function generateMorningGistForUser(
   }
 
   try {
-    const [dayItems, worldItems] = await Promise.all([
+    const [dayItems, worldItems, emailCards] = await Promise.all([
       fetchCalendarItems(user.uid, dateKey, timezone),
       fetchWorldItems(),
+      fetchEmailCards({
+        userId: user.uid,
+        userEmail: user.email ?? undefined,
+        prefs: user.prefs?.email,
+        now,
+      }),
     ]);
 
     const gistRef = db
@@ -284,6 +301,7 @@ export async function generateMorningGistForUser(
 
       dayItems,
       worldItems,
+      emailCards,
 
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,

@@ -20,6 +20,21 @@ import { map, switchMap, startWith } from 'rxjs/operators';
 
 type DayItem = { time?: string; title: string; note?: string };
 type WorldItem = { headline: string; implication: string };
+type EmailCard = {
+  id: string;
+  threadId: string;
+  messageId: string;
+  fromName?: string;
+  fromEmail?: string;
+  subject: string;
+  snippet: string;
+  receivedAt: string;
+  category: 'Action' | 'WaitingOn' | 'FYI';
+  urgency: number;
+  importance: number;
+  why: string;
+  suggestedNextStep?: string;
+};
 
 type MorningGist = {
   id: string;
@@ -32,6 +47,7 @@ type MorningGist = {
 
   dayItems: DayItem[];
   worldItems: WorldItem[];
+  emailCards: EmailCard[];
   gistBullets: string[];
   oneThing: string;
 

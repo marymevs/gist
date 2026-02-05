@@ -44,4 +44,20 @@ export class AccountDataService {
       { merge: true }
     );
   }
+
+  async updateEmailVipSenders(uid: string, vipSenders: string[]): Promise<void> {
+    const ref = doc(this.firestore, 'users', uid);
+    await setDoc(
+      ref,
+      {
+        prefs: {
+          email: {
+            vipSenders,
+          },
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
 }

@@ -19,9 +19,12 @@ export class AccountComponent {
   userDoc$: Observable<GistUser | null> = this.accountData.currentUserDoc$();
   authUser$ = user(this.auth);
   isConnectingCalendar = false;
+  isConnectingGmail = false;
+  isSavingVipSenders = false;
 
   inputs = {
     calendarStatus: 'Not connected',
+    emailStatus: 'Not connected',
     weatherLocation: 'New York, NY',
     newsDomains: 'Tech, Business, Culture',
   };
@@ -67,6 +70,15 @@ export class AccountComponent {
     return 'Not connected';
   }
 
+  emailStatus(user: GistUser | null): string {
+    const integration = user?.emailIntegration;
+    if (!integration) return 'Not connected';
+    if (integration.status === 'connected' || integration.connectedAt) {
+      return 'Connected';
+    }
+    return 'Not connected';
+  }
+
   async onConnectGoogleCalendar(): Promise<void> {
     if (this.isConnectingCalendar) return;
 
@@ -81,12 +93,12 @@ export class AccountComponent {
       const { authorizationUrl, callbackOrigin } =
         await this.startGoogleCalendarAuth(currentUser);
 
-      const popup = this.openOAuthPopup(authorizationUrl);
+      const popup = this.openOAuthPopup(authorizationUrl, 'google-calendar-oauth');
       if (!popup) {
         throw new Error('Popup was blocked. Please allow popups and try again.');
       }
 
-      await this.waitForOAuthResult(popup, callbackOrigin);
+      await this.waitForOAuthResult(popup, callbackOrigin, 'google-calendar-oauth');
       alert('Google Calendar connected.');
     } catch (error) {
       const message =
@@ -96,6 +108,69 @@ export class AccountComponent {
       alert(message);
     } finally {
       this.isConnectingCalendar = false;
+    }
+  }
+
+  async onConnectGmail(): Promise<void> {
+    if (this.isConnectingGmail) return;
+
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      alert('Please sign in before connecting Gmail.');
+      return;
+    }
+
+    this.isConnectingGmail = true;
+    try {
+      const { authorizationUrl, callbackOrigin } =
+        await this.startGoogleGmailAuth(currentUser);
+
+      const popup = this.openOAuthPopup(authorizationUrl, 'google-gmail-oauth');
+      if (!popup) {
+        throw new Error('Popup was blocked. Please allow popups and try again.');
+      }
+
+      await this.waitForOAuthResult(popup, callbackOrigin, 'google-gmail-oauth');
+      alert('Gmail connected.');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to connect Gmail. Please try again.';
+      alert(message);
+    } finally {
+      this.isConnectingGmail = false;
+    }
+  }
+
+  async onSaveVipSenders(user: GistUser, raw: string): Promise<void> {
+    if (this.isSavingVipSenders) return;
+    if (!user?.uid) {
+      alert('Sign in to save VIP senders.');
+      return;
+    }
+
+    const vipSenders = Array.from(
+      new Set(
+        raw
+          .split(/[,;\n]+/)
+          .map((entry) => entry.trim().toLowerCase())
+          .filter((entry) => entry && entry.includes('@')),
+      ),
+    ).slice(0, 30);
+
+    this.isSavingVipSenders = true;
+    try {
+      await this.accountData.updateEmailVipSenders(user.uid, vipSenders);
+      alert('VIP senders saved.');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save VIP senders right now.';
+      alert(message);
+    } finally {
+      this.isSavingVipSenders = false;
     }
   }
 
@@ -154,6 +229,20 @@ export class AccountComponent {
     return `https://us-central1-${projectId}.cloudfunctions.net/exchangeGoogleCalendarCode`;
   }
 
+  private getGmailExchangeEndpoint(): string {
+    const projectId = this.auth.app.options.projectId;
+    if (!projectId) {
+      throw new Error('Missing Firebase project ID configuration.');
+    }
+
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://127.0.0.1:5001/${projectId}/us-central1/exchangeGoogleGmailCode`;
+    }
+
+    return `https://us-central1-${projectId}.cloudfunctions.net/exchangeGoogleGmailCode`;
+  }
+
   private async startGoogleCalendarAuth(currentUser: User): Promise<{
     authorizationUrl: string;
     callbackOrigin: string;
@@ -196,18 +285,74 @@ export class AccountComponent {
     };
   }
 
-  private openOAuthPopup(url: string): Window | null {
+  private async startGoogleGmailAuth(currentUser: User): Promise<{
+    authorizationUrl: string;
+    callbackOrigin: string;
+  }> {
+    const endpoint = this.getGmailExchangeEndpoint();
+    const idToken = await currentUser.getIdToken();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        action: 'start',
+        origin: window.location.origin,
+      }),
+    });
+
+    const payload = (await response.json()) as {
+      authorizationUrl?: unknown;
+      callbackOrigin?: unknown;
+      error?: unknown;
+    };
+    if (!response.ok) {
+      const errorMessage =
+        typeof payload.error === 'string' ? payload.error : 'Failed to start OAuth';
+      throw new Error(errorMessage);
+    }
+
+    if (
+      typeof payload.authorizationUrl !== 'string' ||
+      typeof payload.callbackOrigin !== 'string'
+    ) {
+      throw new Error('OAuth start response was missing required fields.');
+    }
+
+    try {
+      const redirectUri = new URL(payload.authorizationUrl).searchParams.get(
+        'redirect_uri',
+      );
+      if (redirectUri) {
+        console.info('[gmail] Google OAuth redirect_uri', redirectUri);
+      } else {
+        console.warn('[gmail] Missing redirect_uri in authorization URL');
+      }
+    } catch {
+      console.warn('[gmail] Unable to parse authorization URL for redirect_uri');
+    }
+
+    return {
+      authorizationUrl: payload.authorizationUrl,
+      callbackOrigin: payload.callbackOrigin,
+    };
+  }
+
+  private openOAuthPopup(url: string, name = 'google-oauth'): Window | null {
     const width = 520;
     const height = 680;
     const left = Math.max(0, (window.screen.width - width) / 2);
     const top = Math.max(0, (window.screen.height - height) / 2);
     const features = `popup=yes,width=${width},height=${height},left=${left},top=${top}`;
-    return window.open(url, 'google-calendar-oauth', features);
+    return window.open(url, name, features);
   }
 
   private waitForOAuthResult(
     popup: Window,
     callbackOrigin: string,
+    expectedSource: string,
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       let settled = false;
@@ -239,7 +384,7 @@ export class AccountComponent {
           success?: unknown;
           message?: unknown;
         };
-        if (payload.source !== 'google-calendar-oauth') return;
+        if (payload.source !== expectedSource) return;
 
         if (payload.success === true) {
           finish();

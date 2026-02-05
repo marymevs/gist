@@ -11,6 +11,7 @@
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
           <span>Calendar</span><b>{{ calendarStatus(user) }}</b>
+          <span>Email</span><b>{{ emailStatus(user) }}</b>
           <span>Weather</span><b>{{ inputs.weatherLocation }}</b>
           <span>News domains</span><b>{{ inputs.newsDomains }}</b>
         </div>
@@ -23,6 +24,44 @@
             [disabled]="isConnectingCalendar"
           >
             {{ isConnectingCalendar ? 'Connecting…' : 'Connect Google Calendar' }}
+          </button>
+        </div>
+
+        <div style="margin-top: 8px">
+          <button
+            class="secondary"
+            type="button"
+            (click)="onConnectGmail()"
+            [disabled]="isConnectingGmail"
+          >
+            {{ isConnectingGmail ? 'Connecting…' : 'Connect Gmail' }}
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div>
+          <label class="sub" style="display: block; margin-bottom: 6px">
+            VIP senders
+          </label>
+          <input
+            #vipInput
+            class="textInput"
+            type="text"
+            placeholder="ceo@company.com, partner@email.com"
+            [value]="(user.prefs?.email?.vipSenders || []).join(', ')"
+          />
+          <div class="sub" style="margin-top: 6px">
+            Comma-separated emails. VIPs get a hard boost in the signal score.
+          </div>
+          <button
+            class="secondary"
+            type="button"
+            style="margin-top: 8px"
+            (click)="onSaveVipSenders(user, vipInput.value)"
+            [disabled]="isSavingVipSenders"
+          >
+            {{ isSavingVipSenders ? 'Saving…' : 'Save VIPs' }}
           </button>
         </div>
 
