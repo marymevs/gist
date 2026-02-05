@@ -192,8 +192,7 @@ const NEWSLETTER_PHRASES = [
 const DOC_LINK_REGEX =
   /\b(docs\.google\.com|drive\.google\.com|notion\.so|figma\.com|dropbox\.com|box\.com)\b/i;
 
-const EMAIL_REGEX =
-  /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
 const PERSONAL_DOMAINS = new Set([
   'gmail.com',
@@ -371,7 +370,9 @@ async function listMessageIds(params: {
   maxResults: number;
   userId: string;
 }): Promise<Array<{ id: string; threadId: string }>> {
-  const url = new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');
+  const url = new URL(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages',
+  );
   url.searchParams.set('q', params.query);
   url.searchParams.set('maxResults', String(params.maxResults));
 
@@ -451,9 +452,7 @@ function normalizeText(value: string | undefined | null): string {
 
 function headerValue(headers: GmailHeader[] | undefined, name: string): string {
   if (!headers) return '';
-  const hit = headers.find(
-    (h) => h.name?.toLowerCase() === name.toLowerCase(),
-  );
+  const hit = headers.find((h) => h.name?.toLowerCase() === name.toLowerCase());
   return hit?.value?.trim() ?? '';
 }
 
@@ -544,7 +543,10 @@ export async function fetchEmailCards(params: {
   now: Date;
 }): Promise<EmailCard[]> {
   const prefs: EmailPrefs = params.prefs ?? {};
-  const maxCards = Math.max(1, Math.min(prefs.maxCards ?? DEFAULT_MAX_CARDS, 7));
+  const maxCards = Math.max(
+    1,
+    Math.min(prefs.maxCards ?? DEFAULT_MAX_CARDS, 7),
+  );
   const lookbackHours = Math.max(
     1,
     Math.min(prefs.lookbackHours ?? DEFAULT_LOOKBACK_HOURS, 72),
@@ -562,7 +564,9 @@ export async function fetchEmailCards(params: {
 
   const { tokens, location } = await loadStoredTokens(params.userId);
   if (!tokens) {
-    logger.info('No Gmail tokens available for user.', { userId: params.userId });
+    logger.info('No Gmail tokens available for user.', {
+      userId: params.userId,
+    });
     return [];
   }
 
@@ -597,7 +601,9 @@ export async function fetchEmailCards(params: {
   );
 
   const userEmail = params.userEmail?.toLowerCase() ?? '';
-  const vipSenders = (prefs.vipSenders ?? []).map((email) => email.toLowerCase());
+  const vipSenders = (prefs.vipSenders ?? []).map((email) =>
+    email.toLowerCase(),
+  );
   const nowMs = params.now.getTime();
   const lookbackMs = lookbackHours * 60 * 60 * 1000;
 
@@ -607,7 +613,8 @@ export async function fetchEmailCards(params: {
     if (!message) continue;
     const headers = message.payload?.headers ?? [];
 
-    const subject = normalizeText(headerValue(headers, 'Subject')) || 'No subject';
+    const subject =
+      normalizeText(headerValue(headers, 'Subject')) || 'No subject';
     const snippet = normalizeText(message.snippet ?? '');
     const fromRaw = headerValue(headers, 'From');
     const toRaw = headerValue(headers, 'To');
@@ -647,7 +654,7 @@ export async function fetchEmailCards(params: {
       Boolean(xAutoReply) ||
       Boolean(xAutoSuppress);
 
-    const hasAttachment = hasAttachment(message.payload);
+    const attachmentPresent = hasAttachment(message.payload);
     const hasDocLink = DOC_LINK_REGEX.test(`${subject} ${snippet}`);
 
     const combinedText = `${subject} ${snippet}`;
@@ -662,7 +669,9 @@ export async function fetchEmailCards(params: {
     const isCc = userEmail ? ccEmails.includes(userEmail) : false;
 
     const senderEmail = from.email ?? null;
-    const senderDomain = senderEmail ? senderEmail.split('@')[1] ?? null : null;
+    const senderDomain = senderEmail
+      ? (senderEmail.split('@')[1] ?? null)
+      : null;
     const fromVip = senderEmail ? vipSenders.includes(senderEmail) : false;
 
     let categoryHint: EmailCategory = 'FYI';
@@ -706,7 +715,7 @@ export async function fetchEmailCards(params: {
       baseScore += 3;
       reasons.push('Urgent language');
     }
-    if (hasAttachment) {
+    if (attachmentPresent) {
       baseScore += 2;
       reasons.push('Attachment');
     }
@@ -752,7 +761,7 @@ export async function fetchEmailCards(params: {
       isCc,
       isList,
       isAutomated,
-      hasAttachment,
+      hasAttachment: attachmentPresent,
       hasDocLink,
       hasAsk,
       hasUrgent,
@@ -848,7 +857,8 @@ export async function fetchEmailCards(params: {
 
   const canTake = (candidate: ScoredCandidate): boolean => {
     if (usedThreads.has(candidate.threadId)) return false;
-    if (candidate.fromEmail && usedSenders.has(candidate.fromEmail)) return false;
+    if (candidate.fromEmail && usedSenders.has(candidate.fromEmail))
+      return false;
     if (candidate.isNewsletterish && newsletterUsed) return false;
     return true;
   };
