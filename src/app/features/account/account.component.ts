@@ -20,6 +20,7 @@ export class AccountComponent {
   authUser$ = user(this.auth);
   isConnectingCalendar = false;
   isConnectingGmail = false;
+  isSavingVipSenders = false;
 
   inputs = {
     calendarStatus: 'Not connected',
@@ -139,6 +140,37 @@ export class AccountComponent {
       alert(message);
     } finally {
       this.isConnectingGmail = false;
+    }
+  }
+
+  async onSaveVipSenders(user: GistUser, raw: string): Promise<void> {
+    if (this.isSavingVipSenders) return;
+    if (!user?.uid) {
+      alert('Sign in to save VIP senders.');
+      return;
+    }
+
+    const vipSenders = Array.from(
+      new Set(
+        raw
+          .split(/[,;\n]+/)
+          .map((entry) => entry.trim().toLowerCase())
+          .filter((entry) => entry && entry.includes('@')),
+      ),
+    ).slice(0, 30);
+
+    this.isSavingVipSenders = true;
+    try {
+      await this.accountData.updateEmailVipSenders(user.uid, vipSenders);
+      alert('VIP senders saved.');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save VIP senders right now.';
+      alert(message);
+    } finally {
+      this.isSavingVipSenders = false;
     }
   }
 

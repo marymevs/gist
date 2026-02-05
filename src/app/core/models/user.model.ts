@@ -23,6 +23,12 @@ export interface GistUser {
   createdAt: any; // Firestore Timestamp
   updatedAt: any;
 
+  prefs?: {
+    email?: {
+      vipSenders?: string[];
+    };
+  };
+
   // Billing (stubbed for now)
   stripeCustomerId?: string | null;
   stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
