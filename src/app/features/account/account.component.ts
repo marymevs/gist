@@ -5,13 +5,7 @@ import { Auth, user } from '@angular/fire/auth';
 import { AccountDataService } from '../../core/services/account-data.service';
 import { GistUser } from '../../core/models/user.model';
 import { Observable } from 'rxjs';
-import {
-  Firestore,
-  doc,
-  serverTimestamp,
-  setDoc,
-} from '@angular/fire/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { User, signOut } from 'firebase/auth';
 
 type Plan = 'web' | 'paper' | 'loop';
 
@@ -24,6 +18,7 @@ type Plan = 'web' | 'paper' | 'loop';
 export class AccountComponent {
   userDoc$: Observable<GistUser | null> = this.accountData.currentUserDoc$();
   authUser$ = user(this.auth);
+  isConnectingCalendar = false;
 
   inputs = {
     calendarStatus: 'Not connected',
@@ -52,7 +47,6 @@ export class AccountComponent {
   constructor(
     private auth: Auth,
     private accountData: AccountDataService,
-    private firestore: Firestore,
   ) {}
   // --- Click handlers (wire these later) ---
 
@@ -64,6 +58,9 @@ export class AccountComponent {
   calendarStatus(user: GistUser | null): string {
     const integration = user?.calendarIntegration;
     if (!integration) return 'Not connected';
+    if (integration.status === 'connected' || integration.connectedAt) {
+      return 'Connected';
+    }
     if (integration.accessToken || integration.authorizationCode) {
       return 'Connected';
     }
@@ -71,33 +68,35 @@ export class AccountComponent {
   }
 
   async onConnectGoogleCalendar(): Promise<void> {
+    if (this.isConnectingCalendar) return;
+
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
       alert('Please sign in before connecting your calendar.');
       return;
     }
 
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-    provider.setCustomParameters({ prompt: 'consent' });
+    this.isConnectingCalendar = true;
+    try {
+      const { authorizationUrl, callbackOrigin } =
+        await this.startGoogleCalendarAuth(currentUser);
 
-    const result = await signInWithPopup(this.auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const accessToken = credential?.accessToken ?? null;
+      const popup = this.openOAuthPopup(authorizationUrl);
+      if (!popup) {
+        throw new Error('Popup was blocked. Please allow popups and try again.');
+      }
 
-    const ref = doc(this.firestore, 'users', currentUser.uid);
-    await setDoc(
-      ref,
-      {
-        calendarIntegration: {
-          provider: 'google',
-          accessToken,
-          connectedAt: serverTimestamp(),
-        },
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
+      await this.waitForOAuthResult(popup, callbackOrigin);
+      alert('Google Calendar connected.');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to connect Google Calendar. Please try again.';
+      alert(message);
+    } finally {
+      this.isConnectingCalendar = false;
+    }
   }
 
   planLabel(plan: GistUser['plan']): string {
@@ -139,6 +138,148 @@ export class AccountComponent {
   // Optional: call this from template if you detect missing doc
   async ensureDoc(uid: string, email: string | null): Promise<void> {
     await this.accountData.ensureUserDoc({ uid, email });
+  }
+
+  private getCalendarExchangeEndpoint(): string {
+    const projectId = this.auth.app.options.projectId;
+    if (!projectId) {
+      throw new Error('Missing Firebase project ID configuration.');
+    }
+
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://127.0.0.1:5001/${projectId}/us-central1/exchangeGoogleCalendarCode`;
+    }
+
+    return `https://us-central1-${projectId}.cloudfunctions.net/exchangeGoogleCalendarCode`;
+  }
+
+  private async startGoogleCalendarAuth(currentUser: User): Promise<{
+    authorizationUrl: string;
+    callbackOrigin: string;
+  }> {
+    const endpoint = this.getCalendarExchangeEndpoint();
+    const idToken = await currentUser.getIdToken();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        action: 'start',
+        origin: window.location.origin,
+      }),
+    });
+
+    const payload = (await response.json()) as {
+      authorizationUrl?: unknown;
+      callbackOrigin?: unknown;
+      error?: unknown;
+    };
+    if (!response.ok) {
+      const errorMessage =
+        typeof payload.error === 'string' ? payload.error : 'Failed to start OAuth';
+      throw new Error(errorMessage);
+    }
+
+    if (
+      typeof payload.authorizationUrl !== 'string' ||
+      typeof payload.callbackOrigin !== 'string'
+    ) {
+      throw new Error('OAuth start response was missing required fields.');
+    }
+
+    return {
+      authorizationUrl: payload.authorizationUrl,
+      callbackOrigin: payload.callbackOrigin,
+    };
+  }
+
+  private openOAuthPopup(url: string): Window | null {
+    const width = 520;
+    const height = 680;
+    const left = Math.max(0, (window.screen.width - width) / 2);
+    const top = Math.max(0, (window.screen.height - height) / 2);
+    const features = `popup=yes,width=${width},height=${height},left=${left},top=${top}`;
+    return window.open(url, 'google-calendar-oauth', features);
+  }
+
+  private waitForOAuthResult(
+    popup: Window,
+    callbackOrigin: string,
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let popupClosedAtMs: number | null = null;
+
+      const cleanup = (): void => {
+        window.removeEventListener('message', onMessage);
+        window.clearInterval(closeCheckInterval);
+        window.clearTimeout(timeoutHandle);
+      };
+
+      const finish = (error?: Error): void => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      };
+
+      const onMessage = (event: MessageEvent<unknown>): void => {
+        if (event.origin !== callbackOrigin) return;
+        if (!event.data || typeof event.data !== 'object') return;
+
+        const payload = event.data as {
+          source?: unknown;
+          success?: unknown;
+          message?: unknown;
+        };
+        if (payload.source !== 'google-calendar-oauth') return;
+
+        if (payload.success === true) {
+          finish();
+          return;
+        }
+
+        const message =
+          typeof payload.message === 'string'
+            ? payload.message
+            : 'Google Calendar connection failed.';
+        finish(new Error(message));
+      };
+
+      window.addEventListener('message', onMessage);
+
+      const closeCheckInterval = window.setInterval(() => {
+        if (!popup.closed) {
+          popupClosedAtMs = null;
+          return;
+        }
+
+        if (popupClosedAtMs === null) {
+          popupClosedAtMs = Date.now();
+          return;
+        }
+
+        if (Date.now() - popupClosedAtMs >= 1200) {
+          finish(
+            new Error('Calendar connection was cancelled before it completed.'),
+          );
+        }
+      }, 250);
+
+      const timeoutHandle = window.setTimeout(() => {
+        if (!popup.closed) {
+          popup.close();
+        }
+        finish(new Error('Timed out waiting for Google authorization.'));
+      }, 5 * 60 * 1000);
+    });
   }
 
   // Optional: if you want to navigate instead of alerts, use these patterns:

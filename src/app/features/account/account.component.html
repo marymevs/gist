@@ -20,8 +20,9 @@
             class="secondary"
             type="button"
             (click)="onConnectGoogleCalendar()"
+            [disabled]="isConnectingCalendar"
           >
-            Connect Google Calendar
+            {{ isConnectingCalendar ? 'Connecting…' : 'Connect Google Calendar' }}
           </button>
         </div>
 
