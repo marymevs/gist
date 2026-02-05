@@ -4,10 +4,6 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
-import {
-  OPENAI_API_KEY,
-  generateDailyFocusSections,
-} from './integrations/openaiGist';
 
 initializeApp();
 
@@ -119,6 +115,28 @@ function normalizeDayItems(
   }));
 }
 
+function synthesizeGistBullets(input: {
+  firstEvent?: string;
+}): string[] {
+  return [
+    'Keep attention narrow: one focused block beats five scattered tasks.',
+    'Check news and notifications once, then close them for the day.',
+    input.firstEvent
+      ? `Protect your first event: ${input.firstEvent}.`
+      : 'Protect your first focus block before reacting to messages.',
+  ];
+}
+
+function computeOneThing(input: { firstEvent?: string; dayItemsCount: number }): string {
+  if (input.firstEvent) {
+    return 'Send one clarifying message now so your first event starts with fewer open loops.';
+  }
+  if (input.dayItemsCount > 0) {
+    return 'Choose one concrete deliverable and block twenty minutes now to finish its first draft.';
+  }
+  return 'Send one message that removes uncertainty today, then stop checking for replies afterward.';
+}
+
 async function fetchWorldItems(): Promise<
   Array<{ headline: string; implication: string }>
 > {
@@ -225,53 +243,11 @@ export async function generateMorningGistForUser(
       : dayItems[0]?.title;
 
     const cleanDayItems = normalizeDayItems(dayItems);
-    const existingSnap = await gistRef.get();
-    const existingData = existingSnap.exists
-      ? (existingSnap.data() as Partial<MorningGist>)
-      : undefined;
-
-    const existingDayItems = normalizeDayItems(existingData?.dayItems ?? []);
-    const calendarUnchanged =
-      JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
-
-    const reusableOneThing =
-      typeof existingData?.oneThing === 'string'
-        ? existingData.oneThing.trim()
-        : '';
-    const reusableBullets = Array.isArray(existingData?.gistBullets)
-      ? existingData.gistBullets
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0)
-      : [];
-
-    const reusableSections =
-      reusableOneThing && reusableBullets.length === 3
-        ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
-        : null;
-
-    const shouldReuseSections = calendarUnchanged && reusableSections !== null;
-
-    const sections = shouldReuseSections
-      ? reusableSections
-      : await generateDailyFocusSections({
-          date: dateKey,
-          timezone,
-          weatherSummary: weather,
-          firstEvent,
-          dayItems,
-          worldItems,
-        });
-
-    if (shouldReuseSections) {
-      logger.info(
-        'Reusing existing daily focus sections (calendar unchanged).',
-        {
-          userId: user.uid,
-          dateKey,
-        },
-      );
-    }
+    const gistBullets = synthesizeGistBullets({ firstEvent });
+    const oneThing = computeOneThing({
+      firstEvent,
+      dayItemsCount: dayItems.length,
+    });
 
     const gist: MorningGist = {
       id: crypto.randomUUID(),
@@ -285,8 +261,8 @@ export async function generateMorningGistForUser(
       dayItems,
       worldItems,
 
-      gistBullets: sections.gistBullets,
-      oneThing: sections.oneThing,
+      gistBullets,
+      oneThing,
 
       delivery: {
         method,
@@ -337,8 +313,8 @@ export async function generateMorningGistForUser(
 /** === Scheduled job: generates for all eligible users === */
 export const generateMorningGist = onSchedule(
   {
-    // Every day at 07:30 America/New_York (MVP default)
-    schedule: '*/5 * * * *',
+    // Every day at 07:30 America/New_York
+    schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
     secrets: [
@@ -346,7 +322,6 @@ export const generateMorningGist = onSchedule(
       NYT_API_KEY,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
-      OPENAI_API_KEY,
     ],
   },
   async () => {
