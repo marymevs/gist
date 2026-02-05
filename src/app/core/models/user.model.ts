@@ -8,6 +8,12 @@ export interface CalendarIntegration {
   connectedAt?: any;
 }
 
+export interface EmailIntegration {
+  provider?: 'gmail';
+  status?: 'connected' | 'disconnected';
+  connectedAt?: any;
+}
+
 export interface GistUser {
   uid: string;
   email: string | null;
@@ -29,4 +35,6 @@ export interface GistUser {
     authorizationCode?: string | null;
     connectedAt?: any;
   };
+
+  emailIntegration?: EmailIntegration;
 }

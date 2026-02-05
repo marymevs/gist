@@ -78,6 +78,29 @@
             </li>
           </ul>
 
+          <h2>Email signals</h2>
+          <ul>
+            <li *ngIf="!gist.emailCards?.length" style="color: var(--muted)">
+              No high-signal email yet.
+            </li>
+
+            <li *ngFor="let email of gist.emailCards">
+              <div class="emailRow">
+                <span class="badge">{{ email.category }}</span>
+                <b>{{ email.subject }}</b>
+              </div>
+              <div class="why" *ngIf="email.fromName || email.fromEmail">
+                {{ email.fromName || email.fromEmail }} • {{ email.why }}
+              </div>
+              <div class="why" *ngIf="!email.fromName && !email.fromEmail">
+                {{ email.why }}
+              </div>
+              <div class="why" *ngIf="email.suggestedNextStep">
+                Next: {{ email.suggestedNextStep }}
+              </div>
+            </li>
+          </ul>
+
           <h2>The world</h2>
           <ul>
             <li *ngIf="!gist.worldItems?.length" style="color: var(--muted)">

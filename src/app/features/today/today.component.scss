@@ -35,6 +35,13 @@
   align-items: start;
 }
 
+.emailRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 980px) {
   .grid,
   .twoCol {
