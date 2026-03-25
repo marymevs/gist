@@ -25,13 +25,6 @@
   5. Send 10 test emails to Gmail, Apple Mail, and Outlook — confirm inbox placement before inviting external users
 - **Depends on:** Nothing blocking — can be done any time before external user invites.
 
-### Firestore security rules
-- **What:** Current rules are `allow read, write` with no auth check. All user data (Gmail snippets, calendar items, email subjects) is publicly readable.
-- **Why:** Must be fixed before inviting any external user. morningGists contains sensitive personal data.
-- **Implementation:** Lock down all collections to `request.auth.uid == resource.data.userId` or equivalent ownership check. Test with emulator before deploy.
-- **Status:** DONE — shipped in PR #16.
-- **Depends on:** Nothing — fix before bar owner invite.
-
 ### Phaxio webhook signature validation pattern
 - **What:** Confirm Phaxio v2.1's webhook callback authentication pattern before implementing `faxWebhook.ts`.
 - **Why:** The CEO plan assumes HMAC-SHA256. If Phaxio uses a different pattern (e.g., token in URL query param, or X-Phaxio-Signature header with a different algorithm), the webhook will reject all callbacks and fax status will never update.
@@ -58,4 +51,12 @@
 - **Why:** Delight feature — web users who want to print their Gist manually get a clean print layout. Reuses the fax template at zero marginal cost.
 - **Implementation:** Add a Cloud Function `generateGistPdf` (HTTP, auth required) that renders the Gist to HTML via `faxTemplate.ts`, returns as `application/pdf`. Add "Download PDF" button to Today UI.
 - **Priority:** P3 — pure delight, no user need driving it yet.
-- **Depends on:** `faxTemplate.ts` existing (part of fax delivery sprint).
+- **Depends on:** ~~`faxTemplate.ts` existing~~ — `faxTemplate.ts` shipped in PR #18. No blockers.
+
+## Completed
+
+### Firestore security rules
+- **What:** Current rules are `allow read, write` with no auth check. All user data (Gmail snippets, calendar items, email subjects) is publicly readable.
+- **Why:** Must be fixed before inviting any external user. morningGists contains sensitive personal data.
+- **Implementation:** Lock down all collections to `request.auth.uid == resource.data.userId` or equivalent ownership check. Test with emulator before deploy.
+- **Completed:** PR #16

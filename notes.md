@@ -7,10 +7,10 @@
 - marketing site (sort of built, but needs to be more salesy)
 - payment checkout page
   - use stripe?
-- fax delivery
-  - convert Gist HTML to a PDF
-  - send that PDF via a fax API
-  - log delivery status
+- fax delivery ✅ (scheduler + template + delivery shipping in PR #18)
+  - Phaxio HTML-to-fax: upload HTML as multipart/form-data — Phaxio renders it, no PDF conversion needed
+  - print plan → fax routing, email plan → Resend, web → Firestore only
+  - log delivery status (queued → delivered/failed via webhook)
   - Show success/failure in the UI
 - scheduler + reliability
   - add Cloud Scheduler
@@ -347,7 +347,7 @@ class TodayComponent {
 
 // get the db reference
 
-type DeliveryMethod = 'web' | 'fax';
+type DeliveryMethod = 'web' | 'email' | 'fax';
 
 type GistPlan = 'web' | 'print' | 'loop';
 
@@ -448,17 +448,8 @@ function computeOneThing(): string {
   */
 }
 
-async function queueFaxIfNeeded(params: {
-    userId: string;
-    faxNumber?: string | undefined;
-    dateKey: string;
-}): Promise<void> {
-  /**
-   * TODO: integrate Twilio Programmable Fax / Phaxio / SRFax etc.
-   * if there's no faxNumber passed in, return
-   * Otherwise add to a faxQueue collection on the db
-  */
-}
+// queueFaxIfNeeded() removed — replaced by faxDelivery.ts (Phaxio HTML-to-fax)
+// See functions/src/integrations/faxDelivery.ts for the real implementation.
 
 
 function writeDeliveryLog(userId: string, payload: {

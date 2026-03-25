@@ -51,8 +51,8 @@ The friends-and-family build must be referable: invited users can share access w
   - World/news highlights
   - Gist bullets and “one thing”
 - Render in web UI (Today page).
-- Optional fax delivery:
-  - Gist HTML -> PDF -> fax API send
+- Optional fax delivery (Phaxio — HTML uploaded directly, no PDF conversion):
+  - Gist HTML → Phaxio render → fax send
   - Log delivery status
 - Delivery logs visible to the user.
 
@@ -81,15 +81,15 @@ The friends-and-family build must be referable: invited users can share access w
 **User story**: As a user, I can receive gists by fax reliably.
 
 **Requirements**
-- HTML to PDF conversion pipeline.
-- Fax API integration with queued, delivered, failed statuses.
-- Delivery logs written per send attempt.
-- Retries for failed sends (at least 1 retry).
-- Manual resend option (admin or user UI).
+- HTML-to-fax pipeline via Phaxio (Phaxio renders HTML server-side — no PDF conversion needed). ✅ PR #18
+- Fax API integration with queued, delivered, failed statuses. ✅ PR #18 (scheduler side; webhook deferred to next sprint)
+- Delivery logs written per send attempt. ✅ PR #18
+- Retries for failed sends (at least 1 retry). ✅ PR #18 (retries once on 5xx/network errors)
+- Manual resend option (admin or user UI). ⏳ Not yet built
 
 **Acceptance criteria**
-- Every fax send produces a delivery log with status and timestamp.
-- Failed sends trigger a retry with a second log.
+- Every fax send produces a delivery log with status and timestamp. ✅
+- Failed sends trigger a retry with a second log. ✅
 
 ### 4) AI Agent Loop
 **User story**: As the system, I run daily agent tasks that prepare content for morning and evening gists.
@@ -188,7 +188,7 @@ The friends-and-family build must be referable: invited users can share access w
 
 ## Decisions Needed This Week
 - Referral invite cap (e.g., 3 per user).
-- Fax API provider and delivery SLA.
+- ~~Fax API provider and delivery SLA.~~ **Decided: Phaxio (HTML-to-fax, HMAC-SHA256 webhooks).**
 - Preferred “evening time” default.
 
 ## Security & Data Access (v1)
