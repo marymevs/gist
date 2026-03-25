@@ -50,11 +50,12 @@ The friends-and-family build must be referable: invited users can share access w
   - Calendar highlights
   - World/news highlights
   - Gist bullets and “one thing”
-- Render in web UI (Today page).
+- Render in web UI (Today page). ✅
+- Print button opens newspaper layout in new tab (Cmd+P → letter PDF via fax template). ✅ PR #19
 - Optional fax delivery (Phaxio — HTML uploaded directly, no PDF conversion):
   - Gist HTML → Phaxio render → fax send
   - Log delivery status
-- Delivery logs visible to the user.
+- Delivery logs visible to the user. ✅
 
 **Acceptance criteria**
 - A logged-in user can see today’s morning gist on the web UI.
