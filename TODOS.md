@@ -51,7 +51,7 @@
 ### PDF download for web plan users (Print → newspaper layout)
 - **What:** Once `faxTemplate.ts` exists as a print-first HTML template, offer a "Print" button on the Today page for all users.
 - **Why:** Delight feature — web users who want to print their Gist manually get a clean print layout. Reuses the fax template at zero marginal cost.
-- **Implementation:** `generateGistPrint` Cloud Function returns fax-template HTML; frontend opens it as a Blob URL in a new tab. User hits Cmd+P for letter-perfect output. Shipped as Print button (not download) — better UX than forcing a PDF download.
+- **Implementation:** Today page redesigned to visually match the newspaper/fax mockup — warm newsprint background, white paper card (max-width 680px), Georgia serif typography. `window.print()` from the web page produces the same layout directly. `@media print` hides chrome (toolbar, sidebar) and renders full-width paper. The `generateGistPrint` Cloud Function remains for fax delivery.
 - **Completed:** PR #19 (2026-03-25)
 
 ### Firestore security rules

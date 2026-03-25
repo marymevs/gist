@@ -8,7 +8,6 @@ import {
   Firestore,
   collection,
   query,
-  where,
   orderBy,
   limit,
   collectionData,
@@ -102,14 +101,7 @@ export class TodayComponent {
   private router = inject(Router);
   private datePipe = inject(DatePipe);
 
-  // UI state
-  isSerif = true;
-  isPrinting = false;
-
-  // If you want to keep these as strings (not Observables), we can set them imperatively.
-  // Cleaner: expose metaText$ and statusText$ and use async in template.
-  // But your HTML currently expects metaText/statusText strings — so we keep strings
-  // and update them via subscriptions below.
+  // Toolbar / sidebar text — derived from gist$ + deliveryLogs$ in constructor
   metaText = '—';
   statusText = '—';
 
@@ -159,67 +151,8 @@ export class TodayComponent {
   }
 
   // === UI actions ===
-  async onPrint(): Promise<void> {
-    if (this.isPrinting) return;
-
-    const currentUser = this.auth.currentUser;
-    if (!currentUser) {
-      window.print();
-      return;
-    }
-
-    this.isPrinting = true;
-    try {
-      const token = await currentUser.getIdToken();
-      const dateKey = todayDateKeyNY();
-      const url = this.getPrintEndpoint(dateKey);
-
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        // Gist not ready yet — fall back to printing the web view
-        window.print();
-        return;
-      }
-
-      const html = await response.text();
-
-      // Open the fax-layout HTML in a new tab as a Blob URL.
-      // The template's @page CSS makes it letter-perfect — user hits Cmd+P.
-      const blob = new Blob([html], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-      const newTab = window.open(blobUrl, '_blank');
-
-      if (!newTab) {
-        // Popup was blocked — revoke immediately and fall back to web view.
-        URL.revokeObjectURL(blobUrl);
-        window.print();
-        return;
-      }
-
-      // Revoke after a generous delay to allow the tab to load the document.
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch {
-      // Network error — fall back
-      window.print();
-    } finally {
-      this.isPrinting = false;
-    }
-  }
-
-  private getPrintEndpoint(dateKey: string): string {
-    const projectId = this.auth.app.options.projectId;
-    if (!projectId) throw new Error('Missing Firebase project ID.');
-
-    const hostname = window.location.hostname;
-    const base =
-      hostname === 'localhost' || hostname === '127.0.0.1'
-        ? `http://127.0.0.1:5001/${projectId}/us-central1`
-        : `https://us-central1-${projectId}.cloudfunctions.net`;
-
-    return `${base}/generateGistPrint?date=${encodeURIComponent(dateKey)}`;
+  onPrint(): void {
+    window.print();
   }
 
   onResend(): void {
@@ -232,10 +165,6 @@ export class TodayComponent {
 
   onEditTomorrow(): void {
     alert("Demo: this would open 'tomorrow' preferences.");
-  }
-
-  toggleSerif(): void {
-    this.isSerif = !this.isSerif;
   }
 
   goToDelivery(): void {
@@ -320,26 +249,7 @@ export class TodayComponent {
     return { metaText, statusText };
   }
 
-  // private prettyDateFromDateKey(dateKey: string, timeZone: string): string {
-  //   // dateKey: "YYYY-MM-DD"
-  //   // Create a Date that represents that day, then format in the given TZ.
-  //   const [y, m, d] = dateKey.split('-').map((x) => Number(x));
-  //   const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
-
-  //   // Example output: "Saturday, Jan 10"
-  //   const weekday = new Intl.DateTimeFormat('en-US', {
-  //     timeZone,
-  //     weekday: 'long',
-  //   }).format(date);
-  //   const monthDay = new Intl.DateTimeFormat('en-US', {
-  //     timeZone,
-  //     month: 'short',
-  //     day: 'numeric',
-  //   }).format(date);
-  //   return `${weekday}, ${monthDay}`;
-  // }
-
-  private prettyDateFromDateKey(dateKey: string): string {
+  prettyDateFromDateKey(dateKey: string): string {
     // dateKey: "YYYY-MM-DD"
     const [y, m, d] = dateKey.split('-').map(Number);
 
