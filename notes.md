@@ -202,9 +202,9 @@ class TodayComponent {
   /** Button Functions */
 
   onPrint() {
-    // Fetches print-ready HTML from generateGistPrint Cloud Function,
-    // opens it as a Blob URL in a new tab. User hits Cmd+P for letter PDF.
-    // Falls back to window.print() if not logged in, gist missing, or popup blocked.
+    // Calls window.print() directly — the Today page visually matches the newspaper
+    // mockup, so the browser's print dialog produces the right output.
+    // @media print hides the toolbar and sidebar.
   }
 
   onResend() {

@@ -51,7 +51,7 @@ The friends-and-family build must be referable: invited users can share access w
   - World/news highlights
   - Gist bullets and “one thing”
 - Render in web UI (Today page). ✅
-- Print button opens newspaper layout in new tab (Cmd+P → letter PDF via fax template). ✅ PR #19
+- Today page visually matches newspaper/fax mockup; Print button calls `window.print()` directly (Cmd+P → letter output). ✅ PR #19
 - Optional fax delivery (Phaxio — HTML uploaded directly, no PDF conversion):
   - Gist HTML → Phaxio render → fax send
   - Log delivery status
