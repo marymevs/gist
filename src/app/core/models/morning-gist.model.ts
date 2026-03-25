@@ -40,10 +40,12 @@ export interface MorningGist {
   oneThing: string;
 
   delivery: {
-    method: 'web' | 'fax';
+    method: 'web' | 'email' | 'fax';
     pages: number;
     deliveredAt?: any;
     status: 'queued' | 'delivered' | 'failed';
+    /** Phaxio fax ID — present on fax deliveries, used to correlate webhook callbacks. */
+    phaxioFaxId?: string;
   };
 
   createdAt: any;
