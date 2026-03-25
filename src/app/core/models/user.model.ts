@@ -43,4 +43,10 @@ export interface GistUser {
   };
 
   emailIntegration?: EmailIntegration;
+
+  /** Delivery preferences — fax number required for print plan users. */
+  delivery?: {
+    /** E.164 or 10-digit fax number, e.g. "+12125551234" */
+    faxNumber?: string;
+  };
 }

@@ -113,6 +113,35 @@
             View invoices
           </button>
         </div>
+
+        <!-- Fax number — print plan only -->
+        <ng-container *ngIf="user.plan === 'print'">
+          <div class="divider"></div>
+          <div>
+            <label class="sub" style="display: block; margin-bottom: 6px">
+              Fax number
+            </label>
+            <input
+              #faxInput
+              class="textInput"
+              type="tel"
+              placeholder="+12125551234"
+              [value]="user.delivery?.faxNumber || ''"
+            />
+            <div class="sub" style="margin-top: 6px">
+              E.164 format (+12125551234) or 10-digit. Your Gist is faxed here each morning.
+            </div>
+            <button
+              class="secondary"
+              type="button"
+              style="margin-top: 8px"
+              (click)="onSaveFaxNumber(user, faxInput.value)"
+              [disabled]="isSavingFaxNumber"
+            >
+              {{ isSavingFaxNumber ? 'Saving…' : 'Save fax number' }}
+            </button>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Security -->

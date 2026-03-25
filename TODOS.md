@@ -31,3 +31,31 @@
 - **Implementation:** Lock down all collections to `request.auth.uid == resource.data.userId` or equivalent ownership check. Test with emulator before deploy.
 - **Status:** DONE — shipped in PR #16.
 - **Depends on:** Nothing — fix before bar owner invite.
+
+### Phaxio webhook signature validation pattern
+- **What:** Confirm Phaxio v2.1's webhook callback authentication pattern before implementing `faxWebhook.ts`.
+- **Why:** The CEO plan assumes HMAC-SHA256. If Phaxio uses a different pattern (e.g., token in URL query param, or X-Phaxio-Signature header with a different algorithm), the webhook will reject all callbacks and fax status will never update.
+- **Implementation:** Read https://www.phaxio.com/docs/api/v2.1/faxes/receive_notify and confirm the signature validation method. Update `faxWebhook.ts` implementation accordingly.
+- **Priority:** P0 — do this before writing `faxWebhook.ts`.
+- **Depends on:** Nothing — just docs research.
+
+### Stripe billing gate for fax delivery
+- **What:** The `plan` field on the Firestore user doc is server-only (locked by Firestore rules), but plan assignment is still manual via Admin SDK. Before external paying users, Stripe subscription status should be verified before enabling fax delivery.
+- **Why:** Without Stripe validation, there's no guarantee a user's `plan: 'print'` reflects an active paid subscription. Prevents accidental free fax delivery.
+- **Implementation:** Add a Stripe subscription check in `generateMorningGistForUser()` before the fax delivery path. Use `stripe.subscriptions.retrieve()` with the user's `stripeSubscriptionId`. Only proceed if status is `'active'`.
+- **Priority:** P1 — required before bar owner invite.
+- **Depends on:** Stripe integration (not yet built). See payments + gating in notes.md.
+
+### Phaxio webhook no-callback timeout
+- **What:** If Phaxio never sends a delivery callback (outage, misconfigured webhook URL), `morningGists.delivery.status` stays `'queued'` indefinitely. Users see perpetual "queued" status in the UI.
+- **Why:** Closed feedback loop matters for trust. Users should know if their fax didn't arrive.
+- **Implementation:** Add a daily Cloud Scheduler job that scans for `morningGists` docs with `delivery.status === 'queued'` and `createdAt` older than 1 hour. Mark those as `'unconfirmed'`, log a warning. User sees "Unconfirmed — check your fax machine" in the UI.
+- **Priority:** P2 — needed before external users, not MVP blocker.
+- **Depends on:** Fax delivery working (webhook infrastructure in place).
+
+### PDF download for web plan users
+- **What:** Once `faxTemplate.ts` exists as a print-first HTML template, offer a "Download PDF" button on the Today page for all users.
+- **Why:** Delight feature — web users who want to print their Gist manually get a clean print layout. Reuses the fax template at zero marginal cost.
+- **Implementation:** Add a Cloud Function `generateGistPdf` (HTTP, auth required) that renders the Gist to HTML via `faxTemplate.ts`, returns as `application/pdf`. Add "Download PDF" button to Today UI.
+- **Priority:** P3 — pure delight, no user need driving it yet.
+- **Depends on:** `faxTemplate.ts` existing (part of fax delivery sprint).

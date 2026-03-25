@@ -1,4 +1,12 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "morningGists",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "delivery.phaxioFaxId", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

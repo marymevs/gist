@@ -5,7 +5,16 @@ service cloud.firestore {
 
     // User profile document — owned by the authenticated user
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Any authenticated user can create their own doc (signup flow).
+      allow create: if request.auth != null && request.auth.uid == uid;
+
+      // Updates are allowed but the client may never change the plan field.
+      // plan is set server-side only (Admin SDK / Stripe webhook).
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && !('plan' in request.resource.data.diff(resource.data).affectedKeys());
 
       // Morning gists — readable by owning user; written by Cloud Functions (Admin SDK)
       match /morningGists/{gistId} {

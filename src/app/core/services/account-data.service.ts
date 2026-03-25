@@ -45,6 +45,20 @@ export class AccountDataService {
     );
   }
 
+  async updateFaxNumber(uid: string, faxNumber: string): Promise<void> {
+    const ref = doc(this.firestore, 'users', uid);
+    await setDoc(
+      ref,
+      {
+        delivery: {
+          faxNumber: faxNumber.trim(),
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
   async updateEmailVipSenders(uid: string, vipSenders: string[]): Promise<void> {
     const ref = doc(this.firestore, 'users', uid);
     await setDoc(
