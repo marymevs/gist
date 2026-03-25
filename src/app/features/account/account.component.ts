@@ -21,6 +21,7 @@ export class AccountComponent {
   isConnectingCalendar = false;
   isConnectingGmail = false;
   isSavingVipSenders = false;
+  isSavingFaxNumber = false;
 
   inputs = {
     calendarStatus: 'Not connected',
@@ -171,6 +172,34 @@ export class AccountComponent {
       alert(message);
     } finally {
       this.isSavingVipSenders = false;
+    }
+  }
+
+  async onSaveFaxNumber(user: GistUser, raw: string): Promise<void> {
+    if (this.isSavingFaxNumber) return;
+    if (!user?.uid) {
+      alert('Sign in to save your fax number.');
+      return;
+    }
+
+    const faxNumber = raw.trim().replace(/\s+/g, '');
+    if (!faxNumber) {
+      alert('Please enter a fax number.');
+      return;
+    }
+
+    this.isSavingFaxNumber = true;
+    try {
+      await this.accountData.updateFaxNumber(user.uid, faxNumber);
+      alert('Fax number saved.');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save fax number right now.';
+      alert(message);
+    } finally {
+      this.isSavingFaxNumber = false;
     }
   }
 
