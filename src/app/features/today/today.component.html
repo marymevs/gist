@@ -1,164 +1,121 @@
-<section class="card">
+<section class="card newspaper-card">
   <div class="today">
-    <div class="mast">
-      <div>
-        <h1>Morning Gist</h1>
 
-        <div class="meta">
-          {{ metaText }}
-        </div>
-
-        <div class="actions" aria-label="Actions">
-          <button class="secondary" type="button" (click)="onPrint()">
-            Print
-          </button>
-
-          <button class="secondary" type="button" (click)="onResend()">
-            Resend
-          </button>
-
-          <button class="secondary" type="button" (click)="onEditTomorrow()">
-            Edit tomorrow
-          </button>
-
-          <button
-            class="secondary"
-            type="button"
-            (click)="toggleSerif()"
-            [attr.aria-pressed]="isSerif"
-          >
-            {{ isSerif ? "Serif" : "Sans" }}
-          </button>
-        </div>
-      </div>
-
-      <div class="status">
-        {{ statusText }}
+    <!-- TOOLBAR (hidden in print) -->
+    <div class="toolbar noPrint">
+      <div class="toolbar-meta">{{ metaText }}</div>
+      <div class="actions">
+        <button class="secondary" type="button" (click)="onPrint()">Print</button>
+        <button class="secondary" type="button" (click)="onResend()">Resend</button>
+        <button class="secondary" type="button" (click)="onEditTomorrow()">Edit tomorrow</button>
       </div>
     </div>
 
     <div class="grid">
-      <!-- MAIN PAPER -->
+
+      <!-- ── NEWSPAPER MAIN ─────────────────────────────── -->
       <ng-container *ngIf="gist$ | async as gist; else noGist">
-        <div
-          class="paper"
-          [class.serif]="isSerif"
-          aria-label="Morning Gist (print-native)"
-        >
-          <p class="kicker">Today at a glance</p>
+        <article class="newspaper" aria-label="Morning Gist">
 
-          <p><b>Weather:</b> {{ gist.weatherSummary }}</p>
+          <!-- MASTHEAD -->
+          <header class="masthead">
+            <span class="wordmark">Gist</span>
+            <span class="masthead-dateline">
+              {{ prettyDateFromDateKey(gist.date) }}{{ gist.weatherSummary ? ' · ' + gist.weatherSummary : '' }}
+            </span>
+          </header>
+          <div class="masthead-rule"></div>
 
-          <p *ngIf="gist.firstEvent; else noFirstEvent">
-            <b>First event:</b> {{ gist.firstEvent }}
-          </p>
-          <ng-template #noFirstEvent>
-            <p><b>First event:</b> —</p>
-          </ng-template>
-
-          <h2>Your day</h2>
-          <ul>
-            <li *ngIf="!gist.dayItems?.length" style="color: var(--muted)">
-              No day items yet.
-            </li>
-
-            <li *ngFor="let item of gist.dayItems">
-              <ng-container *ngIf="item.time as t; else noTime">
-                <b>{{ t }}</b>
-              </ng-container>
-              <ng-template #noTime>
-                <b>—</b>
-              </ng-template>
-
-              {{ item.title }}
-
-              <div class="why" *ngIf="item.note">
-                {{ item.note }}
+          <!-- TODAY -->
+          <section class="np-section">
+            <h2 class="np-label">Today</h2>
+            <ng-container *ngIf="gist.dayItems?.length; else noDay">
+              <div class="cal-item" *ngFor="let item of gist.dayItems">
+                <span class="cal-time">{{ item.time || '—' }}</span>
+                <div class="cal-body">
+                  <div class="cal-title">{{ item.title }}</div>
+                  <div class="cal-note" *ngIf="item.note">{{ item.note }}</div>
+                </div>
               </div>
-            </li>
-          </ul>
+            </ng-container>
+            <ng-template #noDay>
+              <p class="np-empty">No events today.</p>
+            </ng-template>
+          </section>
 
-          <h2>Email signals</h2>
-          <ul>
-            <li *ngIf="!gist.emailCards?.length" style="color: var(--muted)">
-              No high-signal email yet.
-            </li>
-
-            <li *ngFor="let email of gist.emailCards">
-              <div class="emailRow">
-                <span class="badge">{{ email.category }}</span>
-                <b>{{ email.subject }}</b>
+          <!-- INBOX -->
+          <ng-container *ngIf="gist.emailCards?.length">
+            <section class="np-section">
+              <h2 class="np-label">Inbox</h2>
+              <div class="email-card" *ngFor="let email of gist.emailCards">
+                <div class="email-meta">
+                  <span class="email-cat">
+                    {{ email.category === 'WaitingOn' ? '[ WAITING ]' : '[ ' + email.category.toUpperCase() + ' ]' }}
+                  </span>
+                  <span class="email-from" *ngIf="email.fromName || email.fromEmail">
+                    {{ email.fromName || email.fromEmail }}
+                  </span>
+                </div>
+                <div class="email-subject">{{ email.subject }}</div>
+                <div class="email-snippet">{{ email.snippet }}</div>
+                <div class="email-next" *ngIf="email.suggestedNextStep">
+                  → {{ email.suggestedNextStep }}
+                </div>
               </div>
-              <div class="why" *ngIf="email.fromName || email.fromEmail">
-                {{ email.fromName || email.fromEmail }} • {{ email.why }}
+            </section>
+          </ng-container>
+
+          <!-- THE WORLD -->
+          <section class="np-section">
+            <h2 class="np-label">The World</h2>
+            <ng-container *ngIf="gist.worldItems?.length; else noWorld">
+              <div class="world-item" *ngFor="let w of gist.worldItems">
+                <div class="world-headline">{{ w.headline }}</div>
+                <div class="world-impl">{{ w.implication }}</div>
               </div>
-              <div class="why" *ngIf="!email.fromName && !email.fromEmail">
-                {{ email.why }}
-              </div>
-              <div class="why" *ngIf="email.suggestedNextStep">
-                Next: {{ email.suggestedNextStep }}
-              </div>
-            </li>
-          </ul>
+            </ng-container>
+            <ng-template #noWorld>
+              <p class="np-empty">No news today.</p>
+            </ng-template>
+          </section>
 
-          <h2>The world</h2>
-          <ul>
-            <li *ngIf="!gist.worldItems?.length" style="color: var(--muted)">
-              No world items yet.
-            </li>
+          <!-- FOCUS -->
+          <ng-container *ngIf="gist.gistBullets?.length">
+            <section class="np-section">
+              <h2 class="np-label">Focus</h2>
+              <div class="focus-bullet" *ngFor="let b of gist.gistBullets">{{ b }}</div>
+            </section>
+          </ng-container>
 
-            <li *ngFor="let w of gist.worldItems">
-              {{ w.headline }}
-              <div class="why">{{ w.implication }}</div>
-            </li>
-          </ul>
+          <!-- ONE THING -->
+          <section class="np-section" *ngIf="gist.oneThing">
+            <h2 class="np-label">One Thing</h2>
+            <p class="one-thing">{{ gist.oneThing }}</p>
+            <p class="one-thing-tag">Because your attention is finite — and the internet is not.</p>
+          </section>
 
-          <h2>The gist</h2>
-          <ul>
-            <li *ngIf="!gist.gistBullets?.length" style="color: var(--muted)">
-              No gist bullets yet.
-            </li>
-
-            <li *ngFor="let b of gist.gistBullets">
-              {{ b }}
-            </li>
-          </ul>
-
-          <h2>One thing</h2>
-          <p *ngIf="gist.oneThing; else noOneThing">
-            <b>{{ gist.oneThing }}</b>
-          </p>
-          <ng-template #noOneThing>
-            <p><b>—</b></p>
-          </ng-template>
-
-          <p class="why">
-            Because your attention is finite — and the internet is not.
-          </p>
-        </div>
+          <footer class="np-footer noPrint">mygist.app</footer>
+        </article>
       </ng-container>
 
       <ng-template #noGist>
-        <div class=”card” style=”padding: var(--space-xl)”>
-          <div class=”kicker”>Waiting for your first gist</div>
-          <div style=”font-family: var(--font-display); font-size: 22px; margin-top: var(--space-sm);”>
-            Your morning briefing will appear here.
-          </div>
-          <div class=”sub” style=”margin: var(--space-sm) 0 0”>
-            Once scheduled delivery runs (or you trigger “Run now”), your gist appears on this page and arrives by fax.
-          </div>
+        <div class="newspaper no-gist-placeholder">
+          <div class="no-gist-title">No Morning Gist found.</div>
+          <div class="sub">Generate one (scheduled or "Run now"), then refresh.</div>
         </div>
       </ng-template>
 
-      <!-- DELIVERY SNAPSHOT -->
-      <aside class="card side" aria-label="Delivery snapshot">
+      <!-- ── DELIVERY SIDEBAR ───────────────────────────── -->
+      <aside class="card side noPrint" aria-label="Delivery snapshot">
         <h3>Delivery</h3>
 
-        <!-- You can keep this static for now; we can wire it from user doc later -->
+        <div class="status">{{ statusText }}</div>
+
         <div class="kv">
-          <span>Mode</span><b>Fax + Web</b> <span>Fax</span
-          ><b>(•••) •••-1234</b> <span>Schedule</span><b>Weekdays 7:30 AM ET</b>
-          <span>Format</span><b>Standard • 2 pages max</b>
+          <span>Mode</span><b>Fax + Web</b>
+          <span>Fax</span><b>(•••) •••-1234</b>
+          <span>Schedule</span><b>Weekdays 7:30 AM ET</b>
+          <span>Format</span><b>Standard · 2 pages max</b>
         </div>
 
         <div class="log" aria-label="Delivery log">
@@ -166,35 +123,28 @@
             <div *ngIf="logs.length === 0" style="color: var(--muted)">
               No delivery events yet.
             </div>
-
             <div class="row" *ngFor="let entry of logs">
               <span>{{ entry.createdAtLabel }}</span>
               <span
                 [ngClass]="{
                   ok: entry.statusClass === 'ok',
                   warn: entry.statusClass === 'warn',
-                  bad: entry.statusClass === 'bad',
+                  bad: entry.statusClass === 'bad'
                 }"
-              >
-                {{ entry.status }}
-              </span>
+              >{{ entry.status }}</span>
             </div>
           </ng-container>
-
           <ng-template #logsLoading>
             <div style="color: var(--muted)">Loading…</div>
           </ng-template>
         </div>
 
         <div class="actions" style="margin-top: 12px">
-          <button class="secondary" type="button" (click)="goToDelivery()">
-            Change schedule
-          </button>
-          <button class="secondary" type="button" (click)="goToDelivery()">
-            Update fax
-          </button>
+          <button class="secondary" type="button" (click)="goToDelivery()">Change schedule</button>
+          <button class="secondary" type="button" (click)="goToDelivery()">Update fax</button>
         </div>
       </aside>
+
     </div>
   </div>
 </section>

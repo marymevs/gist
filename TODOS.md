@@ -46,14 +46,13 @@
 - **Priority:** P2 — needed before external users, not MVP blocker.
 - **Depends on:** Fax delivery working (webhook infrastructure in place).
 
-### PDF download for web plan users
-- **What:** Once `faxTemplate.ts` exists as a print-first HTML template, offer a "Download PDF" button on the Today page for all users.
-- **Why:** Delight feature — web users who want to print their Gist manually get a clean print layout. Reuses the fax template at zero marginal cost.
-- **Implementation:** Add a Cloud Function `generateGistPdf` (HTTP, auth required) that renders the Gist to HTML via `faxTemplate.ts`, returns as `application/pdf`. Add "Download PDF" button to Today UI.
-- **Priority:** P3 — pure delight, no user need driving it yet.
-- **Depends on:** ~~`faxTemplate.ts` existing~~ — `faxTemplate.ts` shipped in PR #18. No blockers.
-
 ## Completed
+
+### PDF download for web plan users (Print → newspaper layout)
+- **What:** Once `faxTemplate.ts` exists as a print-first HTML template, offer a "Print" button on the Today page for all users.
+- **Why:** Delight feature — web users who want to print their Gist manually get a clean print layout. Reuses the fax template at zero marginal cost.
+- **Implementation:** Today page redesigned to visually match the newspaper/fax mockup — warm newsprint background, white paper card (max-width 680px), Georgia serif typography. `window.print()` from the web page produces the same layout directly. `@media print` hides chrome (toolbar, sidebar) and renders full-width paper. The `generateGistPrint` Cloud Function remains for fax delivery.
+- **Completed:** PR #19 (2026-03-25)
 
 ### Firestore security rules
 - **What:** Current rules are `allow read, write` with no auth check. All user data (Gmail snippets, calendar items, email subjects) is publicly readable.
