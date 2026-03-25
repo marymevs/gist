@@ -9,6 +9,12 @@ import {
   OPENAI_API_KEY,
   generateDailyFocusSections,
 } from './integrations/openaiGist';
+import {
+  RESEND_API_KEY,
+  sendMorningGistEmail,
+  resolveUserEmail,
+} from './integrations/emailDelivery';
+import { buildEmailHtml, buildEmailSubject } from './integrations/emailTemplate';
 
 initializeApp();
 
@@ -20,17 +26,18 @@ import {
 
 const db = getFirestore();
 
-/** === Types (keep close to the function for now; later move to /shared) === */
-type DeliveryMethod = 'web' | 'fax';
+/** === Types === */
+
+type DeliveryMethod = 'web' | 'email';
 
 type GistPlan = 'web' | 'print' | 'loop';
 
 type UserPrefs = {
-  timezone?: string; // e.g. "America/New_York"
-  city?: string; // e.g. "New York, NY"
-  newsDomains?: string[]; // e.g. ["Tech","Business","Culture"]
-  tone?: string; // e.g. "calm, direct"
-  maxPages?: number; // e.g. 2
+  timezone?: string;
+  city?: string;
+  newsDomains?: string[];
+  tone?: string;
+  maxPages?: number;
   email?: {
     vipSenders?: string[];
     includeUnreadOnly?: boolean;
@@ -43,13 +50,16 @@ type UserPrefs = {
 };
 
 type UserDelivery = {
-  method?: DeliveryMethod; // "web"|"fax"
-  faxNumber?: string; // E.164 or masked storage
+  method?: DeliveryMethod;
   schedule?: {
-    hour?: number; // 7
-    minute?: number; // 30
+    hour?: number;
+    minute?: number;
     weekdaysOnly?: boolean;
   };
+};
+
+type IntegrationStatus = {
+  status?: 'connected' | 'disconnected';
 };
 
 type UserDoc = {
@@ -58,12 +68,14 @@ type UserDoc = {
   plan: GistPlan;
   prefs?: UserPrefs;
   delivery?: UserDelivery;
+  calendarIntegration?: IntegrationStatus;
+  emailIntegration?: IntegrationStatus;
 };
 
 type MorningGist = {
   id: string;
   userId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   timezone: string;
 
   weatherSummary: string;
@@ -87,8 +99,14 @@ type MorningGist = {
 
 /** === Helpers === */
 
+function hasConnectedIntegration(user: UserDoc): boolean {
+  return (
+    user.calendarIntegration?.status === 'connected' ||
+    user.emailIntegration?.status === 'connected'
+  );
+}
+
 function toDateKeyISO(date: Date, timeZone: string): string {
-  // Produces YYYY-MM-DD in the user's timezone
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
@@ -102,11 +120,18 @@ function toDateKeyISO(date: Date, timeZone: string): string {
   return `${y}-${m}-${d}`;
 }
 
+function toEmailDateLabel(date: Date, timeZone: string): string {
+  return date.toLocaleDateString('en-US', {
+    timeZone,
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function safeTimezone(tz?: string): string {
-  // Default to NY if missing/invalid
   if (!tz) return 'America/New_York';
   try {
-    // Throws if invalid in some environments
     Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
     return tz;
   } catch {
@@ -115,7 +140,6 @@ function safeTimezone(tz?: string): string {
 }
 
 function estimatePages(maxPages?: number): number {
-  // MVP: always 2 unless user wants 1
   if (maxPages && maxPages > 0) return Math.min(maxPages, 3);
   return 2;
 }
@@ -154,35 +178,13 @@ async function fetchWorldItems(): Promise<
   Array<{ headline: string; implication: string }>
 > {
   try {
-    return await fetchNytTopStories({
-      section: 'world',
-      limit: 3,
-    });
+    return await fetchNytTopStories({ section: 'world', limit: 3 });
   } catch (error) {
     logger.warn('Failed to fetch NYT world items.', { error });
     return [];
   }
 }
 
-/** Optional: queue fax delivery (stub) */
-async function queueFaxIfNeeded(params: {
-  userId: string;
-  faxNumber?: string;
-  dateKey: string;
-}): Promise<void> {
-  if (!params.faxNumber) return;
-  // TODO: integrate Twilio Programmable Fax / Phaxio / SRFax etc.
-  // MVP: write to a queue collection that a separate worker processes.
-  await db.collection('faxQueue').add({
-    userId: params.userId,
-    dateKey: params.dateKey,
-    faxNumber: params.faxNumber,
-    status: 'queued',
-    createdAt: FieldValue.serverTimestamp(),
-  });
-}
-
-/** Write a delivery log row */
 async function writeDeliveryLog(
   userId: string,
   payload: {
@@ -191,45 +193,64 @@ async function writeDeliveryLog(
     status: string;
     pages?: number;
   },
-) {
-  const ref = db
+): Promise<void> {
+  await db
     .collection('users')
     .doc(userId)
     .collection('deliveryLogs')
-    .doc();
-  await ref.set({
-    type: payload.type,
-    method: payload.method,
-    status: payload.status,
-    pages: payload.pages ?? null,
-    createdAt: FieldValue.serverTimestamp(),
-  });
+    .doc()
+    .set({
+      type: payload.type,
+      method: payload.method,
+      status: payload.status,
+      pages: payload.pages ?? null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
 }
 
-/** === Core generator (callable from schedule or HTTP later) === */
+async function updateGistDeliveryStatus(
+  userId: string,
+  dateKey: string,
+  status: 'delivered' | 'failed',
+): Promise<void> {
+  const update: Record<string, unknown> = { 'delivery.status': status };
+  if (status === 'delivered') {
+    update['delivery.deliveredAt'] = Timestamp.now();
+  }
+  await db
+    .collection('users')
+    .doc(userId)
+    .collection('morningGists')
+    .doc(dateKey)
+    .update(update);
+}
+
+/** === Core generator === */
 export async function generateMorningGistForUser(
   user: UserDoc,
   now: Date,
 ): Promise<void> {
+  if (!hasConnectedIntegration(user)) {
+    logger.info('Skipping user — no connected integrations.', {
+      userId: user.uid,
+    });
+    return;
+  }
+
   const timezone = safeTimezone(user.prefs?.timezone);
   const dateKey = toDateKeyISO(now, timezone);
-
-  const method: DeliveryMethod = user.delivery?.method
-    ? user.delivery.method
-    : user.plan === 'web'
-      ? 'web'
-      : 'fax';
-
+  const method: DeliveryMethod =
+    user.emailIntegration?.status === 'connected' ? 'email' : 'web';
   const city = user.prefs?.city ?? 'New York, NY';
   const pages = estimatePages(user.prefs?.maxPages);
 
   let weather = 'Weather unavailable';
   try {
     const weatherResp = await fetchWeatherSummary({
-      q: city, // e.g. "New York, NY"
+      q: city,
       days: 1,
       aqi: false,
-      alerts: true, // optional; turn on if you want “Heat Advisory”
+      alerts: true,
     });
     weather = weatherResp.summary;
   } catch (error) {
@@ -238,6 +259,8 @@ export async function generateMorningGistForUser(
       userId: user.uid,
     });
   }
+
+  let finalStatus: 'delivered' | 'failed' = 'failed';
 
   try {
     const [dayItems, worldItems, emailCards] = await Promise.all([
@@ -263,6 +286,7 @@ export async function generateMorningGistForUser(
 
     const cleanDayItems = normalizeDayItems(dayItems);
     const cleanEmailCards = normalizeEmailCards(emailCards);
+
     const existingSnap = await gistRef.get();
     const existingData = existingSnap.exists
       ? (existingSnap.data() as Partial<MorningGist>)
@@ -302,13 +326,10 @@ export async function generateMorningGistForUser(
         });
 
     if (shouldReuseSections) {
-      logger.info(
-        'Reusing existing daily focus sections (calendar unchanged).',
-        {
-          userId: user.uid,
-          dateKey,
-        },
-      );
+      logger.info('Reusing existing daily focus sections (calendar unchanged).', {
+        userId: user.uid,
+        dateKey,
+      });
     }
 
     const gist: MorningGist = {
@@ -316,67 +337,110 @@ export async function generateMorningGistForUser(
       userId: user.uid,
       date: dateKey,
       timezone,
-
       weatherSummary: weather,
       ...(firstEvent !== undefined ? { firstEvent } : {}),
-
       dayItems,
       worldItems,
       emailCards: cleanEmailCards,
-
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
-
       delivery: {
         method,
         pages,
         status: 'queued',
       },
-
       createdAt: Timestamp.now(),
     };
 
-    const gistDoc = {
-      ...gist,
-      dayItems: cleanDayItems,
-    };
+    await gistRef.set({ ...gist, dayItems: cleanDayItems }, { merge: true });
 
-    await gistRef.set(gistDoc, { merge: true });
+    // ── Email delivery ──────────────────────────────────────────────────────
+    if (method === 'email') {
+      const toEmail = await resolveUserEmail(user.uid, user.email);
+
+      if (!toEmail) {
+        logger.warn('Skipping email delivery — no email address for user.', {
+          userId: user.uid,
+        });
+        // Gist was saved; treat as web delivery
+        finalStatus = 'delivered';
+      } else {
+        const dateLabel = toEmailDateLabel(now, timezone);
+        const templateInput = {
+          date: dateLabel,
+          weatherSummary: weather,
+          dayItems: cleanDayItems,
+          worldItems,
+          emailCards: cleanEmailCards.map((c) => ({
+            fromName: c.fromName,
+            fromEmail: c.fromEmail,
+            subject: c.subject,
+            snippet: c.snippet,
+            category: c.category,
+            why: c.why,
+            suggestedNextStep: c.suggestedNextStep,
+          })),
+          gistBullets: sections.gistBullets,
+        };
+
+        const html = buildEmailHtml(templateInput);
+        const subject = buildEmailSubject(templateInput);
+        const result = await sendMorningGistEmail({ toEmail, subject, html });
+
+        if (result.success) {
+          finalStatus = 'delivered';
+          logger.info('Morning Gist email sent.', {
+            userId: user.uid,
+            toEmail,
+            dateKey,
+          });
+        } else {
+          finalStatus = 'failed';
+          logger.warn('Morning Gist email failed.', {
+            userId: user.uid,
+            error: result.error,
+          });
+        }
+      }
+    } else {
+      // Web delivery — gist is in Firestore, mark delivered
+      finalStatus = 'delivered';
+    }
+
+    await updateGistDeliveryStatus(user.uid, dateKey, finalStatus);
   } catch (error) {
+    finalStatus = 'failed';
     if (error instanceof Error) {
-      logger.error('Failed to build/save gist', {
+      logger.error('Failed to build/save gist.', {
         message: error.message,
         stack: error.stack,
         userId: user.uid,
       });
     } else {
-      logger.error('Failed to build/save gist', { error, userId: user.uid });
+      logger.error('Failed to build/save gist.', { error, userId: user.uid });
     }
   }
 
   await writeDeliveryLog(user.uid, {
     type: 'morning',
     method,
-    status: 'queued',
+    status: finalStatus,
     pages,
   });
 
-  if (method === 'fax') {
-    await queueFaxIfNeeded({
-      userId: user.uid,
-      faxNumber: user.delivery?.faxNumber,
-      dateKey,
-    });
-  }
-
-  logger.info('Generated Morning Gist', { userId: user.uid, dateKey, method });
+  logger.info('generateMorningGistForUser complete.', {
+    userId: user.uid,
+    dateKey,
+    method,
+    status: finalStatus,
+  });
 }
 
-/** === Scheduled job: generates for all eligible users === */
+/** === Scheduled job === */
 export const generateMorningGist = onSchedule(
   {
-    // Every day at 07:30 America/New_York (MVP default)
-    schedule: '*/5 * * * *',
+    // Daily at 07:30 America/New_York
+    schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
     secrets: [
@@ -385,32 +449,36 @@ export const generateMorningGist = onSchedule(
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
       OPENAI_API_KEY,
+      RESEND_API_KEY,
     ],
   },
   async () => {
     logger.info('Morning Gist scheduler started');
 
-    // MVP selection: all users on non-web plan OR any users with delivery.method defined
     const usersSnap = await db.collection('users').get();
-
     const now = new Date();
     const tasks: Promise<void>[] = [];
 
     usersSnap.forEach((docSnap) => {
-      const data = docSnap.data() as Partial<UserDoc>;
+      const data = docSnap.data() as Partial<
+        UserDoc & {
+          calendarIntegration?: IntegrationStatus;
+          emailIntegration?: IntegrationStatus;
+        }
+      >;
       const uid = data.uid ?? docSnap.id;
       if (!uid) return;
 
       const user: UserDoc = {
         uid,
         email: data.email ?? null,
-        plan: (data.plan as GistPlan) ?? 'print',
+        plan: (data.plan as GistPlan) ?? 'web',
         prefs: data.prefs ?? {},
         delivery: data.delivery ?? {},
+        calendarIntegration: data.calendarIntegration,
+        emailIntegration: data.emailIntegration,
       };
 
-      // If user is web-only and hasn’t asked for delivery, you may skip.
-      // For MVP, we generate for everyone so the web archive fills.
       tasks.push(generateMorningGistForUser(user, now));
     });
 
