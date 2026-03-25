@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Override Tailwind base font reset with our design system fonts */
+*,
+::before,
+::after {
+  font-family: inherit;
+}
+
 /* =========================
    Design tokens (DESIGN.md)
    ========================= */
