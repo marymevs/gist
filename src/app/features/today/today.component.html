@@ -139,10 +139,13 @@
       </ng-container>
 
       <ng-template #noGist>
-        <div class="card" style="padding: 16px">
-          <div style="font-weight: 650">No Morning Gist found.</div>
-          <div class="sub" style="margin: 8px 0 0">
-            Generate one (scheduled or “Run now”), then refresh.
+        <div class=”card” style=”padding: var(--space-xl)”>
+          <div class=”kicker”>Waiting for your first gist</div>
+          <div style=”font-family: var(--font-display); font-size: 22px; margin-top: var(--space-sm);”>
+            Your morning briefing will appear here.
+          </div>
+          <div class=”sub” style=”margin: var(--space-sm) 0 0”>
+            Once scheduled delivery runs (or you trigger “Run now”), your gist appears on this page and arrives by fax.
           </div>
         </div>
       </ng-template>

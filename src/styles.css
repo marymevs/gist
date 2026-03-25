@@ -4,70 +4,104 @@
 @tailwind utilities;
 
 /* =========================
-   Design tokens
+   Design tokens (DESIGN.md)
    ========================= */
 :root {
   color-scheme: light;
-  --bg: #fbfbfa;
-  --surface: #ffffff;
-  --surface-alt: #f7f7f5;
-  --surface-muted: #f3f2ef;
-  --text: #111111;
-  --text-strong: #2a2a2a;
-  --muted: #6b6b6b;
-  --border: #e8e7e4;
-  --border-strong: #cfcfcf;
+
+  /* Paper & Ink */
+  --bg: #f8f5f0;
+  --surface: #fdfcf9;
+  --surface-alt: #f3efe8;
+  --surface-muted: #ece8e0;
+  --ink: #1a1a2e;
+  --ink-strong: #0d0d1a;
+  --muted: #6b6560;
+  --border: #ddd8d0;
+  --border-strong: #c8c2b8;
   --shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  --shadow-card: 0 1px 3px rgba(26, 26, 46, 0.06),
+    0 1px 2px rgba(26, 26, 46, 0.04);
+
+  /* Radius */
   --radius: 18px;
-  --radius-sm: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 4px;
+
+  /* Layout */
   --max: 1040px;
+
+  /* Semantic */
   --ok: #2f6b2f;
   --warn: #9b6a12;
-  --bad: #9a3a3a;
-  --accent: #111111;
-  --accent-contrast: #ffffff;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  --serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --bad: #8b3a3a;
+  --info: #2a4a7a;
+
+  /* Accent */
+  --accent: #1a1a2e;
+  --accent-contrast: #fdfcf9;
+
+  /* Typography */
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: "Instrument Sans", -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
+
+  /* Spacing */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Paper grain */
+  --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0f1113;
-  --surface: #15181b;
-  --surface-alt: #1b1f23;
-  --surface-muted: #23282e;
-  --text: #f2f2f0;
-  --text-strong: #f7f7f3;
-  --muted: #a0a6ad;
-  --border: #2a2f34;
-  --border-strong: #3a424a;
+  --bg: #0f1013;
+  --surface: #16171c;
+  --surface-alt: #1c1d24;
+  --surface-muted: #24252e;
+  --ink: #e8e4dc;
+  --ink-strong: #f5f2ec;
+  --muted: #8a8580;
+  --border: #2a2b34;
+  --border-strong: #3a3c48;
   --shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   --ok: #6acb6a;
   --warn: #f1b86a;
-  --bad: #f08989;
-  --accent: #f2f2f0;
-  --accent-contrast: #101113;
+  --bad: #e87878;
+  --info: #6a9ef1;
+  --accent: #e8e4dc;
+  --accent-contrast: #16171c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --bg: #0f1113;
-    --surface: #15181b;
-    --surface-alt: #1b1f23;
-    --surface-muted: #23282e;
-    --text: #f2f2f0;
-    --text-strong: #f7f7f3;
-    --muted: #a0a6ad;
-    --border: #2a2f34;
-    --border-strong: #3a424a;
+    --bg: #0f1013;
+    --surface: #16171c;
+    --surface-alt: #1c1d24;
+    --surface-muted: #24252e;
+    --ink: #e8e4dc;
+    --ink-strong: #f5f2ec;
+    --muted: #8a8580;
+    --border: #2a2b34;
+    --border-strong: #3a3c48;
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
     --ok: #6acb6a;
     --warn: #f1b86a;
-    --bad: #f08989;
-    --accent: #f2f2f0;
-    --accent-contrast: #101113;
+    --bad: #e87878;
+    --info: #6a9ef1;
+    --accent: #e8e4dc;
+    --accent-contrast: #16171c;
   }
 }
 
@@ -83,11 +117,36 @@ body {
 }
 body {
   margin: 0;
-  color: var(--text);
+  color: var(--ink);
   background: var(--bg);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  line-height: 1.45;
-  padding: 24px 16px 64px;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  padding: var(--space-lg) var(--space-md) var(--space-3xl);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Paper grain texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--grain);
+  background-repeat: repeat;
+  background-size: 256px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+:root[data-theme="dark"] body::before,
+:root:not([data-theme]) body::before {
+  opacity: 0.3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) body::before {
+    opacity: 0.3;
+  }
 }
 
 /* =========================
@@ -97,30 +156,31 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-card);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 6px 0 0;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0 0;
 }
 
 button {
-  /* appearance: none; */
   border: 1px solid var(--border);
   background: var(--surface);
-  padding: 9px 11px;
-  border-radius: 999px;
-  font-size: 13px;
+  padding: var(--space-sm) 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   box-shadow: var(--shadow);
-  color: var(--text);
-  transition: transform 0.06s ease, background 0.2s ease;
+  color: var(--ink);
+  transition: background 0.15s ease-out, border-color 0.15s ease-out;
 }
 button:hover {
-  transform: translateY(-1px);
+  background: var(--surface-alt);
 }
 button.secondary {
   color: var(--muted);
@@ -133,39 +193,44 @@ button.primary {
   color: var(--accent-contrast);
   border-color: var(--accent);
 }
+button.primary:hover {
+  opacity: 0.9;
+}
 button:active {
   background: var(--surface-muted);
-  transform: translateY(0);
 }
 
 input.textInput {
   width: 100%;
-  padding: 9px 11px;
-  border-radius: 10px;
+  padding: var(--space-sm) 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
-  font-size: 13px;
-  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
   box-shadow: var(--shadow);
+  transition: border-color 0.15s ease-out;
 }
 input.textInput:focus {
   outline: none;
-  border-color: var(--border-strong);
+  border-color: var(--accent);
 }
 
 /* Text helpers + status */
 .meta {
   color: var(--muted);
+  font-family: var(--font-mono);
   font-size: 13px;
-  margin-top: 6px;
+  margin-top: var(--space-sm);
 }
 .sub {
   color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 12px;
+  font-size: 14px;
+  margin-bottom: var(--space-md);
 }
 .mono {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 .ok {
   color: var(--ok);
@@ -179,93 +244,99 @@ input.textInput:focus {
 
 /* Generic page wrapper */
 .page {
-  padding: 18px;
+  padding: var(--space-lg);
 }
 .page h1 {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 400;
   letter-spacing: -0.02em;
 }
 
-/* Shared “paper” styling (used on Today + Evening) */
+/* Shared "paper" styling (used on Today + Evening) */
 .paper {
-  margin-top: 18px;
+  margin-top: var(--space-lg);
   border-top: 1px solid var(--border);
-  padding-top: 18px;
+  padding-top: var(--space-lg);
   max-width: 78ch;
 }
 .paper.serif {
-  font-family: var(--serif);
+  font-family: var(--font-display);
 }
 .kicker {
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--muted);
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-md);
 }
 .paper h2 {
-  margin: 18px 0 8px;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-strong);
-  font-family: inherit;
+  margin: var(--space-lg) 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
 }
 .paper p {
-  margin: 0 0 10px;
-  font-size: 15px;
+  margin: 0 0 var(--space-sm);
+  font-size: 16px;
 }
 .paper ul {
   margin: 0;
-  padding-left: 18px;
-  font-size: 15px;
+  padding-left: var(--space-lg);
+  font-size: 16px;
 }
 .paper li {
-  margin: 8px 0;
+  margin: var(--space-sm) 0;
 }
 .why {
   color: var(--muted);
   font-size: 13px;
-  margin-top: 4px;
+  margin-top: var(--space-xs);
 }
 
 /* Side panels (Today + Evening right column) */
 .side {
-  padding: 18px;
+  padding: var(--space-lg);
   border-radius: var(--radius);
 }
 .side h3 {
-  margin: 0 0 10px;
-  font-size: 13px;
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-strong);
+  letter-spacing: 0.1em;
+  color: var(--ink-strong);
 }
 .kv {
   display: grid;
   grid-template-columns: 98px 1fr;
-  gap: 8px 10px;
+  gap: var(--space-sm);
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--muted);
 }
 .kv b {
-  color: var(--text);
+  color: var(--ink);
   font-weight: 600;
 }
 
 .log {
-  margin-top: 14px;
+  margin-top: var(--space-md);
   border-top: 1px solid var(--border);
-  padding-top: 12px;
+  padding-top: var(--space-md);
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--muted);
 }
 .row {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 0;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
   border-bottom: 1px dashed var(--border);
 }
 .row:last-child {
@@ -275,15 +346,16 @@ input.textInput:focus {
 .divider {
   height: 1px;
   background: var(--border);
-  margin: 12px 0;
+  margin: var(--space-md) 0;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
   background: var(--surface);
@@ -300,7 +372,7 @@ input.textInput:focus {
     justify-self: start;
   }
   .today {
-    padding: 20px 18px 16px;
+    padding: var(--space-lg) var(--space-md) var(--space-md);
   }
   .paper {
     max-width: none;
@@ -311,6 +383,9 @@ input.textInput:focus {
 @media print {
   body {
     background: #fff;
+  }
+  body::before {
+    display: none;
   }
   header,
   nav,
