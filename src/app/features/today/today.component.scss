@@ -1,7 +1,5 @@
-/* ── outer wrapper ───────────────────────────────────────────────── */
-
 .newspaper-card {
-  background: #f5f3ef;  /* warm newsprint backing */
+  background: #f5f3ef;
   border-color: transparent;
   box-shadow: none;
   border-radius: 0;
@@ -10,8 +8,6 @@
 .today {
   padding: 0;
 }
-
-/* ── toolbar (screen only) ───────────────────────────────────────── */
 
 .toolbar {
   display: flex;
@@ -29,8 +25,6 @@
   color: var(--muted);
 }
 
-/* ── centered column layout ──────────────────────────────────────── */
-
 .grid {
   display: flex;
   flex-direction: column;
@@ -39,12 +33,10 @@
   gap: 28px;
 }
 
-/* ── newspaper (the paper) ───────────────────────────────────────── */
-
 .newspaper {
   width: 100%;
   max-width: 680px;
-  background: #ffffff;
+  background: #fff;
   border: 1px solid #dcd9d2;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.05);
   padding: 52px 60px 64px;
@@ -52,7 +44,6 @@
   color: #1a1a1a;
 }
 
-/* Masthead */
 .masthead {
   display: flex;
   align-items: baseline;
@@ -67,7 +58,6 @@
   font-weight: 700;
   letter-spacing: -1.5px;
   line-height: 1;
-  color: #1a1a1a;
 }
 
 .masthead-dateline {
@@ -84,7 +74,6 @@
   margin-bottom: 24px;
 }
 
-/* Sections */
 .np-section {
   margin-bottom: 22px;
 }
@@ -108,7 +97,6 @@
   margin: 0;
 }
 
-/* Calendar */
 .cal-item {
   display: flex;
   gap: 14px;
@@ -124,13 +112,10 @@
   flex-shrink: 0;
 }
 
-.cal-body {
-  flex: 1;
-}
+.cal-body { flex: 1; }
 
 .cal-title {
   font-size: 15px;
-  color: #1a1a1a;
   line-height: 1.3;
 }
 
@@ -141,7 +126,6 @@
   margin-top: 2px;
 }
 
-/* Email cards */
 .email-card {
   border-left: 3px solid #1a1a1a;
   padding: 5px 0 5px 12px;
@@ -171,7 +155,6 @@
 .email-subject {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
   margin-bottom: 2px;
   line-height: 1.3;
 }
@@ -189,15 +172,11 @@
   color: #555;
 }
 
-/* World */
-.world-item {
-  margin-bottom: 12px;
-}
+.world-item { margin-bottom: 12px; }
 
 .world-headline {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
   line-height: 1.3;
   margin-bottom: 2px;
 }
@@ -208,21 +187,17 @@
   color: #666;
 }
 
-/* Focus bullets */
 .focus-bullet {
   border-left: 2px solid #1a1a1a;
   padding: 5px 0 5px 14px;
   margin-bottom: 8px;
   font-size: 15px;
-  color: #1a1a1a;
   line-height: 1.4;
 }
 
-/* One thing */
 .one-thing {
   font-size: 17px;
   font-weight: 700;
-  color: #1a1a1a;
   margin: 0 0 5px;
   line-height: 1.35;
 }
@@ -235,7 +210,6 @@
   margin: 0;
 }
 
-/* Newspaper footer */
 .np-footer {
   margin-top: 36px;
   padding-top: 10px;
@@ -247,26 +221,17 @@
   letter-spacing: 0.5px;
 }
 
-/* No-gist placeholder */
 .no-gist-placeholder {
-  width: 100%;
-  max-width: 680px;
-  padding: 52px 60px;
-  font-family: Georgia, serif;
   color: #555;
-  background: #ffffff;
-  border: 1px solid #dcd9d2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding-bottom: 52px;
 }
 
-.no-gist-placeholder .no-gist-title {
+.no-gist-title {
   font-size: 17px;
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 6px;
 }
-
-/* ── delivery sidebar ────────────────────────────────────────────── */
 
 .side {
   width: 100%;
@@ -296,52 +261,22 @@
   text-overflow: ellipsis;
 }
 
-/* ── responsive ──────────────────────────────────────────────────── */
-
 @media (max-width: 680px) {
-  .newspaper {
-    padding: 32px 28px 40px;
-  }
-
-  .no-gist-placeholder {
-    padding: 32px 28px;
-  }
-
-  .wordmark {
-    font-size: 32px;
-  }
-
-  .masthead-dateline {
-    font-size: 11px;
-  }
+  .newspaper, .no-gist-placeholder { padding: 32px 28px 40px; }
+  .wordmark { font-size: 32px; }
+  .masthead-dateline { font-size: 11px; }
 }
 
-/* ── print ───────────────────────────────────────────────────────── */
-
 @media print {
-  @page {
-    size: letter;
-    margin: 0.75in 1in;
-  }
+  @page { size: letter; margin: 0.75in 1in; }
 
-  /* Hide all chrome */
-  .noPrint {
-    display: none !important;
-  }
+  .noPrint { display: none !important; }
 
-  .newspaper-card {
-    background: #fff;
-    border: none;
-  }
+  .newspaper-card { background: #fff; border: none; }
 
-  .today {
-    padding: 0;
-  }
+  .today { padding: 0; }
 
-  .grid {
-    display: block;
-    padding: 0;
-  }
+  .grid { display: block; padding: 0; }
 
   .newspaper {
     max-width: none;
@@ -352,28 +287,10 @@
     color: #000;
   }
 
-  .wordmark {
-    font-size: 32pt;
-  }
-
-  .masthead-rule {
-    background: #000;
-  }
-
-  .np-label {
-    color: #333;
-    border-bottom-color: #000;
-  }
-
-  .email-card {
-    border-left-color: #000;
-  }
-
-  .focus-bullet {
-    border-left-color: #000;
-  }
-
-  .np-footer {
-    display: block !important; /* show "mygist.app" footer in print */
-  }
+  .wordmark { font-size: 32pt; }
+  .masthead-rule { background: #000; }
+  .np-label { color: #333; border-bottom-color: #000; }
+  .email-card { border-left-color: #000; }
+  .focus-bullet { border-left-color: #000; }
+  .np-footer { display: block !important; }
 }
