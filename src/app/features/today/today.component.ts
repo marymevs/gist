@@ -8,7 +8,6 @@ import {
   Firestore,
   collection,
   query,
-  where,
   orderBy,
   limit,
   collectionData,
@@ -52,7 +51,7 @@ type MorningGist = {
   oneThing: string;
 
   delivery?: {
-    method: 'web' | 'fax';
+    method: 'web' | 'email' | 'fax';
     pages: number;
     status: 'queued' | 'delivered' | 'failed' | string;
     deliveredAt?: Timestamp;
@@ -64,7 +63,7 @@ type MorningGist = {
 type DeliveryLog = {
   id: string;
   type: string; // 'morning'|'evening'
-  method: string; // 'fax'|'web'
+  method: string; // 'fax'|'web'|'email'
   status: string; // queued|delivered|failed|received...
   pages?: number | null;
   createdAt?: Timestamp;
@@ -102,13 +101,7 @@ export class TodayComponent {
   private router = inject(Router);
   private datePipe = inject(DatePipe);
 
-  // UI state
-  isSerif = true;
-
-  // If you want to keep these as strings (not Observables), we can set them imperatively.
-  // Cleaner: expose metaText$ and statusText$ and use async in template.
-  // But your HTML currently expects metaText/statusText strings — so we keep strings
-  // and update them via subscriptions below.
+  // Toolbar / sidebar text — derived from gist$ + deliveryLogs$ in constructor
   metaText = '—';
   statusText = '—';
 
@@ -172,10 +165,6 @@ export class TodayComponent {
 
   onEditTomorrow(): void {
     alert("Demo: this would open 'tomorrow' preferences.");
-  }
-
-  toggleSerif(): void {
-    this.isSerif = !this.isSerif;
   }
 
   goToDelivery(): void {
@@ -243,12 +232,12 @@ export class TodayComponent {
       logs[0]?.status ??
       '—'
     ).toString();
+    const methodLower = (method ?? '').toLowerCase();
     const methodLabel =
-      (method ?? '').toLowerCase() === 'fax'
-        ? 'Fax'
-        : (method ?? '').toLowerCase() === 'web'
-          ? 'Web'
-          : `${method}`.toUpperCase();
+      methodLower === 'fax' ? 'Fax' :
+      methodLower === 'email' ? 'Email' :
+      methodLower === 'web' ? 'Web' :
+      `${method}`.toUpperCase();
 
     const pagesLabel = pages ? `${pages} page${pages === 1 ? '' : 's'}` : '—';
 
@@ -260,26 +249,7 @@ export class TodayComponent {
     return { metaText, statusText };
   }
 
-  // private prettyDateFromDateKey(dateKey: string, timeZone: string): string {
-  //   // dateKey: "YYYY-MM-DD"
-  //   // Create a Date that represents that day, then format in the given TZ.
-  //   const [y, m, d] = dateKey.split('-').map((x) => Number(x));
-  //   const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
-
-  //   // Example output: "Saturday, Jan 10"
-  //   const weekday = new Intl.DateTimeFormat('en-US', {
-  //     timeZone,
-  //     weekday: 'long',
-  //   }).format(date);
-  //   const monthDay = new Intl.DateTimeFormat('en-US', {
-  //     timeZone,
-  //     month: 'short',
-  //     day: 'numeric',
-  //   }).format(date);
-  //   return `${weekday}, ${monthDay}`;
-  // }
-
-  private prettyDateFromDateKey(dateKey: string): string {
+  prettyDateFromDateKey(dateKey: string): string {
     // dateKey: "YYYY-MM-DD"
     const [y, m, d] = dateKey.split('-').map(Number);
 

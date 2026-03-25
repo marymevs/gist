@@ -3,7 +3,7 @@ export interface DeliveryLog {
   userId: string;
 
   type: 'morning' | 'evening';
-  method: 'fax' | 'web';
+  method: 'fax' | 'web' | 'email';
 
   status: 'queued' | 'delivered' | 'received' | 'failed';
 

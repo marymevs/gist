@@ -127,4 +127,21 @@ describe('buildFaxHtml', () => {
     const html = buildFaxHtml(minimal);
     expect(html).toContain('size: letter');
   });
+
+  it('escapes HTML in unknown email card category fallback (regression: XSS fix)', () => {
+    // If Firestore has a category value outside the known union, the fallback
+    // label must be HTML-escaped to prevent injection into the print document.
+    const html = buildFaxHtml({
+      ...minimal,
+      emailCards: [{
+        subject: 'Test',
+        snippet: 'Test snippet',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        category: '<script>alert(1)</script>' as any,
+        why: 'Test why',
+      }],
+    });
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;SCRIPT&gt;');
+  });
 });

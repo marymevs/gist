@@ -72,7 +72,7 @@ function categoryLabel(cat: 'Action' | 'WaitingOn' | 'FYI'): string {
     WaitingOn: '[ WAITING ]',
     FYI: '[ FYI ]',
   };
-  return labels[cat] ?? `[ ${cat.toUpperCase()} ]`;
+  return labels[cat] ?? `[ ${esc(cat.toUpperCase())} ]`;
 }
 
 // ─── cover page ──────────────────────────────────────────────────────────────
