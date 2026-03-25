@@ -1,5 +1,5 @@
 .newspaper-card {
-  background: #f5f3ef;
+  background: var(--bg);
   border-color: transparent;
   box-shadow: none;
   border-radius: 0;
@@ -14,13 +14,14 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background: #fff;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .toolbar-meta {
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
 }
@@ -29,49 +30,49 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 36px 20px 56px;
-  gap: 28px;
+  padding: var(--space-xl) var(--space-lg) var(--space-3xl);
+  gap: var(--space-xl);
 }
 
 .newspaper {
   width: 100%;
   max-width: 680px;
-  background: #fff;
-  border: 1px solid #dcd9d2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.05);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card), 0 16px 48px rgba(26, 26, 46, 0.05);
   padding: 52px 60px 64px;
-  font-family: Georgia, 'Times New Roman', serif;
-  color: #1a1a1a;
+  font-family: var(--font-display);
+  color: var(--ink);
 }
 
 .masthead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
 .wordmark {
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
   font-size: 40px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: -1.5px;
   line-height: 1;
 }
 
 .masthead-dateline {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  color: #666;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
   letter-spacing: 0.3px;
   white-space: nowrap;
 }
 
 .masthead-rule {
   height: 3px;
-  background: #1a1a1a;
-  margin-bottom: 24px;
+  background: var(--ink);
+  margin-bottom: var(--space-lg);
 }
 
 .np-section {
@@ -79,20 +80,20 @@
 }
 
 .np-label {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: #555;
-  border-bottom: 1px solid #222;
-  padding-bottom: 4px;
-  margin: 0 0 10px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--ink-strong);
+  padding-bottom: var(--space-xs);
+  margin: 0 0 var(--space-sm);
 }
 
 .np-empty {
   font-style: italic;
-  color: #888;
+  color: var(--muted);
   font-size: 14px;
   margin: 0;
 }
@@ -105,93 +106,95 @@
 }
 
 .cal-time {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: #555;
+  color: var(--muted);
   min-width: 70px;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .cal-body { flex: 1; }
 
 .cal-title {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.3;
 }
 
 .cal-note {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 11px;
-  color: #888;
+  color: var(--muted);
   margin-top: 2px;
 }
 
 .email-card {
-  border-left: 3px solid #1a1a1a;
-  padding: 5px 0 5px 12px;
-  margin-bottom: 12px;
+  border-left: 3px solid var(--ink);
+  padding: 5px 0 5px var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
 .email-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   margin-bottom: 2px;
 }
 
 .email-cat {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 1.2px;
-  color: #555;
+  color: var(--muted);
 }
 
 .email-from {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: #999;
+  color: var(--muted);
 }
 
 .email-subject {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   margin-bottom: 2px;
   line-height: 1.3;
 }
 
 .email-snippet {
+  font-family: var(--font-body);
   font-size: 13px;
-  color: #444;
-  margin-bottom: 4px;
+  color: var(--muted);
+  margin-bottom: var(--space-xs);
   line-height: 1.4;
 }
 
 .email-next {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: #555;
+  color: var(--muted);
 }
 
-.world-item { margin-bottom: 12px; }
+.world-item { margin-bottom: var(--space-md); }
 
 .world-headline {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
   margin-bottom: 2px;
 }
 
 .world-impl {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 11px;
-  color: #666;
+  color: var(--muted);
 }
 
 .focus-bullet {
-  border-left: 2px solid #1a1a1a;
+  border-left: 2px solid var(--ink);
   padding: 5px 0 5px 14px;
-  margin-bottom: 8px;
-  font-size: 15px;
+  margin-bottom: var(--space-sm);
+  font-size: 16px;
   line-height: 1.4;
 }
 
@@ -203,57 +206,60 @@
 }
 
 .one-thing-tag {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-mono);
   font-size: 11px;
-  color: #aaa;
+  color: var(--muted);
   font-style: italic;
   margin: 0;
 }
 
 .np-footer {
-  margin-top: 36px;
-  padding-top: 10px;
-  border-top: 1px solid #ddd;
-  font-family: Arial, Helvetica, sans-serif;
+  margin-top: var(--space-xl);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
   font-size: 10px;
-  color: #bbb;
+  color: var(--border-strong);
   text-align: center;
   letter-spacing: 0.5px;
 }
 
 .no-gist-placeholder {
-  color: #555;
+  color: var(--muted);
   padding-bottom: 52px;
 }
 
 .no-gist-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 6px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: var(--space-sm);
 }
 
 .side {
   width: 100%;
   max-width: 680px;
-  padding: 20px;
+  padding: var(--space-lg);
   border-radius: var(--radius-sm);
 }
 
 .side h3 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-mono);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-strong);
+  color: var(--ink-strong);
 }
 
 .status {
-  margin-bottom: 12px;
-  padding: 6px 10px;
+  margin-bottom: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
@@ -262,9 +268,9 @@
 }
 
 @media (max-width: 680px) {
-  .newspaper, .no-gist-placeholder { padding: 32px 28px 40px; }
+  .newspaper, .no-gist-placeholder { padding: var(--space-xl) var(--space-lg) var(--space-2xl); }
   .wordmark { font-size: 32px; }
-  .masthead-dateline { font-size: 11px; }
+  .masthead-dateline { font-size: 10px; }
 }
 
 @media print {

@@ -1,6 +1,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--muted);
   border-radius: var(--radius-sm);
@@ -11,7 +12,7 @@
 
 .table th,
 .table td {
-  padding: 10px 10px;
+  padding: var(--space-sm);
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
@@ -19,7 +20,7 @@
 
 .table th {
   font-weight: 600;
-  color: var(--text);
+  color: var(--ink);
   background: var(--surface-alt);
 }
 
