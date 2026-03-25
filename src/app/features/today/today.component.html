@@ -9,8 +9,13 @@
         </div>
 
         <div class="actions" aria-label="Actions">
-          <button class="secondary" type="button" (click)="onPrint()">
-            Print
+          <button
+            class="secondary"
+            type="button"
+            (click)="onPrint()"
+            [disabled]="isPrinting"
+          >
+            {{ isPrinting ? 'Opening…' : 'Print' }}
           </button>
 
           <button class="secondary" type="button" (click)="onResend()">
