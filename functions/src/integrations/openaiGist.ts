@@ -1,7 +1,12 @@
 import { logger } from 'firebase-functions';
-import { defineSecret } from 'firebase-functions/params';
 
-export const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
+import {
+  OPENAI_API_KEY,
+  callOpenAiJson,
+  isRecord,
+} from './openaiUtils';
+
+export { OPENAI_API_KEY };
 
 type DayItem = {
   time?: string;
@@ -28,20 +33,6 @@ type DailyFocusSections = {
   gistBullets: string[];
 };
 
-type OpenAiChatCompletionResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string | null;
-    };
-  }>;
-  error?: {
-    message?: string;
-    type?: string;
-  };
-};
-
-const OPENAI_CHAT_COMPLETIONS_URL =
-  'https://api.openai.com/v1/chat/completions';
 const DEFAULT_MODEL = process.env.OPENAI_GIST_MODEL?.trim() || 'gpt-4.1-mini';
 const MAX_ATTEMPTS = 2;
 const ACTION_VERB_REGEX =
@@ -55,18 +46,6 @@ const BANNED_TERMS = [
   'failure',
   'you should feel',
 ];
-
-function getApiKey(): string | null {
-  try {
-    const fromSecret = OPENAI_API_KEY.value();
-    if (fromSecret?.trim()) return fromSecret.trim();
-  } catch {
-    // Secret may be unavailable in local runs without secret injection.
-  }
-
-  const fromEnv = process.env.OPENAI_API_KEY;
-  return fromEnv?.trim() ? fromEnv.trim() : null;
-}
 
 function wordCount(text: string): number {
   return text
@@ -84,75 +63,12 @@ function hasBannedLanguage(text: string): boolean {
   return BANNED_TERMS.some((term) => normalized.includes(term));
 }
 
-function safeJsonParse(raw: string): unknown | null {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function hasOnlyKeys(value: Record<string, unknown>, expectedKeys: string[]) {
   const keys = Object.keys(value);
   return (
     keys.length === expectedKeys.length &&
     expectedKeys.every((expectedKey) => keys.includes(expectedKey))
   );
-}
-
-async function callOpenAiJson(params: {
-  systemPrompt: string;
-  userPrompt: string;
-}): Promise<unknown> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured.');
-  }
-
-  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      temperature: 0.5,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: params.systemPrompt },
-        { role: 'user', content: params.userPrompt },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(
-      `OpenAI request failed (${response.status}): ${text.slice(0, 400)}`,
-    );
-  }
-
-  const payload = (await response.json()) as OpenAiChatCompletionResponse;
-  if (payload.error?.message) {
-    throw new Error(`OpenAI API error: ${payload.error.message}`);
-  }
-
-  const content = payload.choices?.[0]?.message?.content;
-  if (typeof content !== 'string' || !content.trim()) {
-    throw new Error('OpenAI returned an empty completion payload.');
-  }
-
-  const parsed = safeJsonParse(content);
-  if (!parsed) {
-    throw new Error('OpenAI completion content is not valid JSON.');
-  }
-
-  return parsed;
 }
 
 function validateOneThing(value: unknown): {
@@ -288,7 +204,7 @@ ${feedback ? `\nValidation feedback from prior attempt: ${feedback}` : ''}
 `.trim();
 
     try {
-      const parsed = await callOpenAiJson({ systemPrompt, userPrompt });
+      const parsed = await callOpenAiJson({ systemPrompt, userPrompt, model: DEFAULT_MODEL, temperature: 0.5 });
       if (!isRecord(parsed) || !hasOnlyKeys(parsed, ['oneThing'])) {
         feedback = 'Return only {"oneThing":"..."} with no additional keys.';
         logger.warn('OpenAI oneThing output had unexpected JSON shape.', {
@@ -361,7 +277,7 @@ ${feedback ? `\nValidation feedback from prior attempt: ${feedback}` : ''}
 `.trim();
 
     try {
-      const parsed = await callOpenAiJson({ systemPrompt, userPrompt });
+      const parsed = await callOpenAiJson({ systemPrompt, userPrompt, model: DEFAULT_MODEL, temperature: 0.5 });
       if (!isRecord(parsed) || !hasOnlyKeys(parsed, ['gistBullets'])) {
         feedback =
           'Return only {"gistBullets":["...","...","..."]} with no additional keys.';
