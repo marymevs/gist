@@ -1,7 +1,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
 import { fetchEmailCards, type EmailCard } from './integrations/gmailInt';
@@ -15,6 +15,16 @@ import {
   resolveUserEmail,
 } from './integrations/emailDelivery';
 import { buildEmailHtml, buildEmailSubject } from './integrations/emailTemplate';
+import {
+  PHAXIO_API_KEY,
+  PHAXIO_API_SECRET,
+  sendMorningGistFax,
+} from './integrations/faxDelivery';
+import { buildFaxHtml } from './integrations/faxTemplate';
+import {
+  writeDeliveryLog,
+  updateGistDeliveryStatus,
+} from './firestoreUtils';
 
 initializeApp();
 
@@ -28,7 +38,8 @@ const db = getFirestore();
 
 /** === Types === */
 
-type DeliveryMethod = 'web' | 'email';
+/** All delivery methods supported by the scheduler. */
+export type DeliveryMethod = 'web' | 'email' | 'fax';
 
 type GistPlan = 'web' | 'print' | 'loop';
 
@@ -51,6 +62,8 @@ type UserPrefs = {
 
 type UserDelivery = {
   method?: DeliveryMethod;
+  /** E.164 or 10-digit fax number, e.g. "+12125551234" */
+  faxNumber?: string;
   schedule?: {
     hour?: number;
     minute?: number;
@@ -92,6 +105,8 @@ type MorningGist = {
     pages: number;
     status: 'queued' | 'delivered' | 'failed';
     deliveredAt?: Timestamp;
+    /** Phaxio fax ID — set for fax deliveries, used by faxWebhook to correlate callbacks. */
+    phaxioFaxId?: string;
   };
 
   createdAt: Timestamp;
@@ -104,6 +119,21 @@ function hasConnectedIntegration(user: UserDoc): boolean {
     user.calendarIntegration?.status === 'connected' ||
     user.emailIntegration?.status === 'connected'
   );
+}
+
+/**
+ * Resolve delivery method using plan-first routing.
+ *
+ *   print plan → fax  (physical delivery)
+ *   loop/web   → email if Gmail connected, otherwise web
+ *
+ * This is intentional: the plan controls what you get. The print plan
+ * subscriber wants paper; the loop/web subscriber gets digital.
+ */
+function resolveDeliveryMethod(user: UserDoc): DeliveryMethod {
+  if (user.plan === 'print') return 'fax';
+  if (user.emailIntegration?.status === 'connected') return 'email';
+  return 'web';
 }
 
 function toDateKeyISO(date: Date, timeZone: string): string {
@@ -120,7 +150,7 @@ function toDateKeyISO(date: Date, timeZone: string): string {
   return `${y}-${m}-${d}`;
 }
 
-function toEmailDateLabel(date: Date, timeZone: string): string {
+function toDateLabel(date: Date, timeZone: string): string {
   return date.toLocaleDateString('en-US', {
     timeZone,
     weekday: 'long',
@@ -185,46 +215,6 @@ async function fetchWorldItems(): Promise<
   }
 }
 
-async function writeDeliveryLog(
-  userId: string,
-  payload: {
-    type: 'morning';
-    method: DeliveryMethod;
-    status: string;
-    pages?: number;
-  },
-): Promise<void> {
-  await db
-    .collection('users')
-    .doc(userId)
-    .collection('deliveryLogs')
-    .doc()
-    .set({
-      type: payload.type,
-      method: payload.method,
-      status: payload.status,
-      pages: payload.pages ?? null,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-}
-
-async function updateGistDeliveryStatus(
-  userId: string,
-  dateKey: string,
-  status: 'delivered' | 'failed',
-): Promise<void> {
-  const update: Record<string, unknown> = { 'delivery.status': status };
-  if (status === 'delivered') {
-    update['delivery.deliveredAt'] = Timestamp.now();
-  }
-  await db
-    .collection('users')
-    .doc(userId)
-    .collection('morningGists')
-    .doc(dateKey)
-    .update(update);
-}
-
 /** === Core generator === */
 export async function generateMorningGistForUser(
   user: UserDoc,
@@ -239,10 +229,20 @@ export async function generateMorningGistForUser(
 
   const timezone = safeTimezone(user.prefs?.timezone);
   const dateKey = toDateKeyISO(now, timezone);
-  const method: DeliveryMethod =
-    user.emailIntegration?.status === 'connected' ? 'email' : 'web';
+  const method = resolveDeliveryMethod(user);
   const city = user.prefs?.city ?? 'New York, NY';
   const pages = estimatePages(user.prefs?.maxPages);
+
+  // Fax guard: skip early if plan=print but no fax number configured
+  if (method === 'fax') {
+    const faxNumber = user.delivery?.faxNumber?.trim();
+    if (!faxNumber) {
+      logger.warn('Skipping fax delivery — print plan user has no fax number.', {
+        userId: user.uid,
+      });
+      return;
+    }
+  }
 
   let weather = 'Weather unavailable';
   try {
@@ -260,7 +260,8 @@ export async function generateMorningGistForUser(
     });
   }
 
-  let finalStatus: 'delivered' | 'failed' = 'failed';
+  // Initial delivery status — fax stays 'queued' until webhook confirms
+  let finalStatus: 'queued' | 'delivered' | 'failed' = 'failed';
 
   try {
     const [dayItems, worldItems, emailCards] = await Promise.all([
@@ -354,6 +355,8 @@ export async function generateMorningGistForUser(
 
     await gistRef.set({ ...gist, dayItems: cleanDayItems }, { merge: true });
 
+    const dateLabel = toDateLabel(now, timezone);
+
     // ── Email delivery ──────────────────────────────────────────────────────
     if (method === 'email') {
       const toEmail = await resolveUserEmail(user.uid, user.email);
@@ -362,10 +365,8 @@ export async function generateMorningGistForUser(
         logger.warn('Skipping email delivery — no email address for user.', {
           userId: user.uid,
         });
-        // Gist was saved; treat as web delivery
-        finalStatus = 'delivered';
+        finalStatus = 'delivered'; // gist is in Firestore; treat as web
       } else {
-        const dateLabel = toEmailDateLabel(now, timezone);
         const templateInput = {
           date: dateLabel,
           weatherSummary: weather,
@@ -402,12 +403,56 @@ export async function generateMorningGistForUser(
           });
         }
       }
+
+    // ── Fax delivery ────────────────────────────────────────────────────────
+    } else if (method === 'fax') {
+      const faxNumber = user.delivery!.faxNumber!.trim();
+      const subscriberName = user.email?.split('@')[0] ?? 'Subscriber';
+
+      const html = buildFaxHtml({
+        subscriberName,
+        date: dateLabel,
+        weatherSummary: weather,
+        dayItems: cleanDayItems,
+        worldItems,
+        emailCards: cleanEmailCards.map((c) => ({
+          fromName: c.fromName,
+          subject: c.subject,
+          snippet: c.snippet,
+          category: c.category,
+          why: c.why,
+          suggestedNextStep: c.suggestedNextStep,
+        })),
+        gistBullets: sections.gistBullets,
+      });
+
+      const result = await sendMorningGistFax({ faxNumber, html, userId: user.uid });
+
+      if (result.success) {
+        // Store the Phaxio fax ID so the webhook can correlate the callback
+        await gistRef.update({ 'delivery.phaxioFaxId': result.faxId });
+        // Status stays 'queued' — webhook will update to 'delivered'/'failed'
+        finalStatus = 'queued';
+        logger.info('Morning Gist fax queued.', {
+          userId: user.uid,
+          faxId: result.faxId,
+          dateKey,
+        });
+      } else {
+        finalStatus = 'failed';
+        logger.warn('Morning Gist fax failed.', {
+          userId: user.uid,
+          error: result.error,
+        });
+        await updateGistDeliveryStatus(user.uid, dateKey, 'failed');
+      }
+
+    // ── Web delivery ────────────────────────────────────────────────────────
     } else {
-      // Web delivery — gist is in Firestore, mark delivered
       finalStatus = 'delivered';
+      await updateGistDeliveryStatus(user.uid, dateKey, 'delivered');
     }
 
-    await updateGistDeliveryStatus(user.uid, dateKey, finalStatus);
   } catch (error) {
     finalStatus = 'failed';
     if (error instanceof Error) {
@@ -421,6 +466,7 @@ export async function generateMorningGistForUser(
     }
   }
 
+  // Always write a delivery log entry (queued/delivered/failed)
   await writeDeliveryLog(user.uid, {
     type: 'morning',
     method,
@@ -443,6 +489,9 @@ export const generateMorningGist = onSchedule(
     schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
+    // Extended timeout: Phaxio HTML-to-fax dispatch adds ~500ms per user.
+    // 180s covers up to ~30 fax users comfortably at MVP scale.
+    timeoutSeconds: 180,
     secrets: [
       WEATHERAPI_KEY,
       NYT_API_KEY,
@@ -450,6 +499,8 @@ export const generateMorningGist = onSchedule(
       GOOGLE_CLIENT_SECRET,
       OPENAI_API_KEY,
       RESEND_API_KEY,
+      PHAXIO_API_KEY,
+      PHAXIO_API_SECRET,
     ],
   },
   async () => {
