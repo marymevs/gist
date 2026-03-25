@@ -176,7 +176,8 @@ body::before {
 button {
   border: 1px solid var(--border);
   background: var(--surface);
-  padding: var(--space-sm) 12px;
+  padding: 10px 12px;
+  min-height: 44px;
   border-radius: var(--radius-sm);
   font-family: var(--font-body);
   font-size: 14px;
