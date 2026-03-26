@@ -164,7 +164,7 @@ export class TodayComponent {
   }
 
   onEditTomorrow(): void {
-    alert("Demo: this would open 'tomorrow' preferences.");
+    this.router.navigate(['/account'], { queryParams: { section: 'preferences' } });
   }
 
   goToDelivery(): void {

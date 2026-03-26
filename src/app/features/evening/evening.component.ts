@@ -145,9 +145,7 @@ export class EveningComponent implements OnDestroy {
   }
 
   onViewTomorrow(): void {
-    alert(
-      'Demo: tomorrow’s Morning Gist would include an execution summary (Completed / Needs review / Failed).'
-    );
+    this.router.navigate(['/today']);
   }
 
   goToToday(): void {
