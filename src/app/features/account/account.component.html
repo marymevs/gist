@@ -12,8 +12,6 @@
         <div class="kv" style="grid-template-columns: 140px 1fr">
           <span>Calendar</span><b>{{ calendarStatus(user) }}</b>
           <span>Email</span><b>{{ emailStatus(user) }}</b>
-          <span>Weather</span><b>{{ inputs.weatherLocation }}</b>
-          <span>News domains</span><b>{{ inputs.newsDomains }}</b>
         </div>
 
         <div style="margin-top: 12px">
@@ -64,34 +62,79 @@
             {{ isSavingVipSenders ? 'Saving…' : 'Save VIPs' }}
           </button>
         </div>
-
-        <div style="margin-top: 12px">
-          <button
-            class="secondary"
-            type="button"
-            (click)="onManageConnections()"
-          >
-            Manage connections
-          </button>
-        </div>
       </div>
 
       <!-- Tone & length -->
       <div class="card" style="padding: 16px">
         <h2 style="font-size: 16px; margin: 0 0 10px">Tone &amp; length</h2>
-        <div class="sub">If it can’t fit on paper, it doesn’t belong.</div>
+        <div class="sub">If it can't fit on paper, it doesn't belong.</div>
 
-        <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Length</span><b>{{ prefs.lengthLabel }}</b> <span>Tone</span
-          ><b>{{ prefs.toneLabel }}</b> <span>Quiet days</span
-          ><b>{{ prefs.quietDays }}</b>
-        </div>
+        <!-- Display mode -->
+        <ng-container *ngIf="!isEditingPreferences">
+          <div class="kv" style="grid-template-columns: 140px 1fr">
+            <span>Length</span><b>{{ lengthLabel(user) }}</b>
+            <span>Tone</span><b>{{ toneLabel(user) }}</b>
+            <span>Quiet days</span><b>{{ quietDaysLabel(user) }}</b>
+          </div>
 
-        <div style="margin-top: 12px">
-          <button class="secondary" type="button" (click)="onEditPreferences()">
-            Edit preferences
-          </button>
-        </div>
+          <div style="margin-top: 12px">
+            <button class="secondary" type="button" (click)="onEditPreferences(user)">
+              Edit preferences
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- Edit mode -->
+        <ng-container *ngIf="isEditingPreferences">
+          <div class="prefsForm">
+            <div>
+              <label class="sub" style="display: block; margin-bottom: 4px">Length</label>
+              <select class="textInput" [(ngModel)]="editLength">
+                <option *ngFor="let opt of lengthOptions" [value]="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div style="margin-top: 10px">
+              <label class="sub" style="display: block; margin-bottom: 4px">Tone</label>
+              <select class="textInput" [(ngModel)]="editTone">
+                <option *ngFor="let opt of toneOptions" [value]="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div style="margin-top: 10px">
+              <label class="sub" style="display: block; margin-bottom: 4px">Quiet days</label>
+              <div class="quietDaysRow">
+                <label *ngFor="let day of dayLabels; let i = index" class="checkLabel">
+                  <input type="checkbox" [(ngModel)]="editQuietDays[i]" />
+                  {{ day }}
+                </label>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px; display: flex; gap: 8px">
+              <button
+                class="secondary"
+                type="button"
+                (click)="onSavePreferences(user)"
+                [disabled]="isSavingPreferences"
+              >
+                {{ isSavingPreferences ? 'Saving…' : 'Save' }}
+              </button>
+              <button
+                class="secondary"
+                type="button"
+                (click)="onCancelPreferences()"
+                [disabled]="isSavingPreferences"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Billing -->
@@ -100,17 +143,27 @@
         <div class="sub">Business-first and transparent.</div>
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Plan</span><b>{{ user.plan }}</b> <span>Next invoice</span
-          ><b>{{ billing.nextInvoiceLabel }}</b> <span>Included sends</span
-          ><b>{{ billing.includedSendsLabel }}</b>
+          <span>Plan</span><b>{{ planLabel(user.plan) }}</b>
+          <span>Price</span><b>{{ planPrice(user.plan) }}</b>
+          <span>Status</span><b>{{ user.stripeSubscriptionStatus || 'demo' }}</b>
         </div>
 
         <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
-          <button class="secondary" type="button" (click)="onChangePlan()">
-            Change plan
+          <button
+            class="secondary disabled-hint"
+            type="button"
+            disabled
+            title="Stripe billing coming soon"
+          >
+            Change plan (coming soon)
           </button>
-          <button class="secondary" type="button" (click)="onViewInvoices()">
-            View invoices
+          <button
+            class="secondary disabled-hint"
+            type="button"
+            disabled
+            title="Stripe billing coming soon"
+          >
+            View invoices (coming soon)
           </button>
         </div>
 
@@ -150,16 +203,33 @@
         <div class="sub">Minimal, boring, safe.</div>
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Email</span><b>{{ user.email }}</b> <span>2FA</span
-          ><b>{{ security.twoFaStatus }}</b> <span>Data</span
-          ><b>{{ security.dataStatus }}</b>
+          <span>Email</span><b>{{ user.email }}</b>
+          <span>2FA</span><b>Managed by Firebase Auth</b>
         </div>
 
         <div style="margin-top: 12px">
-          <button class="secondary" type="button" (click)="onManageSecurity()">
-            Manage security
+          <button class="secondary" type="button" (click)="toggleSecurity()">
+            {{ isSecurityExpanded ? 'Hide details' : 'Security details' }}
           </button>
         </div>
+
+        <ng-container *ngIf="isSecurityExpanded">
+          <div class="divider"></div>
+          <div class="sub">
+            Two-factor authentication is managed by your sign-in provider (Google or email/password via Firebase Auth).
+            To enable 2FA, configure it in your Google account settings.
+          </div>
+          <div style="margin-top: 10px">
+            <button
+              class="secondary disabled-hint"
+              type="button"
+              disabled
+              title="Data export coming soon"
+            >
+              Download my data (coming soon)
+            </button>
+          </div>
+        </ng-container>
       </div>
     </div>
   </ng-container>

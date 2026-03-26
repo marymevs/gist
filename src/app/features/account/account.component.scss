@@ -190,3 +190,57 @@ button.primary {
   font-size: 13px;
   margin-bottom: 12px;
 }
+
+/* Preferences edit form */
+.prefsForm select.textInput {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.quietDaysRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkLabel input[type="checkbox"] {
+  accent-color: var(--accent, #2c3e50);
+}
+
+/* Disabled hint buttons */
+button.disabled-hint {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.disabled-hint:hover {
+  transform: none;
+}
+
+.divider {
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+.textInput {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}

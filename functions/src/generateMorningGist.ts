@@ -75,7 +75,7 @@ type IntegrationStatus = {
   status?: 'connected' | 'disconnected';
 };
 
-type UserDoc = {
+export type UserDoc = {
   uid: string;
   email: string | null;
   plan: GistPlan;

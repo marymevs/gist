@@ -1,17 +1,31 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { Auth, user } from '@angular/fire/auth';
 import { AccountDataService } from '../../core/services/account-data.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { GistUser } from '../../core/models/user.model';
 import { Observable } from 'rxjs';
 import { User, signOut } from 'firebase/auth';
 
-type Plan = 'web' | 'paper' | 'loop';
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+const LENGTH_OPTIONS = [
+  { value: 'brief', label: 'Brief (1 page)' },
+  { value: 'standard', label: 'Standard (2 pages)' },
+  { value: 'detailed', label: 'Detailed (3 pages)' },
+] as const;
+
+const TONE_OPTIONS = [
+  { value: 'calm', label: 'Calm, direct' },
+  { value: 'detailed', label: 'Detailed, thorough' },
+  { value: 'concise', label: 'Concise, bullet-only' },
+] as const;
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
 })
@@ -22,41 +36,34 @@ export class AccountComponent {
   isConnectingGmail = false;
   isSavingVipSenders = false;
   isSavingFaxNumber = false;
+  isSavingPreferences = false;
 
-  inputs = {
-    calendarStatus: 'Not connected',
-    emailStatus: 'Not connected',
-    weatherLocation: 'New York, NY',
-    newsDomains: 'Tech, Business, Culture',
-  };
+  // Preferences edit mode
+  isEditingPreferences = false;
+  editLength = 'standard';
+  editTone = 'calm';
+  editQuietDays: boolean[] = [true, false, false, false, false, false, true]; // Sun=on, Sat=on
 
-  prefs = {
-    lengthLabel: 'Standard (2 pages)',
-    toneLabel: 'Calm, direct',
-    quietDays: 'Sat, Sun',
-  };
+  // Security expanded
+  isSecurityExpanded = false;
 
-  billing = {
-    planLabel: 'print',
-    nextInvoiceLabel: 'Feb 10',
-    includedSendsLabel: '30 / month',
-  };
-
-  security = {
-    email: 'you@domain.com',
-    twoFaStatus: 'Not enabled',
-    dataStatus: 'Export available',
-  };
+  // Constants for template
+  readonly dayLabels = DAY_LABELS;
+  readonly lengthOptions = LENGTH_OPTIONS;
+  readonly toneOptions = TONE_OPTIONS;
 
   constructor(
     private auth: Auth,
     private accountData: AccountDataService,
-  ) {}
-  // --- Click handlers (wire these later) ---
-
-  onManageConnections(): void {
-    // Later: route to a Connections page or open a modal
-    alert('Demo: Manage connections (Calendar / Weather / News sources).');
+    private toast: ToastService,
+    private route: ActivatedRoute,
+  ) {
+    // Auto-expand preferences if navigated with ?section=preferences
+    this.route.queryParams.subscribe((params) => {
+      if (params['section'] === 'preferences') {
+        this.isEditingPreferences = true;
+      }
+    });
   }
 
   calendarStatus(user: GistUser | null): string {
@@ -85,7 +92,7 @@ export class AccountComponent {
 
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
-      alert('Please sign in before connecting your calendar.');
+      this.toast.show('Please sign in before connecting your calendar.', 'error');
       return;
     }
 
@@ -100,13 +107,13 @@ export class AccountComponent {
       }
 
       await this.waitForOAuthResult(popup, callbackOrigin, 'google-calendar-oauth');
-      alert('Google Calendar connected.');
+      this.toast.show('Google Calendar connected.', 'success');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Unable to connect Google Calendar. Please try again.';
-      alert(message);
+      this.toast.show(message, 'error');
     } finally {
       this.isConnectingCalendar = false;
     }
@@ -117,7 +124,7 @@ export class AccountComponent {
 
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
-      alert('Please sign in before connecting Gmail.');
+      this.toast.show('Please sign in before connecting Gmail.', 'error');
       return;
     }
 
@@ -132,13 +139,13 @@ export class AccountComponent {
       }
 
       await this.waitForOAuthResult(popup, callbackOrigin, 'google-gmail-oauth');
-      alert('Gmail connected.');
+      this.toast.show('Gmail connected.', 'success');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Unable to connect Gmail. Please try again.';
-      alert(message);
+      this.toast.show(message, 'error');
     } finally {
       this.isConnectingGmail = false;
     }
@@ -147,7 +154,7 @@ export class AccountComponent {
   async onSaveVipSenders(user: GistUser, raw: string): Promise<void> {
     if (this.isSavingVipSenders) return;
     if (!user?.uid) {
-      alert('Sign in to save VIP senders.');
+      this.toast.show('Sign in to save VIP senders.', 'error');
       return;
     }
 
@@ -163,13 +170,13 @@ export class AccountComponent {
     this.isSavingVipSenders = true;
     try {
       await this.accountData.updateEmailVipSenders(user.uid, vipSenders);
-      alert('VIP senders saved.');
+      this.toast.show('VIP senders saved.', 'success');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Unable to save VIP senders right now.';
-      alert(message);
+      this.toast.show(message, 'error');
     } finally {
       this.isSavingVipSenders = false;
     }
@@ -178,26 +185,26 @@ export class AccountComponent {
   async onSaveFaxNumber(user: GistUser, raw: string): Promise<void> {
     if (this.isSavingFaxNumber) return;
     if (!user?.uid) {
-      alert('Sign in to save your fax number.');
+      this.toast.show('Sign in to save your fax number.', 'error');
       return;
     }
 
     const faxNumber = raw.trim().replace(/\s+/g, '');
     if (!faxNumber) {
-      alert('Please enter a fax number.');
+      this.toast.show('Please enter a fax number.', 'info');
       return;
     }
 
     this.isSavingFaxNumber = true;
     try {
       await this.accountData.updateFaxNumber(user.uid, faxNumber);
-      alert('Fax number saved.');
+      this.toast.show('Fax number saved.', 'success');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Unable to save fax number right now.';
-      alert(message);
+      this.toast.show(message, 'error');
     } finally {
       this.isSavingFaxNumber = false;
     }
@@ -215,34 +222,78 @@ export class AccountComponent {
     return '$45/mo';
   }
 
-  onEditPreferences(): void {
-    // Later: route to Preferences page
-    alert('Demo: Edit tone, length, quiet days.');
+  // --- Preferences edit ---
+
+  onEditPreferences(user: GistUser): void {
+    this.editLength = user.prefs?.length ?? 'standard';
+    this.editTone = user.prefs?.tone ?? 'calm';
+    const quietDays = user.prefs?.quietDays ?? [0, 6]; // default Sun, Sat
+    this.editQuietDays = DAY_LABELS.map((_, i) => quietDays.includes(i));
+    this.isEditingPreferences = true;
   }
 
-  onChangePlan(): void {
-    // Later: open Stripe Checkout or customer portal
-    alert('Demo: Change plan (Stripe).');
+  onCancelPreferences(): void {
+    this.isEditingPreferences = false;
   }
 
-  onViewInvoices(): void {
-    // Later: open Stripe customer portal invoices view
-    alert('Demo: View invoices (Stripe).');
+  async onSavePreferences(user: GistUser): Promise<void> {
+    if (this.isSavingPreferences || !user?.uid) return;
+
+    const quietDays = this.editQuietDays
+      .map((checked, i) => (checked ? i : -1))
+      .filter((i) => i >= 0);
+
+    this.isSavingPreferences = true;
+    try {
+      await this.accountData.updatePreferences(user.uid, {
+        length: this.editLength,
+        tone: this.editTone,
+        quietDays,
+      });
+      this.isEditingPreferences = false;
+      this.toast.show('Preferences saved.', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save preferences right now.';
+      this.toast.show(message, 'error');
+    } finally {
+      this.isSavingPreferences = false;
+    }
   }
 
-  onManageSecurity(): void {
-    // Later: route to security settings; 2FA depends on auth provider
-    alert('Demo: Manage security (email / 2FA / export).');
+  lengthLabel(user: GistUser): string {
+    const val = user.prefs?.length ?? 'standard';
+    return LENGTH_OPTIONS.find((o) => o.value === val)?.label ?? 'Standard (2 pages)';
+  }
+
+  toneLabel(user: GistUser): string {
+    const val = user.prefs?.tone ?? 'calm';
+    return TONE_OPTIONS.find((o) => o.value === val)?.label ?? 'Calm, direct';
+  }
+
+  quietDaysLabel(user: GistUser): string {
+    const days = user.prefs?.quietDays ?? [0, 6];
+    if (days.length === 0) return 'None';
+    return days.map((d) => DAY_LABELS[d]).join(', ');
+  }
+
+  // --- Security ---
+
+  toggleSecurity(): void {
+    this.isSecurityExpanded = !this.isSecurityExpanded;
   }
 
   async logout(): Promise<void> {
     await signOut(this.auth);
   }
 
-  // Optional: call this from template if you detect missing doc
   async ensureDoc(uid: string, email: string | null): Promise<void> {
     await this.accountData.ensureUserDoc({ uid, email });
   }
+
+  // --- OAuth helpers (unchanged) ---
 
   private getCalendarExchangeEndpoint(): string {
     const projectId = this.auth.app.options.projectId;
@@ -455,8 +506,4 @@ export class AccountComponent {
       }, 5 * 60 * 1000);
     });
   }
-
-  // Optional: if you want to navigate instead of alerts, use these patterns:
-  // this.router.navigate(['/delivery']);
-  // this.router.navigate(['/account/preferences']);
 }

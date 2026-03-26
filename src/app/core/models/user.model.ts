@@ -27,6 +27,9 @@ export interface GistUser {
     email?: {
       vipSenders?: string[];
     };
+    length?: 'brief' | 'standard' | 'detailed';
+    tone?: 'calm' | 'detailed' | 'concise';
+    quietDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
   };
 
   // Billing (stubbed for now)

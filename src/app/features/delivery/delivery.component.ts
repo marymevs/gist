@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { Auth, authState } from '@angular/fire/auth';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import {
   Firestore,
   collection,
@@ -15,6 +16,8 @@ import {
 
 import { Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
+
+import { ToastService } from '../../shared/services/toast.service';
 
 type DeliveryLog = {
   id: string;
@@ -40,8 +43,12 @@ type DeliveryLogRow = DeliveryLog & {
 export class DeliveryComponent {
   private auth = inject(Auth);
   private db = inject(Firestore);
+  private functions = inject(Functions);
   private router = inject(Router);
   private datePipe = inject(DatePipe);
+  private toast = inject(ToastService);
+
+  isResending = false;
 
   logs$: Observable<DeliveryLogRow[]> = authState(this.auth).pipe(
     switchMap((user) => {
@@ -63,8 +70,7 @@ export class DeliveryComponent {
     const createdAtDate = createdAt?.toDate ? createdAt.toDate() : undefined;
 
     const createdAtLabel = createdAtDate
-      ? // Example: "Jan 12, 7:30 AM"
-        this.datePipe.transform(createdAtDate, 'MMM d, h:mm a') ?? '—'
+      ? this.datePipe.transform(createdAtDate, 'MMM d, h:mm a') ?? '—'
       : '—';
 
     const statusClass = this.statusToClass(log.status);
@@ -80,41 +86,44 @@ export class DeliveryComponent {
     const s = (status ?? '').toLowerCase();
 
     if (
-      ['delivered', 'received', 'complete', 'completed', 'done', 'ok'].includes(
-        s
-      )
+      ['delivered', 'received', 'complete', 'completed', 'done', 'ok'].includes(s)
     ) {
       return 'ok';
     }
     if (['failed', 'error'].includes(s)) return 'bad';
 
-    // queued, pending, parsing, executing, etc.
     return 'warn';
   }
 
-  /** Button handlers (MVP stubs; wire to callable functions later) */
+  /** Button handlers — call resendMorningGist Cloud Function */
 
-  resend(log: DeliveryLogRow) {
-    // Later: call a Cloud Function to re-send by referencing the gist/dateKey
-    console.log('Resend requested', log);
-    alert('Demo: resend will be wired to a Cloud Function next.');
+  async resend(log: DeliveryLogRow): Promise<void> {
+    if (this.isResending) return;
+    this.isResending = true;
+
+    try {
+      const fn = httpsCallable(this.functions, 'resendMorningGist');
+      await fn({});
+      this.toast.show('Gist resend queued.', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to resend — try again later.';
+      this.toast.show(message, 'error');
+    } finally {
+      this.isResending = false;
+    }
   }
 
-  retry(log: DeliveryLogRow) {
-    console.log('Retry requested', log);
-    alert('Demo: retry will be wired to a Cloud Function next.');
+  async retry(log: DeliveryLogRow): Promise<void> {
+    // Retry uses the same resend logic — regenerate and re-deliver
+    await this.resend(log);
   }
 
   view(log: DeliveryLogRow) {
-    console.log('View requested', log);
-
-    // Example: send them to today or archive; adjust as you prefer.
-    // If you store references like gistId/dateKey later, you can deep-link.
     this.router.navigate(['/archive']);
   }
 
   editSchedule() {
-    // For now, route to Account or Delivery settings section later
     this.router.navigate(['/account']);
   }
 
