@@ -1,5 +1,5 @@
 .auth {
-  padding: 18px;
+  padding: var(--space-lg);
   max-width: 720px;
   margin: 0 auto;
 }
@@ -7,12 +7,12 @@
 .planGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .plan {
   text-align: left;
-  padding: 14px;
+  padding: var(--space-md);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
@@ -25,30 +25,32 @@
 .planTop {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-md);
   align-items: baseline;
 }
 
 .planName {
-  font-weight: 650;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
   letter-spacing: -0.01em;
 }
 
 .planSub {
-  margin-top: 4px;
+  margin-top: var(--space-xs);
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .planPrice {
-  font-family: var(--mono);
-  color: var(--text);
+  font-family: var(--font-mono);
+  color: var(--ink);
   font-size: 13px;
 }
 
 .planBullets {
-  margin: 10px 0 0;
-  padding-left: 18px;
+  margin: var(--space-sm) 0 0;
+  padding-left: var(--space-lg);
   color: var(--muted);
   font-size: 13px;
 }
@@ -56,8 +58,8 @@
 .orRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 12px 0;
+  gap: var(--space-sm);
+  margin: var(--space-md) 0;
 }
 .line {
   height: 1px;
@@ -71,24 +73,31 @@
 
 .form {
   display: grid;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .field span {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: var(--space-xs);
 }
 
 input {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-body);
   font-size: 14px;
   background: var(--surface);
-  color: var(--text);
+  color: var(--ink);
+  transition: border-color 0.15s ease-out;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .link {
@@ -103,13 +112,13 @@ input {
 }
 
 .error {
-  margin-top: 8px;
+  margin-top: var(--space-sm);
   color: var(--bad);
   font-size: 13px;
 }
 
 .fineprint {
-  margin-top: 10px;
+  margin-top: var(--space-sm);
   color: var(--muted);
   font-size: 12px;
 }

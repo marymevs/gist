@@ -1,7 +1,7 @@
 .archive {
   display: grid;
   grid-template-columns: 300px 1fr;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: start;
 }
 
@@ -13,18 +13,23 @@
 }
 
 .item {
-  padding: 12px 12px;
+  padding: var(--space-md);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
   font-size: 13px;
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-sm);
   color: var(--muted);
+  transition: background 0.15s ease-out;
+}
+
+.item:hover {
+  background: var(--surface-alt);
 }
 
 .item strong {
-  color: var(--text);
+  color: var(--ink);
   font-weight: 600;
 }
 

@@ -1,49 +1,51 @@
 .twoCol {
   display: grid;
   grid-template-columns: 1fr 340px;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: start;
 }
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   border: 1px solid var(--border);
   background: var(--surface-alt);
-  border-radius: 999px;
-  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
 }
 .mono {
-  font-family: var(--mono);
+  font-family: var(--font-mono);
 }
 .divider {
   height: 1px;
   background: var(--border);
-  margin: 12px 0;
+  margin: var(--space-md) 0;
 }
 
-/* “Form” look on paper */
+/* "Form" look on paper */
 .formBlock {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 12px;
+  padding: var(--space-md);
   background: var(--surface);
 }
 .formTitle {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
-  margin: 0 0 8px;
+  gap: var(--space-md);
+  margin: 0 0 var(--space-sm);
 }
 .formTitle b {
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-strong);
+  color: var(--ink-strong);
 }
 .formHint {
   font-size: 12px;
@@ -52,20 +54,20 @@
 .line {
   border-bottom: 1px solid var(--border);
   height: 18px;
-  margin: 8px 0;
+  margin: var(--space-sm) 0;
 }
 .checkRow {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: flex-start;
-  margin: 8px 0;
+  margin: var(--space-sm) 0;
   font-size: 14px;
 }
 .box {
   width: 16px;
   height: 16px;
   border: 1px solid var(--border-strong);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin-top: 2px;
   flex: 0 0 auto;
 }
@@ -81,8 +83,9 @@
 .taskTable {
   width: 100%;
   border-collapse: collapse;
+  font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--text-strong);
+  color: var(--ink-strong);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -90,14 +93,14 @@
 }
 .taskTable th,
 .taskTable td {
-  padding: 8px 8px;
+  padding: var(--space-sm);
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 .taskTable th {
-  font-size: 12px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--muted);
   background: var(--surface-alt);
 }
@@ -107,27 +110,28 @@
 .taskCellLines {
   height: 14px;
   border-bottom: 1px solid var(--border);
-  margin-top: 6px;
+  margin-top: var(--space-sm);
 }
 
 .stateBox {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-sm);
-  padding: 12px;
+  padding: var(--space-md);
   color: var(--muted);
   font-size: 13px;
 }
 .stateBox b {
-  color: var(--text);
+  color: var(--ink);
   font-weight: 600;
 }
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
   background: var(--surface);

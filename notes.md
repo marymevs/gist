@@ -202,7 +202,9 @@ class TodayComponent {
   /** Button Functions */
 
   onPrint() {
-    // call window.print()
+    // Calls window.print() directly — the Today page visually matches the newspaper
+    // mockup, so the browser's print dialog produces the right output.
+    // @media print hides the toolbar and sidebar.
   }
 
   onResend() {
