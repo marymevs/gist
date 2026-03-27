@@ -305,4 +305,8 @@ export class OnboardingComponent {
   get canSubmit(): boolean {
     return this.authComplete && this.faxNumber.trim().length > 0;
   }
+
+  get currentUserEmail(): string | null {
+    return this.auth.currentUser?.email ?? null;
+  }
 }
