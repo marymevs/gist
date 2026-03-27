@@ -5,7 +5,7 @@ import { Firestore, doc, setDoc, serverTimestamp } from '@angular/fire/firestore
 import { Functions, httpsCallableFromURL } from '@angular/fire/functions';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, User } from 'firebase/auth';
 
 @Component({
   standalone: true,
@@ -94,22 +94,15 @@ export class OnboardingComponent {
     this.calendarLoading = true;
     this.calendarError = '';
     try {
-      // Reuse existing OAuth popup flow from account component pattern
-      const provider = new GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-      const cred = await signInWithPopup(this.auth, provider);
-      // Store the access token for calendar use
-      const credential = GoogleAuthProvider.credentialFromResult(cred);
-      if (credential?.accessToken) {
-        const uid = this.auth.currentUser?.uid;
-        if (uid) {
-          await setDoc(
-            doc(this.firestore, 'users', uid, 'integrations', 'googleCalendar'),
-            { accessToken: credential.accessToken, status: 'connected', connectedAt: serverTimestamp() },
-            { merge: true },
-          );
-        }
-      }
+      const currentUser = this.auth.currentUser;
+      if (!currentUser) throw new Error('Not signed in.');
+      // Use server-side code exchange (same as AccountComponent) so refresh token
+      // is stored and the popup does not re-authenticate the Firebase user.
+      const { authorizationUrl, callbackOrigin } =
+        await this.startExchangeFlow(currentUser, 'exchangeGoogleCalendarCode');
+      const popup = this.openOAuthPopup(authorizationUrl, 'google-calendar-oauth');
+      if (!popup) throw new Error('Popup was blocked. Please allow popups and try again.');
+      await this.waitForOAuthResult(popup, callbackOrigin, 'google-calendar-oauth');
       this.calendarConnected = true;
     } catch (e: any) {
       this.calendarError = e?.message ?? 'Google said no. Try again?';
@@ -124,26 +117,103 @@ export class OnboardingComponent {
     this.gmailLoading = true;
     this.gmailError = '';
     try {
-      const provider = new GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
-      const cred = await signInWithPopup(this.auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(cred);
-      if (credential?.accessToken) {
-        const uid = this.auth.currentUser?.uid;
-        if (uid) {
-          await setDoc(
-            doc(this.firestore, 'users', uid, 'integrations', 'googleGmail'),
-            { accessToken: credential.accessToken, status: 'connected', connectedAt: serverTimestamp() },
-            { merge: true },
-          );
-        }
-      }
+      const currentUser = this.auth.currentUser;
+      if (!currentUser) throw new Error('Not signed in.');
+      const { authorizationUrl, callbackOrigin } =
+        await this.startExchangeFlow(currentUser, 'exchangeGoogleGmailCode');
+      const popup = this.openOAuthPopup(authorizationUrl, 'google-gmail-oauth');
+      if (!popup) throw new Error('Popup was blocked. Please allow popups and try again.');
+      await this.waitForOAuthResult(popup, callbackOrigin, 'google-gmail-oauth');
       this.gmailConnected = true;
     } catch (e: any) {
       this.gmailError = e?.message ?? 'Google said no. Try again?';
     } finally {
       this.gmailLoading = false;
     }
+  }
+
+  // ─── OAuth helpers (mirrors AccountComponent — uses server-side code exchange) ──
+
+  private getExchangeEndpoint(fnName: string): string {
+    const projectId = this.auth.app.options.projectId;
+    if (!projectId) throw new Error('Missing Firebase project ID.');
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://127.0.0.1:5001/${projectId}/us-central1/${fnName}`;
+    }
+    return `https://us-central1-${projectId}.cloudfunctions.net/${fnName}`;
+  }
+
+  private async startExchangeFlow(
+    currentUser: User,
+    fnName: string,
+  ): Promise<{ authorizationUrl: string; callbackOrigin: string }> {
+    const endpoint = this.getExchangeEndpoint(fnName);
+    const idToken = await currentUser.getIdToken();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ action: 'start', origin: window.location.origin }),
+    });
+    const payload = (await response.json()) as {
+      authorizationUrl?: unknown;
+      callbackOrigin?: unknown;
+      error?: unknown;
+    };
+    if (!response.ok) {
+      throw new Error(typeof payload.error === 'string' ? payload.error : 'Failed to start OAuth');
+    }
+    if (typeof payload.authorizationUrl !== 'string' || typeof payload.callbackOrigin !== 'string') {
+      throw new Error('OAuth start response was missing required fields.');
+    }
+    return { authorizationUrl: payload.authorizationUrl, callbackOrigin: payload.callbackOrigin };
+  }
+
+  private openOAuthPopup(url: string, name: string): Window | null {
+    const width = 520;
+    const height = 680;
+    const left = Math.max(0, (window.screen.width - width) / 2);
+    const top = Math.max(0, (window.screen.height - height) / 2);
+    return window.open(url, name, `popup=yes,width=${width},height=${height},left=${left},top=${top}`);
+  }
+
+  private waitForOAuthResult(popup: Window, callbackOrigin: string, expectedSource: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let popupClosedAtMs: number | null = null;
+
+      const cleanup = () => {
+        window.removeEventListener('message', onMessage);
+        window.clearInterval(closeCheckInterval);
+        window.clearTimeout(timeoutHandle);
+      };
+      const finish = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        error ? reject(error) : resolve();
+      };
+      const onMessage = (event: MessageEvent<unknown>) => {
+        if (event.origin !== callbackOrigin) return;
+        if (!event.data || typeof event.data !== 'object') return;
+        const payload = event.data as { source?: unknown; success?: unknown; message?: unknown };
+        if (payload.source !== expectedSource) return;
+        if (payload.success === true) { finish(); return; }
+        finish(new Error(typeof payload.message === 'string' ? payload.message : 'Connection failed.'));
+      };
+      window.addEventListener('message', onMessage);
+      const closeCheckInterval = window.setInterval(() => {
+        if (!popup.closed) { popupClosedAtMs = null; return; }
+        if (popupClosedAtMs === null) { popupClosedAtMs = Date.now(); return; }
+        if (Date.now() - popupClosedAtMs >= 1200) {
+          finish(new Error('Connection was cancelled before it completed.'));
+        }
+      }, 250);
+      const timeoutHandle = window.setTimeout(() => {
+        if (!popup.closed) popup.close();
+        finish(new Error('Timed out waiting for Google authorization.'));
+      }, 5 * 60 * 1000);
+    });
   }
 
   // ─── Test Fax ───────────────────────────────────────────────────────────────

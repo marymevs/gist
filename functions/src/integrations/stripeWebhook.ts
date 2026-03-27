@@ -156,9 +156,17 @@ export const stripeWebhook = onRequest(
             break;
           }
 
-          const status = subscription.status === 'active' ? 'active' :
-                         subscription.status === 'past_due' ? 'past_due' :
-                         subscription.status === 'canceled' ? 'canceled' : 'active';
+          const statusMap: Record<string, string> = {
+            active: 'active',
+            past_due: 'past_due',
+            canceled: 'canceled',
+            unpaid: 'unpaid',
+            incomplete: 'incomplete',
+            incomplete_expired: 'incomplete_expired',
+            trialing: 'trialing',
+            paused: 'paused',
+          };
+          const status = statusMap[subscription.status] ?? 'unknown';
 
           await updateUserSubscription(userId, {
             stripeSubscriptionStatus: status,

@@ -252,11 +252,13 @@ export async function generateMorningGistForUser(
       .collection('morningGists')
       .doc(dateKey)
       .get();
-    if (existingGist.exists && existingGist.data()?.delivery?.status) {
-      logger.info('Skipping duplicate fax delivery — gist already has delivery status.', {
+    const existingStatus = existingGist.data()?.delivery?.status as string | undefined;
+    const nonRetryableStatuses = ['queued', 'delivered', 'received', 'paused'];
+    if (existingGist.exists && existingStatus && nonRetryableStatuses.includes(existingStatus)) {
+      logger.info('Skipping duplicate fax delivery — gist already has non-retryable status.', {
         userId: user.uid,
         dateKey,
-        existingStatus: existingGist.data()?.delivery?.status,
+        existingStatus,
       });
       return;
     }
