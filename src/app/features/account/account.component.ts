@@ -263,6 +263,31 @@ export class AccountComponent {
     }
   }
 
+  async onChangePlan(): Promise<void> {
+    try {
+      const token = await this.auth.currentUser?.getIdToken();
+      if (!token) return;
+      const response = await fetch('/api/stripeCreateCheckout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ plan: 'print' }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? 'Could not start checkout.');
+      }
+    } catch {
+      alert('Could not connect to billing. Try again.');
+    }
+  }
+
+  onViewInvoices(): void {
+    // Opens Stripe customer portal — URL configured in Stripe dashboard
+    window.open('https://billing.stripe.com/p/login/test', '_blank');
+  }
+
   lengthLabel(user: GistUser): string {
     const val = user.prefs?.length ?? 'standard';
     return LENGTH_OPTIONS.find((o) => o.value === val)?.label ?? 'Standard (2 pages)';
