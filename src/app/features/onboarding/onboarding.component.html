@@ -34,7 +34,7 @@
 
     <section class="onboarding-section done-section" *ngIf="authComplete">
       <h2 class="section-label">ACCOUNT</h2>
-      <p class="done-text">Signed in as {{ email || auth.currentUser?.email }} ✓</p>
+      <p class="done-text">Signed in as {{ email || currentUserEmail }} ✓</p>
     </section>
 
     <!-- Section 2: Connect Calendar -->
