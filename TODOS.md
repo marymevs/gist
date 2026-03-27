@@ -2,6 +2,13 @@
 
 ## Active
 
+### Onboarding → Stripe checkout redirect
+- **What:** The onboarding flow captures plan selection but doesn't yet redirect users to Stripe checkout at completion. External users who pick a paid plan reach the dashboard without paying.
+- **Why:** Required before inviting any external user on a paid plan. Currently a stub (`// TODO: Wire Stripe checkout redirect here for external users` in `onboarding.component.ts`).
+- **Implementation:** After plan selection step completes, call `stripeCreateCheckout` Cloud Function and redirect to the returned Stripe Checkout URL. Handle success/cancel redirect back to `/onboarding` or `/today`.
+- **Priority:** P1 — blocks paid external users.
+- **Depends on:** Stripe integration (already in place).
+
 ### Per-user delivery time (timezone-aware scheduling)
 - **What:** Scheduler currently runs at hardcoded 7am EST for all users. Users in other timezones get the wrong time.
 - **Why:** Required once any user outside EST onboards. A bar owner in LA would currently receive at 4am.
