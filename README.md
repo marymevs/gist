@@ -1,6 +1,13 @@
 # Gist
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.0.4.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.
+
+## Key Docs
+
+- [DESIGN.md](./DESIGN.md) — design system: colors, typography, spacing. Read before any UI work.
+- [CHANGELOG.md](./CHANGELOG.md) — version history
+- [TODOS.md](./TODOS.md) — active and completed work items
+- [gist-v1-launch-spec.md](./gist-v1-launch-spec.md) — v1 launch goals and success criteria
 
 ## Development server
 

@@ -9,6 +9,7 @@ import { SignupComponent } from './features/auth/signup.component';
 import { LoginComponent } from './features/auth/login.component';
 import { PrivacyPolicyComponent } from './features/privacy-policy/privacy-policy.component';
 import { TermsOfServiceComponent } from './features/terms-of-service/terms-of-service.component';
+import { OnboardingComponent } from './features/onboarding/onboarding.component';
 
 export const routes: Routes = [
   {
@@ -57,6 +58,12 @@ export const routes: Routes = [
     path: 'account',
     component: AccountComponent,
     title: 'Account',
+  },
+
+  {
+    path: 'onboarding',
+    component: OnboardingComponent,
+    title: 'Get Started — Gist',
   },
 
   {

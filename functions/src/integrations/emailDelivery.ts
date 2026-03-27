@@ -5,11 +5,10 @@ import { Resend } from 'resend';
 
 export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 
-// TODO: update FROM_ADDRESS once SPF/DKIM are configured for your sending domain.
-// During development Resend allows sending from onboarding@resend.dev to your
-// own verified address only. Set to your real domain address before inviting
-// external users.
-const FROM_ADDRESS = 'Gist <onboarding@resend.dev>';
+// SPF/DKIM must be configured for mygist.app in the Resend dashboard
+// and DNS records added before this address will deliver to external users.
+// See TODOS.md "Domain setup for email delivery" for the full checklist.
+const FROM_ADDRESS = process.env.GIST_FROM_ADDRESS ?? 'Gist <morning@mygist.app>';
 
 export type SendResult =
   | { success: true }

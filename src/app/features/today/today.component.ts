@@ -101,6 +101,10 @@ export class TodayComponent {
   private router = inject(Router);
   private datePipe = inject(DatePipe);
 
+  // UI state
+  hasGistToday = false;
+  pdfLoading = false;
+
   // Toolbar / sidebar text — derived from gist$ + deliveryLogs$ in constructor
   metaText = '—';
   statusText = '—';
@@ -148,11 +152,43 @@ export class TodayComponent {
         this.metaText = metaText;
         this.statusText = statusText;
       });
+
+    // Track whether a gist exists for today (controls PDF button state)
+    this.gist$.subscribe((gist) => {
+      this.hasGistToday = !!gist;
+    });
   }
 
   // === UI actions ===
   onPrint(): void {
     window.print();
+  }
+
+  async onDownloadPdf(): Promise<void> {
+    if (!this.hasGistToday || this.pdfLoading) return;
+    this.pdfLoading = true;
+    try {
+      const token = await this.auth.currentUser?.getIdToken();
+      if (!token) return;
+      const response = await fetch('/api/generateGistPdf', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        alert('PDF couldn\'t be generated.');
+        return;
+      }
+      const html = await response.text();
+      // Open in new tab for print-to-PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+      }
+    } catch {
+      alert('PDF couldn\'t be generated.');
+    } finally {
+      this.pdfLoading = false;
+    }
   }
 
   onResend(): void {

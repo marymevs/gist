@@ -6,9 +6,15 @@
       <div class="toolbar-meta">{{ metaText }}</div>
       <div class="actions">
         <button class="secondary" type="button" (click)="onPrint()">Print</button>
+        <button class="secondary" type="button" (click)="onDownloadPdf()"
+          [disabled]="!hasGistToday"
+          [title]="hasGistToday ? 'Download as PDF' : 'Your Gist for today hasn\'t been generated yet.'">
+          Download PDF
+        </button>
         <button class="secondary" type="button" (click)="onResend()">Resend</button>
         <button class="secondary" type="button" (click)="onEditTomorrow()">Edit tomorrow</button>
       </div>
+      <div class="status">{{ statusText }}</div>
     </div>
 
     <div class="grid">

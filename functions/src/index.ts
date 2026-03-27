@@ -3,3 +3,8 @@ export { resendMorningGist } from './resendMorningGist';
 export { generateGistPrint } from './generateGistPrint';
 export { exchangeGoogleCalendarCode } from './googleCalendarOAuth';
 export { exchangeGoogleGmailCode } from './googleGmailOAuth';
+export { faxWebhook } from './integrations/faxWebhook';
+export { stripeWebhook } from './integrations/stripeWebhook';
+export { stripeCreateCheckout } from './integrations/stripeCheckout';
+export { sendTestFax } from './integrations/testFax';
+export { generateGistPdf } from './integrations/generatePdf';
