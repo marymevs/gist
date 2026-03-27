@@ -1,0 +1,164 @@
+.onboarding-page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  padding: 40px 18px;
+}
+
+.onboarding-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 32px 28px;
+}
+
+.onboarding-title {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.onboarding-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 28px;
+}
+
+.onboarding-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.section-label {
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.section-description {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .textInput {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.or-divider {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.done-section .done-text {
+  font-size: 14px;
+  color: var(--green, #2f6b2f);
+}
+
+.time-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-select {
+  width: auto;
+  min-width: 120px;
+}
+
+.timezone-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.submit-section {
+  text-align: center;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--green, #2f6b2f);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pricing-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.error-text {
+  font-size: 13px;
+  color: var(--danger, #9a3a3a);
+  margin-top: 6px;
+}
+
+// Responsive
+@media (max-width: 600px) {
+  .onboarding-page {
+    padding: 16px;
+  }
+
+  .onboarding-card {
+    padding: 24px 16px;
+  }
+
+  .button-row {
+    flex-direction: column;
+    gap: 8px;
+
+    .or-divider {
+      display: none;
+    }
+
+    button {
+      width: 100%;
+    }
+  }
+}
