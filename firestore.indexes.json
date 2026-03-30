@@ -4,7 +4,7 @@
       "collectionGroup": "morningGists",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "delivery.phaxioFaxId", "order": "ASCENDING" }
+        { "fieldPath": "delivery.ifaxJobId", "order": "ASCENDING" }
       ]
     }
   ],

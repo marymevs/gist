@@ -44,8 +44,8 @@ export interface MorningGist {
     pages: number;
     deliveredAt?: any;
     status: 'queued' | 'delivered' | 'failed';
-    /** Phaxio fax ID — present on fax deliveries, used to correlate webhook callbacks. */
-    phaxioFaxId?: string;
+    /** iFax job ID — present on fax deliveries, used to correlate webhook callbacks. */
+    ifaxJobId?: string;
   };
 
   createdAt: any;

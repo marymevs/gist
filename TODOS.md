@@ -25,12 +25,12 @@
   5. Send 10 test emails to Gmail, Apple Mail, and Outlook — confirm inbox placement before inviting external users
 - **Depends on:** Nothing blocking — can be done any time before external user invites.
 
-### Phaxio webhook signature validation pattern
-- **What:** Confirm Phaxio v2.1's webhook callback authentication pattern before implementing `faxWebhook.ts`.
-- **Why:** The CEO plan assumes HMAC-SHA256. If Phaxio uses a different pattern (e.g., token in URL query param, or X-Phaxio-Signature header with a different algorithm), the webhook will reject all callbacks and fax status will never update.
-- **Implementation:** Read https://www.phaxio.com/docs/api/v2.1/faxes/receive_notify and confirm the signature validation method. Update `faxWebhook.ts` implementation accordingly.
-- **Priority:** P0 — do this before writing `faxWebhook.ts`.
-- **Depends on:** Nothing — just docs research.
+### iFax webhook implementation
+- **What:** Implement `faxWebhook.ts` to handle iFax postflight and receive webhook callbacks.
+- **Why:** iFax sends postflight webhooks on fax completion (success or failure) and receive callbacks for inbound faxes. Without handling these, `morningGists.delivery.status` stays `'queued'` indefinitely.
+- **Implementation:** iFax webhooks retry up to 5 times with exponential backoff (5 min → 60 min). Implement endpoint to receive callbacks, validate the request, extract job status, and update `delivery.status` to `'delivered'` or `'failed'`. Use `delivery.ifaxJobId` for correlation.
+- **Priority:** P0 — do this before going live with fax delivery.
+- **Depends on:** Nothing — iFax API docs available at https://www.ifaxapp.com/docs/api/v1.
 
 ### Stripe billing gate for fax delivery
 - **What:** The `plan` field on the Firestore user doc is server-only (locked by Firestore rules), but plan assignment is still manual via Admin SDK. Before external paying users, Stripe subscription status should be verified before enabling fax delivery.
@@ -39,10 +39,10 @@
 - **Priority:** P1 — required before bar owner invite.
 - **Depends on:** Stripe integration (not yet built). See payments + gating in notes.md.
 
-### Phaxio webhook no-callback timeout
-- **What:** If Phaxio never sends a delivery callback (outage, misconfigured webhook URL), `morningGists.delivery.status` stays `'queued'` indefinitely. Users see perpetual "queued" status in the UI.
+### iFax webhook no-callback timeout
+- **What:** If iFax never sends a delivery callback (outage, misconfigured webhook URL), `morningGists.delivery.status` stays `'queued'` indefinitely. Users see perpetual "queued" status in the UI.
 - **Why:** Closed feedback loop matters for trust. Users should know if their fax didn't arrive.
-- **Implementation:** Add a daily Cloud Scheduler job that scans for `morningGists` docs with `delivery.status === 'queued'` and `createdAt` older than 1 hour. Mark those as `'unconfirmed'`, log a warning. User sees "Unconfirmed — check your fax machine" in the UI.
+- **Implementation:** Add a daily Cloud Scheduler job that scans for `morningGists` docs with `delivery.status === 'queued'` and `createdAt` older than 1 hour. Mark those as `'unconfirmed'`, log a warning. User sees "Unconfirmed — check your fax machine" in the UI. Can also use iFax's `POST /customer/fax-status` endpoint to poll job status as a fallback.
 - **Priority:** P2 — needed before external users, not MVP blocker.
 - **Depends on:** Fax delivery working (webhook infrastructure in place).
 

@@ -5,7 +5,7 @@ import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
 import { OPENAI_API_KEY } from './integrations/openaiGist';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
-import { PHAXIO_API_KEY, PHAXIO_API_SECRET } from './integrations/faxDelivery';
+import { IFAX_API_KEY } from './integrations/faxDelivery';
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
@@ -29,8 +29,7 @@ export const resendMorningGist = onCall(
       GOOGLE_CLIENT_SECRET,
       OPENAI_API_KEY,
       RESEND_API_KEY,
-      PHAXIO_API_KEY,
-      PHAXIO_API_SECRET,
+      IFAX_API_KEY,
     ],
   },
   async (request) => {

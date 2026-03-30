@@ -20,7 +20,7 @@ export type DeliveryStatus = 'queued' | 'delivered' | 'failed';
 /**
  * Update the delivery.status (and optionally delivery.deliveredAt) on a
  * morningGists document. Called by the scheduler after email/web delivery and
- * by the fax webhook after Phaxio confirms the fax.
+ * by the fax webhook after iFax confirms the fax.
  */
 export async function updateGistDeliveryStatus(
   userId: string,

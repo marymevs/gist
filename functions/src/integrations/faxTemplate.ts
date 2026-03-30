@@ -1,7 +1,7 @@
 /**
  * Print-first HTML template for the morning Gist fax delivery.
  *
- * Designed for Phaxio's HTML renderer (US Letter, 8.5×11 in).
+ * Designed for fax HTML rendering (US Letter, 8.5×11 in).
  * NOT an email template — no inbox-width tables, no email-client shims.
  *
  * Layout:
@@ -274,7 +274,7 @@ function contentPage(input: FaxTemplateInput): string {
 
 /**
  * Build the complete fax HTML document: cover page + content page(s).
- * Phaxio renders this HTML to a US Letter fax.
+ * iFax renders this HTML to a US Letter fax.
  */
 export function buildFaxHtml(input: FaxTemplateInput): string {
   const safeInput: FaxTemplateInput = {

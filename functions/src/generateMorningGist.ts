@@ -16,8 +16,7 @@ import {
 } from './integrations/emailDelivery';
 import { buildEmailHtml, buildEmailSubject } from './integrations/emailTemplate';
 import {
-  PHAXIO_API_KEY,
-  PHAXIO_API_SECRET,
+  IFAX_API_KEY,
   sendMorningGistFax,
 } from './integrations/faxDelivery';
 import { buildFaxHtml } from './integrations/faxTemplate';
@@ -105,8 +104,8 @@ type MorningGist = {
     pages: number;
     status: 'queued' | 'delivered' | 'failed';
     deliveredAt?: Timestamp;
-    /** Phaxio fax ID — set for fax deliveries, used by faxWebhook to correlate callbacks. */
-    phaxioFaxId?: string;
+    /** iFax job ID — set for fax deliveries, used by faxWebhook to correlate callbacks. */
+    ifaxJobId?: string;
   };
 
   createdAt: Timestamp;
@@ -429,13 +428,13 @@ export async function generateMorningGistForUser(
       const result = await sendMorningGistFax({ faxNumber, html, userId: user.uid });
 
       if (result.success) {
-        // Store the Phaxio fax ID so the webhook can correlate the callback
-        await gistRef.update({ 'delivery.phaxioFaxId': result.faxId });
+        // Store the iFax job ID so the webhook can correlate the callback
+        await gistRef.update({ 'delivery.ifaxJobId': result.jobId });
         // Status stays 'queued' — webhook will update to 'delivered'/'failed'
         finalStatus = 'queued';
         logger.info('Morning Gist fax queued.', {
           userId: user.uid,
-          faxId: result.faxId,
+          jobId: result.jobId,
           dateKey,
         });
       } else {
@@ -489,7 +488,7 @@ export const generateMorningGist = onSchedule(
     schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    // Extended timeout: Phaxio HTML-to-fax dispatch adds ~500ms per user.
+    // Extended timeout: iFax HTML-to-fax dispatch adds ~500ms per user.
     // 180s covers up to ~30 fax users comfortably at MVP scale.
     timeoutSeconds: 180,
     secrets: [
@@ -499,8 +498,7 @@ export const generateMorningGist = onSchedule(
       GOOGLE_CLIENT_SECRET,
       OPENAI_API_KEY,
       RESEND_API_KEY,
-      PHAXIO_API_KEY,
-      PHAXIO_API_SECRET,
+      IFAX_API_KEY,
     ],
   },
   async () => {
