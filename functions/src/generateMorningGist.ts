@@ -154,9 +154,11 @@ export async function generateMorningGistForUser(
           .filter((item) => item.length > 0)
       : [];
 
+    const reusableQualityScore = existingData?.qualityScore ?? undefined;
+
     const reusableSections =
       reusableOneThing && reusableBullets.length === 3
-        ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
+        ? { oneThing: reusableOneThing, gistBullets: reusableBullets, qualityScore: reusableQualityScore }
         : null;
 
     const shouldReuseSections = calendarUnchanged && reusableSections !== null;
@@ -274,11 +276,35 @@ export async function generateMorningGistForUser(
   });
 }
 
-/** === Scheduled job === */
+/**
+ * Compute the next delivery Timestamp for a user based on their schedule prefs.
+ * Returns a Timestamp for tomorrow at the specified hour:minute in the user's timezone.
+ */
+function computeNextDelivery(
+  now: Date,
+  timezone: string,
+  schedule?: { hour?: number; minute?: number },
+): Timestamp {
+  const hour = schedule?.hour ?? 7;
+  const minute = schedule?.minute ?? 30;
+
+  // Get "today" in the user's timezone
+  const todayStr = toDateKeyISO(now, timezone);
+  // Build a Date for today at delivery time in the user's timezone
+  const deliveryToday = new Date(`${todayStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+
+  // Use tomorrow if today's delivery time has passed
+  const target = deliveryToday.getTime() > now.getTime()
+    ? deliveryToday
+    : new Date(deliveryToday.getTime() + 24 * 60 * 60 * 1000);
+
+  return Timestamp.fromDate(target);
+}
+
+/** === Scheduled job (15-min cron, per-user delivery times) === */
 export const generateMorningGist = onSchedule(
   {
-    schedule: '30 7 * * *',
-    timeZone: 'America/New_York',
+    schedule: 'every 15 minutes',
     region: 'us-central1',
     timeoutSeconds: 180,
     secrets: [
@@ -293,37 +319,107 @@ export const generateMorningGist = onSchedule(
     ],
   },
   async () => {
-    logger.info('Morning Gist scheduler started');
-
-    const usersSnap = await db.collection('users').get();
     const now = new Date();
+    logger.info('Morning Gist scheduler tick', { now: now.toISOString() });
+
+    // Query users whose nextDeliveryAt is in the past (due for delivery)
+    const dueSnap = await db
+      .collection('users')
+      .where('nextDeliveryAt', '<=', Timestamp.fromDate(now))
+      .get();
+
+    if (dueSnap.empty) {
+      // Fallback: also pick up legacy users with no nextDeliveryAt set
+      // (users who existed before the scheduler refactor)
+      const legacySnap = await db
+        .collection('users')
+        .where('onboardingComplete', '==', true)
+        .get();
+
+      const legacyTasks: Promise<void>[] = [];
+      legacySnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Skip users that already have nextDeliveryAt (they're not due)
+        if (data.nextDeliveryAt) return;
+
+        const uid = data.uid ?? docSnap.id;
+        if (!uid) return;
+
+        const timezone = safeTimezone(data.prefs?.timezone);
+        const todayKey = toDateKeyISO(now, timezone);
+
+        // Idempotency: skip if already generated today
+        if (data.lastGeneratedDate === todayKey) return;
+
+        const user = buildUserDoc(uid, data);
+        legacyTasks.push(generateAndUpdateSchedule(user, now, todayKey, timezone));
+      });
+
+      if (legacyTasks.length > 0) {
+        await Promise.allSettled(legacyTasks);
+        logger.info('Processed legacy users without nextDeliveryAt.', { count: legacyTasks.length });
+      } else {
+        logger.info('No users due for delivery.');
+      }
+      return;
+    }
+
     const tasks: Promise<void>[] = [];
 
-    usersSnap.forEach((docSnap) => {
-      const data = docSnap.data() as Partial<
-        UserDoc & {
-          calendarIntegration?: IntegrationStatus;
-          emailIntegration?: IntegrationStatus;
-        }
-      >;
+    dueSnap.forEach((docSnap) => {
+      const data = docSnap.data();
       const uid = data.uid ?? docSnap.id;
       if (!uid) return;
 
-      const user: UserDoc = {
-        uid,
-        email: data.email ?? null,
-        plan: (data.plan as GistPlan) ?? 'web',
-        prefs: data.prefs ?? {},
-        delivery: data.delivery ?? {},
-        calendarIntegration: data.calendarIntegration,
-        emailIntegration: data.emailIntegration,
-      };
+      const timezone = safeTimezone(data.prefs?.timezone);
+      const todayKey = toDateKeyISO(now, timezone);
 
-      tasks.push(generateMorningGistForUser(user, now));
+      // Idempotency: skip if already generated today
+      if (data.lastGeneratedDate === todayKey) {
+        // Still update nextDeliveryAt so we don't re-query this user
+        db.collection('users').doc(uid).update({
+          nextDeliveryAt: computeNextDelivery(now, timezone, data.delivery?.schedule),
+        }).catch(() => {});
+        return;
+      }
+
+      const user = buildUserDoc(uid, data);
+      tasks.push(generateAndUpdateSchedule(user, now, todayKey, timezone));
     });
 
     await Promise.allSettled(tasks);
 
-    logger.info('Morning Gist scheduler finished', { users: usersSnap.size });
+    logger.info('Morning Gist scheduler tick finished', {
+      due: dueSnap.size,
+      processed: tasks.length,
+    });
   },
 );
+
+function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
+  return {
+    uid,
+    email: data.email ?? null,
+    plan: (data.plan as GistPlan) ?? 'web',
+    prefs: data.prefs ?? {},
+    delivery: data.delivery ?? {},
+    calendarIntegration: data.calendarIntegration,
+    emailIntegration: data.emailIntegration,
+  };
+}
+
+async function generateAndUpdateSchedule(
+  user: UserDoc,
+  now: Date,
+  todayKey: string,
+  timezone: string,
+): Promise<void> {
+  await generateMorningGistForUser(user, now);
+
+  // Mark today as generated + set next delivery time
+  const schedule = user.delivery?.schedule;
+  await db.collection('users').doc(user.uid).update({
+    lastGeneratedDate: todayKey,
+    nextDeliveryAt: computeNextDelivery(now, timezone, schedule),
+  });
+}
