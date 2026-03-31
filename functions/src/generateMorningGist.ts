@@ -50,6 +50,14 @@ import { gmailConnector } from './connectors/gmail';
 import { newsConnector } from './connectors/news';
 import { moonConnector } from './connectors/moon';
 
+import { readMemoryContext, formatMemoryForPrompt } from './personalization/memoryReader';
+import {
+  observeCalendarPatterns,
+  observeTopicAffinities,
+  observeQualityScore,
+  pruneExpiredMemory,
+} from './personalization/memoryEngine';
+
 const db = getFirestore();
 
 /** === Core generator === */
@@ -163,6 +171,20 @@ export async function generateMorningGistForUser(
 
     const shouldReuseSections = calendarUnchanged && reusableSections !== null;
 
+    // Read memory context for personalization
+    let memoryPrompt = '';
+    if (!shouldReuseSections) {
+      try {
+        const memory = await readMemoryContext(user.uid);
+        memoryPrompt = formatMemoryForPrompt(memory);
+      } catch (err) {
+        logger.warn('Failed to read memory context, proceeding without.', {
+          userId: user.uid,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
+
     const sections = shouldReuseSections
       ? reusableSections
       : await generateDailyFocusSections({
@@ -173,6 +195,7 @@ export async function generateMorningGistForUser(
           firstEvent,
           dayItems,
           worldItems,
+          memoryContext: memoryPrompt || undefined,
         });
 
     if (shouldReuseSections) {
@@ -181,6 +204,16 @@ export async function generateMorningGistForUser(
         dateKey,
       });
     }
+
+    // Write behavioral signals to memory (fire-and-forget)
+    Promise.allSettled([
+      observeCalendarPatterns(user.uid, dayItems),
+      observeTopicAffinities(user.uid, worldItems, user.prefs?.newsDomains),
+      sections.qualityScore
+        ? observeQualityScore(user.uid, sections.qualityScore)
+        : Promise.resolve(),
+      pruneExpiredMemory(user.uid),
+    ]).catch(() => {});
 
     const gist: MorningGist = {
       id: crypto.randomUUID(),
@@ -214,6 +247,7 @@ export async function generateMorningGistForUser(
         userId: user.uid,
         userEmail: user.email,
         dateLabel,
+        gistDate: dateKey,
         weatherSummary: weather,
         dayItems: cleanDayItems,
         worldItems,
