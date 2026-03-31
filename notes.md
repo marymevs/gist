@@ -2,11 +2,10 @@
 
 - evening agent execution
   - calendar booking, email sending, morning gist configuration
-- onboarding flow
+- onboarding flow ✅ (multi-step onboarding at /onboarding shipped in v0.1.0.0)
   - taking in preferences about news
 - marketing site (sort of built, but needs to be more salesy)
-- payment checkout page
-  - use stripe?
+- payment checkout page ✅ (Stripe checkout + webhooks shipped in v0.1.0.0)
 - fax delivery ✅ (scheduler + template + delivery shipping in PR #18)
   - Phaxio HTML-to-fax: upload HTML as multipart/form-data — Phaxio renders it, no PDF conversion needed
   - print plan → fax routing, email plan → Resend, web → Firestore only

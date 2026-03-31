@@ -18,6 +18,7 @@ import {
   writeDeliveryLog,
   updateGistDeliveryStatus,
 } from './firestoreUtils';
+import { checkSubscriptionActive } from './integrations/stripeUtils';
 
 initializeApp();
 
@@ -83,6 +84,67 @@ export async function generateMorningGistForUser(
       logger.warn('Skipping fax delivery — print plan user has no fax number.', {
         userId: user.uid,
       });
+      return;
+    }
+
+    // Idempotency guard: skip if fax already sent for today (prevents duplicates
+    // on Cloud Scheduler re-runs)
+    const existingGist = await db
+      .collection('users')
+      .doc(user.uid)
+      .collection('morningGists')
+      .doc(dateKey)
+      .get();
+    const existingStatus = existingGist.data()?.delivery?.status as string | undefined;
+    const nonRetryableStatuses = ['queued', 'delivered', 'received', 'paused'];
+    if (existingGist.exists && existingStatus && nonRetryableStatuses.includes(existingStatus)) {
+      logger.info('Skipping duplicate fax delivery — gist already has non-retryable status.', {
+        userId: user.uid,
+        dateKey,
+        existingStatus,
+      });
+      return;
+    }
+
+    // Stripe billing gate: check cached subscription status (fail-open)
+    const isActive = await checkSubscriptionActive(user.uid);
+    if (!isActive) {
+      logger.info('Skipping fax delivery — subscription not active.', {
+        userId: user.uid,
+      });
+      // Write paused status to gist doc so the idempotency guard catches same-day re-runs.
+      await db
+        .collection('users')
+        .doc(user.uid)
+        .collection('morningGists')
+        .doc(dateKey)
+        .set({ delivery: { status: 'paused' }, userId: user.uid, date: dateKey }, { merge: true })
+        .catch((err) => logger.warn('Failed to write paused status to gist doc.', { err }));
+
+      // Notify the user via fax + email (screenless-safe)
+      const toEmail = await resolveUserEmail(user.uid, user.email);
+      if (toEmail) {
+        await sendMorningGistEmail({
+          toEmail,
+          subject: 'Your Gist fax is paused',
+          html: '<p>Your morning Gist fax was paused because your payment didn\'t go through. Update your payment at <a href="https://mygist.app/account">mygist.app/account</a> to resume delivery.</p>',
+        }).catch((err) => logger.warn('Failed to send payment-paused email.', { userId: user.uid, err }));
+      }
+      // Also send a one-page notification fax (primary channel for screenless users)
+      const notifyHtml = buildFaxHtml({
+        subscriberName: 'Subscriber',
+        date: toDateLabel(now, timezone),
+        weatherSummary: '',
+        dayItems: [],
+        worldItems: [],
+        emailCards: [],
+        gistBullets: ['Your Gist fax is paused because your payment didn\'t go through.', 'Update your payment at mygist.app/account to resume delivery.', 'If you need help, reply to this fax or email morning@mygist.app.'],
+      });
+      await sendMorningGistFax({
+        faxNumber: user.delivery!.faxNumber!.trim(),
+        html: notifyHtml,
+        userId: user.uid,
+      }).catch((err) => logger.warn('Failed to send payment-paused notification fax.', { userId: user.uid, err }));
       return;
     }
   }

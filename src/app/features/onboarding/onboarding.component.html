@@ -1,0 +1,136 @@
+<div class="onboarding-page">
+  <div class="card onboarding-card">
+
+    <!-- Header -->
+    <h1 class="onboarding-title serif">Set up your morning briefing</h1>
+    <p class="onboarding-subtitle">One page. Every morning. On paper.</p>
+
+    <!-- Section 1: Account -->
+    <section class="onboarding-section" *ngIf="!authComplete">
+      <h2 class="section-label">ACCOUNT</h2>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" class="textInput" [(ngModel)]="email" placeholder="you@example.com" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" class="textInput" [(ngModel)]="password" placeholder="At least 6 characters" />
+      </div>
+
+      <div class="button-row">
+        <button class="button-primary" (click)="signupWithEmail()" [disabled]="!email || !password">
+          Create account
+        </button>
+        <span class="or-divider">or</span>
+        <button class="button-secondary" (click)="signupWithGoogle()">
+          Sign up with Google
+        </button>
+      </div>
+
+      <p class="error-text" *ngIf="authError">{{ authError }}</p>
+    </section>
+
+    <section class="onboarding-section done-section" *ngIf="authComplete">
+      <h2 class="section-label">ACCOUNT</h2>
+      <p class="done-text">Signed in as {{ email || currentUserEmail }} ✓</p>
+    </section>
+
+    <!-- Section 2: Connect Calendar -->
+    <section class="onboarding-section" *ngIf="authComplete">
+      <h2 class="section-label">CONNECT YOUR CALENDAR</h2>
+      <p class="section-description">We read your calendar titles to build your daily schedule. Nothing else.</p>
+
+      <button
+        class="button-secondary"
+        (click)="connectCalendar()"
+        [disabled]="calendarLoading || calendarConnected"
+        aria-label="Connect Google Calendar">
+        <span *ngIf="calendarLoading">Connecting...</span>
+        <span *ngIf="calendarConnected">Calendar connected ✓</span>
+        <span *ngIf="!calendarLoading && !calendarConnected">Connect Google Calendar</span>
+      </button>
+
+      <p class="error-text" *ngIf="calendarError">{{ calendarError }}</p>
+    </section>
+
+    <!-- Section 3: Connect Email -->
+    <section class="onboarding-section" *ngIf="authComplete">
+      <h2 class="section-label">CONNECT YOUR EMAIL</h2>
+      <p class="section-description">We scan email subjects to surface what needs your attention. We never read email bodies.</p>
+
+      <button
+        class="button-secondary"
+        (click)="connectGmail()"
+        [disabled]="gmailLoading || gmailConnected"
+        aria-label="Connect Gmail">
+        <span *ngIf="gmailLoading">Connecting...</span>
+        <span *ngIf="gmailConnected">Gmail connected ✓</span>
+        <span *ngIf="!gmailLoading && !gmailConnected">Connect Gmail</span>
+      </button>
+
+      <p class="error-text" *ngIf="gmailError">{{ gmailError }}</p>
+    </section>
+
+    <!-- Section 4: Fax Number -->
+    <section class="onboarding-section" *ngIf="authComplete">
+      <h2 class="section-label">WHERE SHOULD WE FAX?</h2>
+
+      <div class="form-group">
+        <label for="faxNumber">Fax number</label>
+        <input
+          id="faxNumber"
+          type="tel"
+          class="textInput"
+          [(ngModel)]="faxNumber"
+          placeholder="+1 (212) 555-1234" />
+      </div>
+
+      <button
+        class="button-secondary"
+        (click)="sendTestFax()"
+        [disabled]="testFaxStatus === 'sending' || testFaxStatus === 'sent' || !faxNumber.trim()">
+        <span *ngIf="testFaxStatus === 'idle'">Send test fax</span>
+        <span *ngIf="testFaxStatus === 'sending'">Sending test fax...</span>
+        <span *ngIf="testFaxStatus === 'sent'">Test fax sent! Check your machine. ✓</span>
+        <span *ngIf="testFaxStatus === 'error'">Try again</span>
+      </button>
+
+      <p class="error-text" *ngIf="testFaxError">{{ testFaxError }}</p>
+    </section>
+
+    <!-- Section 5: Delivery Time -->
+    <section class="onboarding-section" *ngIf="authComplete">
+      <h2 class="section-label">WHEN DO YOU WAKE UP?</h2>
+      <p class="section-description">We'll fax your Gist 30 minutes before.</p>
+
+      <div class="time-picker-row">
+        <select class="textInput time-select" [(ngModel)]="deliveryHour" aria-label="Delivery hour">
+          <option value="5">5:00 AM</option>
+          <option value="6">6:00 AM</option>
+          <option value="7">7:00 AM</option>
+          <option value="8">8:00 AM</option>
+          <option value="9">9:00 AM</option>
+        </select>
+
+        <span class="timezone-label">{{ timezone }}</span>
+      </div>
+    </section>
+
+    <!-- Submit -->
+    <section class="onboarding-section submit-section" *ngIf="authComplete">
+      <button
+        class="button-primary submit-button"
+        (click)="onSubmit()"
+        [disabled]="!canSubmit || submitting">
+        <span *ngIf="!submitting">Send my first Gist</span>
+        <span *ngIf="submitting">Setting up...</span>
+      </button>
+
+      <p class="pricing-note">$8/mo after 7-day trial. Cancel anytime.</p>
+      <p class="error-text" *ngIf="submitError">{{ submitError }}</p>
+    </section>
+
+  </div>
+</div>
