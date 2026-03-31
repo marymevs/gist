@@ -5,9 +5,9 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
 import {
-  OPENAI_API_KEY,
+  ANTHROPIC_API_KEY,
   generateDailyFocusSections,
-} from './integrations/openaiGist';
+} from './integrations/claudeGist';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
   PHAXIO_API_KEY,
@@ -167,6 +167,7 @@ export async function generateMorningGistForUser(
           date: dateKey,
           timezone,
           weatherSummary: weather,
+          moonPhase: `${moon.emoji} ${moon.phase}`,
           firstEvent,
           dayItems,
           worldItems,
@@ -192,6 +193,7 @@ export async function generateMorningGistForUser(
       emailCards: cleanEmailCards,
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
+      qualityScore: sections.qualityScore,
       delivery: {
         method,
         pages,
@@ -284,7 +286,7 @@ export const generateMorningGist = onSchedule(
       NYT_API_KEY,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
-      OPENAI_API_KEY,
+      ANTHROPIC_API_KEY,
       RESEND_API_KEY,
       PHAXIO_API_KEY,
       PHAXIO_API_SECRET,

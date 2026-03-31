@@ -5,7 +5,7 @@ import {
   classifyEmailCandidates,
   type EmailAiInput,
   type EmailAiResult,
-} from './openaiEmail';
+} from './claudeEmail';
 
 export type EmailCategory = 'Action' | 'WaitingOn' | 'FYI';
 

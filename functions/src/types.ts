@@ -70,6 +70,11 @@ export type MorningGist = {
   emailCards: EmailCard[];
   gistBullets: string[];
   oneThing: string;
+  qualityScore?: {
+    editorialVoice: number;
+    crossReferenceDepth: number;
+    personalizationDepth: number;
+  };
 
   delivery: {
     method: DeliveryMethod;
