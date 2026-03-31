@@ -18,7 +18,7 @@ import { logger } from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import Stripe from 'stripe';
-import { updateUserSubscription, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from './stripeUtils';
+import { updateUserSubscription, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, type SubscriptionStatus } from './stripeUtils';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -156,17 +156,13 @@ export const stripeWebhook = onRequest(
             break;
           }
 
-          const statusMap: Record<string, string> = {
+          // Map Stripe statuses to our SubscriptionStatus type
+          const knownStatuses: Record<string, SubscriptionStatus> = {
             active: 'active',
             past_due: 'past_due',
             canceled: 'canceled',
-            unpaid: 'unpaid',
-            incomplete: 'incomplete',
-            incomplete_expired: 'incomplete_expired',
-            trialing: 'trialing',
-            paused: 'paused',
           };
-          const status = statusMap[subscription.status] ?? 'unknown';
+          const status: SubscriptionStatus = knownStatuses[subscription.status] ?? 'canceled';
 
           await updateUserSubscription(userId, {
             stripeSubscriptionStatus: status,

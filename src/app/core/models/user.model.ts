@@ -40,6 +40,10 @@ export interface GistUser {
     quietDays?: number[];  // 0=Sun, 1=Mon, ..., 6=Sat
     timezone?: string;
     city?: string;
+    countdown?: {
+      label: string;       // e.g. "Thesis", "Race"
+      targetDate: string;  // ISO date e.g. "2026-05-07"
+    };
   };
 
   // Delivery schedule (per-user delivery times)
@@ -57,6 +61,9 @@ export interface GistUser {
   nextDeliveryAt?: any;
   /** ISO date string of last generated gist, prevents double-generation. */
   lastGeneratedDate?: string;
+
+  /** Running issue count — incremented each generation. Masthead: "Vol. I · No. {count}" */
+  gistIssueCount?: number;
 
   // Onboarding state
   onboardingComplete?: boolean;

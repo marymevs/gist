@@ -109,6 +109,68 @@ These marks should feel like subtle print production artifacts, not UI chrome.
 - Inter, Roboto, Poppins, or any overused system-default font as primary
 - Pure black (#000000) for text — always use the ink color (#1a1a2e)
 
+---
+
+## Output Template Design System
+
+The delivered Gist (fax, email, print, PDF, web `/today` view) uses a separate typographic and color system optimized for print density and editorial warmth. The web app UI retains the Instrument Serif/Sans system above.
+
+### Typography (Output)
+- **Display/Masthead:** Fraunces 800, 46pt, -0.03em tracking. Optical sizing 9–144.
+- **Headlines:** Fraunces 700, 16pt, -0.01em
+- **Subheads:** Fraunces 500, 8.5–10pt
+- **Body:** IBM Plex Sans 300, 8.5pt (body), 7–7.5pt (small), 9pt (lede)
+- **Labels/Data:** IBM Plex Mono 300–400, 5–6pt, uppercase, 0.10–0.16em tracking
+- **Quotes:** Fraunces italic 300, 10–11pt
+- **Loading:** Google Fonts — `https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,800;1,9..144,300;1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap`
+
+### Color (Output)
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `--ink` | `#1c1917` | Primary text, heavy rules, masthead |
+| `--mid` | `#57534e` | Secondary text, event notes, news summaries |
+| `--light` | `#a8a29e` | Timestamps, labels, metadata, footer |
+| `--rule` | `#d6d3d1` | Dotted dividers, section borders |
+| `--tint` | `#f5f0eb` | Highlight box background |
+| `--paper` | `#fffdf9` | Page background |
+| `--warm` | `#92400e` | Accent: kickers, section labels, highlight borders |
+
+### Page Geometry (Output)
+- Content width: **7in** (centered on US Letter)
+- Margins: **0.55in top/bottom, 0.65in left/right** (`@page`)
+- Two-column layout via flexbox (`.cols > .c + .c`)
+- Column gutter: 10pt margin-left + 10pt padding-left + 0.5pt rule
+- Screen preview: 24px body padding, warm gray (`#e7e5e4`) surround, box-shadow
+
+### Visual Grammar (Output)
+| Element | Style |
+|---------|-------|
+| Masthead title | 46pt Fraunces 800, -0.03em tracking |
+| Masthead subtitle | Fraunces italic 300, 9.5pt, `--mid` |
+| Section labels | IBM Plex Mono 400, 5.5pt, uppercase, 0.16em tracking, `--warm` |
+| Heavy rule | 2pt solid `--ink` (masthead bottom) |
+| Section rule | 1.5pt solid `--ink` (column header) |
+| Light rule | 0.5pt solid `--rule` (between items) |
+| Dotted divider | 0.5pt dotted `--rule` (between events/notifications) |
+| Highlight box | `--tint` bg, 1.5pt solid `--warm` left border, 7pt 9pt padding |
+| Weather temp | Fraunces 500, 20pt |
+| Event time | IBM Plex Mono 300, 6pt, `--light`, 36pt min-width |
+| Footer | IBM Plex Mono, 5pt, `--light`, 0.1em tracking, uppercase |
+| Write lines | 0.5pt solid `--rule` bottom border, 18pt height |
+
+### Information Architecture (Output)
+**Page 1 — The Briefing:** Masthead → Weather bar → Rhythms bar → Lede (kicker + headline + editorial paragraph) → Two-column body (left: Schedule + Good News | right: Notifications + People + Quote) → Footer.
+
+**Page 2 — The Reflection:** Compact header → Two-column body (left: Body & Mind + Practice Arc + Moon Highlight + Closing thought | right: Morning Intention write lines + Fax Back checkboxes/write lines + Personal closing quote) → Footer.
+
+### Anti-Patterns (Output-Specific)
+- No category-colored left borders on email cards (old template pattern)
+- No cover page (old fax template had a cover page — new template goes straight to content)
+- No table-based layout for print/fax/PDF (use flexbox — tables only for email-safe variant)
+- No Georgia or Arial — always Fraunces / IBM Plex Sans / IBM Plex Mono
+
+---
+
 ## Decisions Log
 | Date | Decision | Rationale |
 |------|----------|-----------|
@@ -118,3 +180,10 @@ These marks should feel like subtle print production artifacts, not UI chrome.
 | 2026-03-25 | Paper grain texture adopted | Reinforces physical-artifact identity. Immediately distinctive vs. flat surfaces used by all other calm-tech products. |
 | 2026-03-25 | Bureau "production marks" cherry-picked | Timestamp and page markers add personality without the cold institutional feel of full bureau aesthetic. User should feel served, not managed. |
 | 2026-03-25 | Editorial direction chosen over bureau dispatch | Bureau (intelligence briefing aesthetic) was considered but rejected — too cold and institutional. Gist should feel luxurious, not like the user is a cog in a machine. |
+| 2026-03-31 | Output Template design system added | Fraunces + IBM Plex Sans/Mono for delivered Gist output. Web app keeps Instrument Serif/Sans. Two systems, one product. |
+| 2026-03-31 | Fraunces chosen for output serif | Variable optical size (9–144), warm editorial feel, pairs well with IBM Plex. 46pt masthead creates iconic brand mark. |
+| 2026-03-31 | Warm amber accent (#92400e) | Section labels and highlight borders use amber instead of ink. Creates visual hierarchy without competing with editorial content. |
+| 2026-03-31 | Two-page broadsheet structure | Page 1 = briefing (information). Page 2 = reflection (intention + fax-back). Turns one-way output into two-way communication. |
+| 2026-03-31 | Structured JSON + template render strategy | Claude outputs Zod-validated sections, template renders HTML. Predictable layout, testable, no LLM HTML generation. |
+| 2026-03-31 | Personal countdowns in rhythms bar | User prefs get countdown: { label, targetDate }. Displayed alongside moon, season, daylight in the rhythms bar. |
+| 2026-03-31 | Issue numbers tracked per user | gistIssueCount on user doc, incremented per generation. Masthead shows "Vol. I · No. {count}". |
