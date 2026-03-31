@@ -37,6 +37,8 @@ export class AccountComponent {
   isSavingVipSenders = false;
   isSavingFaxNumber = false;
   isSavingPreferences = false;
+  isUpgrading = false;
+  isOpeningPortal = false;
 
   // Preferences edit mode
   isEditingPreferences = false;
@@ -302,6 +304,91 @@ export class AccountComponent {
     const days = user.prefs?.quietDays ?? [0, 6];
     if (days.length === 0) return 'None';
     return days.map((d) => DAY_LABELS[d]).join(', ');
+  }
+
+  // --- Billing ---
+
+  async onUpgradePlan(user: GistUser): Promise<void> {
+    if (this.isUpgrading) return;
+
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      this.toast.show('Please sign in to upgrade.', 'error');
+      return;
+    }
+
+    this.isUpgrading = true;
+    try {
+      const idToken = await currentUser.getIdToken();
+      const endpoint = this.getBillingEndpoint('createCheckoutSession');
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ plan: 'print' }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || !data.url) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unable to start checkout.';
+      this.toast.show(msg, 'error');
+    } finally {
+      this.isUpgrading = false;
+    }
+  }
+
+  async onManageBilling(): Promise<void> {
+    if (this.isOpeningPortal) return;
+
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      this.toast.show('Please sign in to manage billing.', 'error');
+      return;
+    }
+
+    this.isOpeningPortal = true;
+    try {
+      const idToken = await currentUser.getIdToken();
+      const endpoint = this.getBillingEndpoint('createPortalSession');
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || !data.url) {
+        throw new Error(data.error || 'Failed to open billing portal');
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unable to open billing portal.';
+      this.toast.show(msg, 'error');
+    } finally {
+      this.isOpeningPortal = false;
+    }
+  }
+
+  private getBillingEndpoint(fn: string): string {
+    const projectId = this.auth.app.options.projectId;
+    if (!projectId) throw new Error('Missing Firebase project ID.');
+
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `http://127.0.0.1:5001/${projectId}/us-central1/${fn}`;
+    }
+    return `https://us-central1-${projectId}.cloudfunctions.net/${fn}`;
   }
 
   // --- Security ---

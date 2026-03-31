@@ -11,6 +11,7 @@ export type EmailTemplateInput = {
   dayItems: { time?: string; title: string; note?: string }[];
   worldItems: { headline: string; implication: string }[];
   emailCards: {
+    id?: string; // email message ID for feedback links
     fromName?: string;
     fromEmail?: string;
     subject: string;
@@ -20,6 +21,9 @@ export type EmailTemplateInput = {
     suggestedNextStep?: string;
   }[];
   gistBullets: string[];
+  // Optional: enables feedback links in email cards
+  userId?: string;
+  gistDate?: string; // dateKey e.g. "2026-03-31"
 };
 
 // ─── colour tokens ────────────────────────────────────────────────────────────
@@ -70,7 +74,10 @@ function dayItemsHtml(items: EmailTemplateInput['dayItems']): string {
     .join('');
 }
 
-function emailCardHtml(card: EmailTemplateInput['emailCards'][number]): string {
+function emailCardHtml(
+  card: EmailTemplateInput['emailCards'][number],
+  feedbackCtx?: { userId: string; gistDate: string },
+): string {
   const borders: Record<string, string> = {
     Action: C.actionBorder,
     WaitingOn: C.waitingBorder,
@@ -94,16 +101,32 @@ function emailCardHtml(card: EmailTemplateInput['emailCards'][number]): string {
     ? `<div style="font-family:Arial,sans-serif;font-size:11px;color:${C.black};margin-top:4px;font-style:italic;">${esc(card.suggestedNextStep)}</div>`
     : '';
 
+  // Feedback links (thumbs up/down)
+  let feedbackHtml = '';
+  if (feedbackCtx && card.id) {
+    const base = `https://us-central1-gist-ab4e8.cloudfunctions.net/emailFeedback`;
+    const params = `uid=${encodeURIComponent(feedbackCtx.userId)}&date=${encodeURIComponent(feedbackCtx.gistDate)}&card=${encodeURIComponent(card.id)}&cat=${encodeURIComponent(card.category)}`;
+    feedbackHtml = `<div style="font-family:Arial,sans-serif;font-size:10px;color:${C.mutedText};margin-top:4px;">
+      <a href="${base}?${params}&r=up" style="color:${C.mutedText};text-decoration:none;">\u25B2 Accurate</a>
+      &nbsp;&middot;&nbsp;
+      <a href="${base}?${params}&r=down" style="color:${C.mutedText};text-decoration:none;">\u25BC Not quite</a>
+    </div>`;
+  }
+
   return `<div style="border-left:3px solid ${border};background:${bg};
     padding:8px 10px;margin-bottom:8px;">
     ${fromHtml}
     <div style="font-size:13px;font-weight:bold;color:${C.black};margin-bottom:3px;">${esc(card.subject)}</div>
     <div style="font-family:Arial,sans-serif;font-size:11px;color:#555;margin-bottom:3px;">${esc(card.why)}</div>
     ${step}
+    ${feedbackHtml}
   </div>`;
 }
 
-function emailCardsByCategory(cards: EmailTemplateInput['emailCards']): string {
+function emailCardsByCategory(
+  cards: EmailTemplateInput['emailCards'],
+  feedbackCtx?: { userId: string; gistDate: string },
+): string {
   const categories: Array<{ key: 'Action' | 'WaitingOn' | 'FYI'; label: string }> = [
     { key: 'Action', label: 'Action needed' },
     { key: 'WaitingOn', label: 'Waiting on' },
@@ -116,7 +139,7 @@ function emailCardsByCategory(cards: EmailTemplateInput['emailCards']): string {
     const group = cards.filter((c) => c.category === key);
     if (!group.length) continue;
     parts.push(sectionLabel(label));
-    parts.push(group.map((c) => emailCardHtml(c)).join(''));
+    parts.push(group.map((c) => emailCardHtml(c, feedbackCtx)).join(''));
   }
 
   if (!parts.length) {
@@ -155,6 +178,10 @@ function bulletsHtml(bullets: string[]): string {
 // ─── main export ──────────────────────────────────────────────────────────────
 
 export function buildEmailHtml(input: EmailTemplateInput): string {
+  const feedbackCtx = input.userId && input.gistDate
+    ? { userId: input.userId, gistDate: input.gistDate }
+    : undefined;
+
   const actionCards = input.emailCards.filter((c) => c.category === 'Action');
   const hasEmailCards = input.emailCards.length > 0;
   const subjectSuffix = actionCards.length
@@ -206,7 +233,7 @@ export function buildEmailHtml(input: EmailTemplateInput): string {
       ${sectionLabel('Today')}
       ${dayItemsHtml(input.dayItems)}
 
-      ${hasEmailCards ? `<div style="margin-top:18px;">${emailCardsByCategory(input.emailCards)}</div>` : ''}
+      ${hasEmailCards ? `<div style="margin-top:18px;">${emailCardsByCategory(input.emailCards, feedbackCtx)}</div>` : ''}
 
     </td>
 

@@ -69,7 +69,7 @@ export class SignupComponent {
       );
 
       await this.saveProfile(cred.user.uid, cred.user.email);
-      await this.router.navigate(['/today']);
+      await this.router.navigate(['/onboarding']);
     } catch (e: any) {
       this.error = e?.message ?? 'Signup failed.';
     } finally {
@@ -84,7 +84,7 @@ export class SignupComponent {
     try {
       const cred = await signInWithPopup(this.auth, new GoogleAuthProvider());
       await this.saveProfile(cred.user.uid, cred.user.email);
-      await this.router.navigate(['/today']);
+      await this.router.navigate(['/onboarding']);
     } catch (e: any) {
       this.error = e?.message ?? 'Google signup failed.';
     } finally {

@@ -23,33 +23,49 @@ export interface GistUser {
   createdAt: any; // Firestore Timestamp
   updatedAt: any;
 
+  // Onboarding profile fields
+  profile?: {
+    name?: string;
+    context?: string; // free-text role/situation
+  };
+
   prefs?: {
     email?: {
       vipSenders?: string[];
     };
     length?: 'brief' | 'standard' | 'detailed';
     tone?: 'calm' | 'detailed' | 'concise';
-    quietDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
+    topics?: string[];     // chip selections from onboarding
+    rhythms?: string[];    // chip selections from onboarding
+    quietDays?: number[];  // 0=Sun, 1=Mon, ..., 6=Sat
+    timezone?: string;
+    city?: string;
   };
 
-  // Billing (stubbed for now)
-  stripeCustomerId?: string | null;
-  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
-  // Calendar integration (OAuth tokens stored for backend use)
-
-  calendarIntegration?: {
-    provider?: 'google';
-    status?: 'connected' | 'disconnected';
-    accessToken?: string | null;
-    authorizationCode?: string | null;
-    connectedAt?: any;
-  };
-
-  emailIntegration?: EmailIntegration;
-
-  /** Delivery preferences — fax number required for print plan users. */
+  // Delivery schedule (per-user delivery times)
   delivery?: {
+    method?: 'web' | 'email' | 'fax';
     /** E.164 or 10-digit fax number, e.g. "+12125551234" */
     faxNumber?: string;
+    schedule?: {
+      hour?: number;   // 0-23, default 7
+      minute?: number; // 0-59, default 30
+    };
   };
+
+  /** ISO timestamp of next scheduled delivery, set by scheduler/onboarding. */
+  nextDeliveryAt?: any;
+  /** ISO date string of last generated gist, prevents double-generation. */
+  lastGeneratedDate?: string;
+
+  // Onboarding state
+  onboardingComplete?: boolean;
+
+  // Billing
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
+
+  calendarIntegration?: CalendarIntegration;
+  emailIntegration?: EmailIntegration;
 }

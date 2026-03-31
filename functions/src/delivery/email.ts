@@ -15,6 +15,7 @@ export type EmailDeliveryInput = {
   userId: string;
   userEmail: string | null;
   dateLabel: string;
+  gistDate?: string; // dateKey for feedback links, e.g. "2026-03-31"
   weatherSummary: string;
   dayItems: Array<{ time?: string; title: string; note?: string }>;
   worldItems: Array<{ headline: string; implication: string }>;
@@ -43,6 +44,7 @@ export async function deliverByEmail(input: EmailDeliveryInput): Promise<Deliver
     dayItems: input.dayItems,
     worldItems: input.worldItems,
     emailCards: input.emailCards.map((c) => ({
+      id: c.id,
       fromName: c.fromName,
       fromEmail: c.fromEmail,
       subject: c.subject,
@@ -52,6 +54,8 @@ export async function deliverByEmail(input: EmailDeliveryInput): Promise<Deliver
       suggestedNextStep: c.suggestedNextStep,
     })),
     gistBullets: input.gistBullets,
+    userId: input.userId,
+    gistDate: input.gistDate,
   };
 
   const html = buildEmailHtml(templateInput);

@@ -2,13 +2,12 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
-import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
-import { fetchEmailCards } from './integrations/gmailInt';
+import { WEATHERAPI_KEY } from './integrations/weather';
+import { NYT_API_KEY } from './integrations/nytTopStories';
 import {
-  OPENAI_API_KEY,
+  ANTHROPIC_API_KEY,
   generateDailyFocusSections,
-} from './integrations/openaiGist';
+} from './integrations/claudeGist';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
   PHAXIO_API_KEY,
@@ -25,7 +24,6 @@ initializeApp();
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  fetchCalendarItems,
 } from './integrations/googleCalendarInt';
 
 import type { UserDoc, MorningGist, GistPlan, IntegrationStatus } from './types';
@@ -46,18 +44,23 @@ import { deliverByEmail } from './delivery/email';
 import { deliverByFax } from './delivery/fax';
 import { deliverByWeb } from './delivery/web';
 
-const db = getFirestore();
+import type { ConnectorContext } from './connectors/types';
+import { weatherConnector } from './connectors/weather';
+import { calendarConnector } from './connectors/calendar';
+import { gmailConnector } from './connectors/gmail';
+import { newsConnector } from './connectors/news';
+import { moonConnector } from './connectors/moon';
 
-async function fetchWorldItems(): Promise<
-  Array<{ headline: string; implication: string }>
-> {
-  try {
-    return await fetchNytTopStories({ section: 'world', limit: 3 });
-  } catch (error) {
-    logger.warn('Failed to fetch NYT world items.', { error });
-    return [];
-  }
-}
+import { readMemoryContext, formatMemoryForPrompt } from './personalization/memoryReader';
+import { isSubscriptionActive } from './billing/stripeUtils';
+import {
+  observeCalendarPatterns,
+  observeTopicAffinities,
+  observeQualityScore,
+  pruneExpiredMemory,
+} from './personalization/memoryEngine';
+
+const db = getFirestore();
 
 /** === Core generator === */
 export async function generateMorningGistForUser(
@@ -149,35 +152,66 @@ export async function generateMorningGistForUser(
     }
   }
 
-  let weather = 'Weather unavailable';
-  try {
-    const weatherResp = await fetchWeatherSummary({
-      q: city,
-      days: 1,
-      aqi: false,
-      alerts: true,
-    });
-    weather = weatherResp.summary;
-  } catch (error) {
-    logger.warn('Failed to fetch weather summary.', {
-      error,
-      userId: user.uid,
-    });
+  // Billing gate: verify active subscription for paid plans
+  if (user.plan !== 'web') {
+    try {
+      const active = await isSubscriptionActive(user.stripeCustomerId, user.plan);
+      if (!active) {
+        logger.warn('Skipping gist generation — no active subscription for paid plan.', {
+          userId: user.uid,
+          plan: user.plan,
+          status: user.stripeSubscriptionStatus ?? 'none',
+        });
+        return;
+      }
+    } catch (err) {
+      // If Stripe is down, log but continue (graceful degradation)
+      logger.warn('Stripe subscription check failed, proceeding anyway.', {
+        userId: user.uid,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
   }
+
+  // Build connector context
+  const connectorCtx: ConnectorContext = {
+    userId: user.uid,
+    userEmail: user.email ?? undefined,
+    dateKey,
+    timezone,
+    city,
+    prefs: user.prefs,
+    now,
+  };
 
   let finalStatus: 'queued' | 'delivered' | 'failed' = 'failed';
 
   try {
-    const [dayItems, worldItems, emailCards] = await Promise.all([
-      fetchCalendarItems(user.uid, dateKey, timezone),
-      fetchWorldItems(),
-      fetchEmailCards({
-        userId: user.uid,
-        userEmail: user.email ?? undefined,
-        prefs: user.prefs?.email,
-        now,
-      }),
-    ]);
+    // Pull all data sources in parallel via connectors
+    const [weatherResult, calendarResult, newsResult, emailResult, moonResult] =
+      await Promise.all([
+        weatherConnector.pull(connectorCtx),
+        calendarConnector.pull(connectorCtx),
+        newsConnector.pull(connectorCtx),
+        gmailConnector.pull(connectorCtx),
+        moonConnector.pull(connectorCtx),
+      ]);
+
+    // Log any connector failures
+    for (const r of [weatherResult, calendarResult, newsResult, emailResult, moonResult]) {
+      if (r.status === 'failed') {
+        logger.warn('Connector returned failed status.', {
+          userId: user.uid,
+          error: r.error,
+        });
+      }
+    }
+
+    const weather = weatherResult.data.summary;
+    const dayItems = calendarResult.data;
+    const worldItems = newsResult.data;
+    const emailCards = emailResult.data;
+    const moon = moonResult.data;
 
     const gistRef = db
       .collection('users')
@@ -212,12 +246,28 @@ export async function generateMorningGistForUser(
           .filter((item) => item.length > 0)
       : [];
 
+    const reusableQualityScore = existingData?.qualityScore ?? undefined;
+
     const reusableSections =
       reusableOneThing && reusableBullets.length === 3
-        ? { oneThing: reusableOneThing, gistBullets: reusableBullets }
+        ? { oneThing: reusableOneThing, gistBullets: reusableBullets, qualityScore: reusableQualityScore }
         : null;
 
     const shouldReuseSections = calendarUnchanged && reusableSections !== null;
+
+    // Read memory context for personalization
+    let memoryPrompt = '';
+    if (!shouldReuseSections) {
+      try {
+        const memory = await readMemoryContext(user.uid);
+        memoryPrompt = formatMemoryForPrompt(memory);
+      } catch (err) {
+        logger.warn('Failed to read memory context, proceeding without.', {
+          userId: user.uid,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
 
     const sections = shouldReuseSections
       ? reusableSections
@@ -225,9 +275,11 @@ export async function generateMorningGistForUser(
           date: dateKey,
           timezone,
           weatherSummary: weather,
+          moonPhase: `${moon.emoji} ${moon.phase}`,
           firstEvent,
           dayItems,
           worldItems,
+          memoryContext: memoryPrompt || undefined,
         });
 
     if (shouldReuseSections) {
@@ -237,18 +289,30 @@ export async function generateMorningGistForUser(
       });
     }
 
+    // Write behavioral signals to memory (fire-and-forget)
+    Promise.allSettled([
+      observeCalendarPatterns(user.uid, dayItems),
+      observeTopicAffinities(user.uid, worldItems, user.prefs?.newsDomains),
+      sections.qualityScore
+        ? observeQualityScore(user.uid, sections.qualityScore)
+        : Promise.resolve(),
+      pruneExpiredMemory(user.uid),
+    ]).catch(() => {});
+
     const gist: MorningGist = {
       id: crypto.randomUUID(),
       userId: user.uid,
       date: dateKey,
       timezone,
       weatherSummary: weather,
+      moonPhase: `${moon.emoji} ${moon.phase}`,
       ...(firstEvent !== undefined ? { firstEvent } : {}),
       dayItems,
       worldItems,
       emailCards: cleanEmailCards,
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
+      qualityScore: sections.qualityScore,
       delivery: {
         method,
         pages,
@@ -267,6 +331,7 @@ export async function generateMorningGistForUser(
         userId: user.uid,
         userEmail: user.email,
         dateLabel,
+        gistDate: dateKey,
         weatherSummary: weather,
         dayItems: cleanDayItems,
         worldItems,
@@ -329,11 +394,35 @@ export async function generateMorningGistForUser(
   });
 }
 
-/** === Scheduled job === */
+/**
+ * Compute the next delivery Timestamp for a user based on their schedule prefs.
+ * Returns a Timestamp for tomorrow at the specified hour:minute in the user's timezone.
+ */
+function computeNextDelivery(
+  now: Date,
+  timezone: string,
+  schedule?: { hour?: number; minute?: number },
+): Timestamp {
+  const hour = schedule?.hour ?? 7;
+  const minute = schedule?.minute ?? 30;
+
+  // Get "today" in the user's timezone
+  const todayStr = toDateKeyISO(now, timezone);
+  // Build a Date for today at delivery time in the user's timezone
+  const deliveryToday = new Date(`${todayStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+
+  // Use tomorrow if today's delivery time has passed
+  const target = deliveryToday.getTime() > now.getTime()
+    ? deliveryToday
+    : new Date(deliveryToday.getTime() + 24 * 60 * 60 * 1000);
+
+  return Timestamp.fromDate(target);
+}
+
+/** === Scheduled job (15-min cron, per-user delivery times) === */
 export const generateMorningGist = onSchedule(
   {
-    schedule: '30 7 * * *',
-    timeZone: 'America/New_York',
+    schedule: 'every 15 minutes',
     region: 'us-central1',
     timeoutSeconds: 180,
     secrets: [
@@ -341,44 +430,116 @@ export const generateMorningGist = onSchedule(
       NYT_API_KEY,
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
-      OPENAI_API_KEY,
+      ANTHROPIC_API_KEY,
       RESEND_API_KEY,
       PHAXIO_API_KEY,
       PHAXIO_API_SECRET,
     ],
   },
   async () => {
-    logger.info('Morning Gist scheduler started');
-
-    const usersSnap = await db.collection('users').get();
     const now = new Date();
+    logger.info('Morning Gist scheduler tick', { now: now.toISOString() });
+
+    // Query users whose nextDeliveryAt is in the past (due for delivery)
+    const dueSnap = await db
+      .collection('users')
+      .where('nextDeliveryAt', '<=', Timestamp.fromDate(now))
+      .get();
+
+    if (dueSnap.empty) {
+      // Fallback: also pick up legacy users with no nextDeliveryAt set
+      // (users who existed before the scheduler refactor)
+      const legacySnap = await db
+        .collection('users')
+        .where('onboardingComplete', '==', true)
+        .get();
+
+      const legacyTasks: Promise<void>[] = [];
+      legacySnap.forEach((docSnap) => {
+        const data = docSnap.data();
+        // Skip users that already have nextDeliveryAt (they're not due)
+        if (data.nextDeliveryAt) return;
+
+        const uid = data.uid ?? docSnap.id;
+        if (!uid) return;
+
+        const timezone = safeTimezone(data.prefs?.timezone);
+        const todayKey = toDateKeyISO(now, timezone);
+
+        // Idempotency: skip if already generated today
+        if (data.lastGeneratedDate === todayKey) return;
+
+        const user = buildUserDoc(uid, data);
+        legacyTasks.push(generateAndUpdateSchedule(user, now, todayKey, timezone));
+      });
+
+      if (legacyTasks.length > 0) {
+        await Promise.allSettled(legacyTasks);
+        logger.info('Processed legacy users without nextDeliveryAt.', { count: legacyTasks.length });
+      } else {
+        logger.info('No users due for delivery.');
+      }
+      return;
+    }
+
     const tasks: Promise<void>[] = [];
 
-    usersSnap.forEach((docSnap) => {
-      const data = docSnap.data() as Partial<
-        UserDoc & {
-          calendarIntegration?: IntegrationStatus;
-          emailIntegration?: IntegrationStatus;
-        }
-      >;
+    dueSnap.forEach((docSnap) => {
+      const data = docSnap.data();
       const uid = data.uid ?? docSnap.id;
       if (!uid) return;
 
-      const user: UserDoc = {
-        uid,
-        email: data.email ?? null,
-        plan: (data.plan as GistPlan) ?? 'web',
-        prefs: data.prefs ?? {},
-        delivery: data.delivery ?? {},
-        calendarIntegration: data.calendarIntegration,
-        emailIntegration: data.emailIntegration,
-      };
+      const timezone = safeTimezone(data.prefs?.timezone);
+      const todayKey = toDateKeyISO(now, timezone);
 
-      tasks.push(generateMorningGistForUser(user, now));
+      // Idempotency: skip if already generated today
+      if (data.lastGeneratedDate === todayKey) {
+        // Still update nextDeliveryAt so we don't re-query this user
+        db.collection('users').doc(uid).update({
+          nextDeliveryAt: computeNextDelivery(now, timezone, data.delivery?.schedule),
+        }).catch(() => {});
+        return;
+      }
+
+      const user = buildUserDoc(uid, data);
+      tasks.push(generateAndUpdateSchedule(user, now, todayKey, timezone));
     });
 
     await Promise.allSettled(tasks);
 
-    logger.info('Morning Gist scheduler finished', { users: usersSnap.size });
+    logger.info('Morning Gist scheduler tick finished', {
+      due: dueSnap.size,
+      processed: tasks.length,
+    });
   },
 );
+
+function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
+  return {
+    uid,
+    email: data.email ?? null,
+    plan: (data.plan as GistPlan) ?? 'web',
+    prefs: data.prefs ?? {},
+    delivery: data.delivery ?? {},
+    calendarIntegration: data.calendarIntegration,
+    emailIntegration: data.emailIntegration,
+    stripeCustomerId: data.stripeCustomerId ?? null,
+    stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
+  };
+}
+
+async function generateAndUpdateSchedule(
+  user: UserDoc,
+  now: Date,
+  todayKey: string,
+  timezone: string,
+): Promise<void> {
+  await generateMorningGistForUser(user, now);
+
+  // Mark today as generated + set next delivery time
+  const schedule = user.delivery?.schedule;
+  await db.collection('users').doc(user.uid).update({
+    lastGeneratedDate: todayKey,
+    nextDeliveryAt: computeNextDelivery(now, timezone, schedule),
+  });
+}

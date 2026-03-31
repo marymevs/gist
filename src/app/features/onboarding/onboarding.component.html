@@ -1,136 +1,228 @@
-<div class="onboarding-page">
-  <div class="card onboarding-card">
+<!-- Editorial loading state (post-onboarding) -->
+<div class="loadingOverlay" *ngIf="isGenerating">
+  <div class="loadingCard">
+    <h1 class="loadingHeadline">Composing your first Gist&hellip;</h1>
 
-    <!-- Header -->
-    <h1 class="onboarding-title serif">Set up your morning briefing</h1>
-    <p class="onboarding-subtitle">One page. Every morning. On paper.</p>
+    <p class="loadingMessage" *ngIf="!generationFailed">
+      {{ loadingMessages[loadingMessageIndex] }}
+    </p>
 
-    <!-- Section 1: Account -->
-    <section class="onboarding-section" *ngIf="!authComplete">
-      <h2 class="section-label">ACCOUNT</h2>
-
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" class="textInput" [(ngModel)]="email" placeholder="you@example.com" />
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" class="textInput" [(ngModel)]="password" placeholder="At least 6 characters" />
-      </div>
-
-      <div class="button-row">
-        <button class="button-primary" (click)="signupWithEmail()" [disabled]="!email || !password">
-          Create account
-        </button>
-        <span class="or-divider">or</span>
-        <button class="button-secondary" (click)="signupWithGoogle()">
-          Sign up with Google
-        </button>
-      </div>
-
-      <p class="error-text" *ngIf="authError">{{ authError }}</p>
-    </section>
-
-    <section class="onboarding-section done-section" *ngIf="authComplete">
-      <h2 class="section-label">ACCOUNT</h2>
-      <p class="done-text">Signed in as {{ email || currentUserEmail }} ✓</p>
-    </section>
-
-    <!-- Section 2: Connect Calendar -->
-    <section class="onboarding-section" *ngIf="authComplete">
-      <h2 class="section-label">CONNECT YOUR CALENDAR</h2>
-      <p class="section-description">We read your calendar titles to build your daily schedule. Nothing else.</p>
-
-      <button
-        class="button-secondary"
-        (click)="connectCalendar()"
-        [disabled]="calendarLoading || calendarConnected"
-        aria-label="Connect Google Calendar">
-        <span *ngIf="calendarLoading">Connecting...</span>
-        <span *ngIf="calendarConnected">Calendar connected ✓</span>
-        <span *ngIf="!calendarLoading && !calendarConnected">Connect Google Calendar</span>
-      </button>
-
-      <p class="error-text" *ngIf="calendarError">{{ calendarError }}</p>
-    </section>
-
-    <!-- Section 3: Connect Email -->
-    <section class="onboarding-section" *ngIf="authComplete">
-      <h2 class="section-label">CONNECT YOUR EMAIL</h2>
-      <p class="section-description">We scan email subjects to surface what needs your attention. We never read email bodies.</p>
-
-      <button
-        class="button-secondary"
-        (click)="connectGmail()"
-        [disabled]="gmailLoading || gmailConnected"
-        aria-label="Connect Gmail">
-        <span *ngIf="gmailLoading">Connecting...</span>
-        <span *ngIf="gmailConnected">Gmail connected ✓</span>
-        <span *ngIf="!gmailLoading && !gmailConnected">Connect Gmail</span>
-      </button>
-
-      <p class="error-text" *ngIf="gmailError">{{ gmailError }}</p>
-    </section>
-
-    <!-- Section 4: Fax Number -->
-    <section class="onboarding-section" *ngIf="authComplete">
-      <h2 class="section-label">WHERE SHOULD WE FAX?</h2>
-
-      <div class="form-group">
-        <label for="faxNumber">Fax number</label>
-        <input
-          id="faxNumber"
-          type="tel"
-          class="textInput"
-          [(ngModel)]="faxNumber"
-          placeholder="+1 (212) 555-1234" />
-      </div>
-
-      <button
-        class="button-secondary"
-        (click)="sendTestFax()"
-        [disabled]="testFaxStatus === 'sending' || testFaxStatus === 'sent' || !faxNumber.trim()">
-        <span *ngIf="testFaxStatus === 'idle'">Send test fax</span>
-        <span *ngIf="testFaxStatus === 'sending'">Sending test fax...</span>
-        <span *ngIf="testFaxStatus === 'sent'">Test fax sent! Check your machine. ✓</span>
-        <span *ngIf="testFaxStatus === 'error'">Try again</span>
-      </button>
-
-      <p class="error-text" *ngIf="testFaxError">{{ testFaxError }}</p>
-    </section>
-
-    <!-- Section 5: Delivery Time -->
-    <section class="onboarding-section" *ngIf="authComplete">
-      <h2 class="section-label">WHEN DO YOU WAKE UP?</h2>
-      <p class="section-description">We'll fax your Gist 30 minutes before.</p>
-
-      <div class="time-picker-row">
-        <select class="textInput time-select" [(ngModel)]="deliveryHour" aria-label="Delivery hour">
-          <option value="5">5:00 AM</option>
-          <option value="6">6:00 AM</option>
-          <option value="7">7:00 AM</option>
-          <option value="8">8:00 AM</option>
-          <option value="9">9:00 AM</option>
-        </select>
-
-        <span class="timezone-label">{{ timezone }}</span>
-      </div>
-    </section>
-
-    <!-- Submit -->
-    <section class="onboarding-section submit-section" *ngIf="authComplete">
-      <button
-        class="button-primary submit-button"
-        (click)="onSubmit()"
-        [disabled]="!canSubmit || submitting">
-        <span *ngIf="!submitting">Send my first Gist</span>
-        <span *ngIf="submitting">Setting up...</span>
-      </button>
-
-      <p class="pricing-note">$8/mo after 7-day trial. Cancel anytime.</p>
-      <p class="error-text" *ngIf="submitError">{{ submitError }}</p>
-    </section>
-
+    <div class="loadingFallback" *ngIf="generationFailed">
+      <p>Your first Gist will arrive tomorrow morning at {{ formattedDeliveryTime }}.</p>
+      <button class="primary" (click)="goToToday()">Go to Today &rarr;</button>
+    </div>
   </div>
+</div>
+
+<!-- Split-panel onboarding -->
+<div class="onboarding" *ngIf="!isGenerating">
+  <!-- Left: Brand panel -->
+  <aside class="brandPanel">
+    <div class="brandContent">
+      <h1 class="brandLogo">Gist</h1>
+      <p class="brandTagline">Your day, on paper.</p>
+    </div>
+
+    <div class="stepIndicator" [attr.aria-label]="'Step ' + step + ' of 4'">
+      <span class="stepDot" *ngFor="let s of [1,2,3,4]" [class.active]="s === step" [class.done]="s < step"></span>
+    </div>
+  </aside>
+
+  <!-- Right: Form panel -->
+  <main class="formPanel">
+    <!-- Back button (screens 2-4) -->
+    <button class="backLink" *ngIf="step > 1" (click)="back()">&larr; Back</button>
+
+    <!-- ── Screen 1: Who You Are ────────────────────────────────────── -->
+    <section class="screen" *ngIf="step === 1">
+      <h2 class="screenTitle">Who you are</h2>
+      <p class="screenSub">Just enough so your Gist reads like it was written for you.</p>
+
+      <div class="formGroup">
+        <label class="field">
+          <span>Your name</span>
+          <input
+            type="text"
+            [(ngModel)]="profileName"
+            placeholder="e.g. Mary"
+            autocomplete="given-name"
+            autofocus
+          />
+        </label>
+
+        <label class="field">
+          <span>What do you do? <em class="optional">(optional)</em></span>
+          <input
+            type="text"
+            [(ngModel)]="profileContext"
+            placeholder="e.g. I run a wine bar in Brooklyn"
+          />
+        </label>
+      </div>
+    </section>
+
+    <!-- ── Screen 2: Connect Your Data ──────────────────────────────── -->
+    <section class="screen" *ngIf="step === 2">
+      <h2 class="screenTitle">Connect your data</h2>
+      <p class="screenSub">We pull from these sources to build your daily briefing.</p>
+
+      <div class="connectorList">
+        <!-- Calendar -->
+        <div class="connectorRow" [class.connected]="calendarStatus === 'connected'">
+          <div class="connectorInfo">
+            <div class="connectorName">Google Calendar</div>
+            <div class="connectorDesc">Events, meetings, and schedule</div>
+          </div>
+          <button
+            class="connectorBtn"
+            *ngIf="calendarStatus === 'idle'"
+            (click)="connectCalendar()"
+          >Connect</button>
+          <span class="connectorLoading" *ngIf="calendarStatus === 'connecting'">Connecting&hellip;</span>
+          <span class="connectorDone" *ngIf="calendarStatus === 'connected'" role="status" aria-live="polite">&#10003; Connected</span>
+        </div>
+
+        <!-- Gmail -->
+        <div class="connectorRow" [class.connected]="gmailStatus === 'connected'">
+          <div class="connectorInfo">
+            <div class="connectorName">Gmail</div>
+            <div class="connectorDesc">Important emails and action items</div>
+          </div>
+          <button
+            class="connectorBtn"
+            *ngIf="gmailStatus === 'idle'"
+            (click)="connectGmail()"
+          >Connect</button>
+          <span class="connectorLoading" *ngIf="gmailStatus === 'connecting'">Connecting&hellip;</span>
+          <span class="connectorDone" *ngIf="gmailStatus === 'connected'" role="status" aria-live="polite">&#10003; Connected</span>
+        </div>
+      </div>
+
+      <!-- OAuth trust signal -->
+      <p class="oauthTrust" *ngIf="showOAuthTrust">
+        We only read your data to build your Gist. Nothing is stored beyond what&rsquo;s shown.
+      </p>
+
+      <!-- Warning if no connectors -->
+      <p class="connectorWarning" *ngIf="connectorWarning">{{ connectorWarning }}</p>
+    </section>
+
+    <!-- ── Screen 3: People & Preferences ───────────────────────────── -->
+    <section class="screen" *ngIf="step === 3">
+      <h2 class="screenTitle">Preferences</h2>
+      <p class="screenSub">All optional. We&rsquo;ll start with sensible defaults and learn over time.</p>
+
+      <div class="chipSection">
+        <h3 class="chipLabel">Tone</h3>
+        <div class="chipRow">
+          <button
+            class="chip"
+            [class.selected]="selectedTone === 'calm'"
+            (click)="toggleTone('calm')"
+          >Calm, direct</button>
+          <button
+            class="chip"
+            [class.selected]="selectedTone === 'detailed'"
+            (click)="toggleTone('detailed')"
+          >Detailed, thorough</button>
+          <button
+            class="chip"
+            [class.selected]="selectedTone === 'concise'"
+            (click)="toggleTone('concise')"
+          >Concise, bullet-only</button>
+        </div>
+      </div>
+
+      <div class="chipSection">
+        <h3 class="chipLabel">Topics you follow</h3>
+        <div class="chipRow">
+          <button
+            *ngFor="let topic of topicChips"
+            class="chip"
+            [class.selected]="isTopicSelected(topic)"
+            (click)="toggleTopic(topic)"
+          >{{ topic }}</button>
+        </div>
+      </div>
+
+      <div class="chipSection">
+        <h3 class="chipLabel">When do you read?</h3>
+        <div class="chipRow">
+          <button
+            *ngFor="let rhythm of rhythmChips"
+            class="chip"
+            [class.selected]="isRhythmSelected(rhythm)"
+            (click)="toggleRhythm(rhythm)"
+          >{{ rhythm }}</button>
+        </div>
+      </div>
+
+      <p class="defaultsNote" *ngIf="!selectedTone && selectedTopics.length === 0 && selectedRhythms.length === 0">
+        We&rsquo;ll start with a balanced Gist and learn your preferences over time.
+      </p>
+    </section>
+
+    <!-- ── Screen 4: Delivery ───────────────────────────────────────── -->
+    <section class="screen" *ngIf="step === 4">
+      <h2 class="screenTitle">Delivery</h2>
+      <p class="screenSub">When and how you get your morning Gist.</p>
+
+      <div class="deliveryCards">
+        <button
+          class="deliveryCard"
+          [class.selected]="deliveryMethod === 'web'"
+          (click)="deliveryMethod = 'web'"
+        >
+          <div class="deliveryCardTop">
+            <span class="deliveryName">Web + Email</span>
+            <span class="deliveryPrice">Free</span>
+          </div>
+          <span class="deliverySub">Read online or in your inbox</span>
+        </button>
+
+        <button
+          class="deliveryCard"
+          [class.selected]="deliveryMethod === 'email'"
+          (click)="deliveryMethod = 'email'"
+        >
+          <div class="deliveryCardTop">
+            <span class="deliveryName">Paper</span>
+            <span class="deliveryPrice">$25/mo</span>
+          </div>
+          <span class="deliverySub">Printed and mailed to your door</span>
+        </button>
+      </div>
+
+      <div class="timeSection">
+        <h3 class="chipLabel">Delivery time</h3>
+        <div class="timeRow">
+          <select [(ngModel)]="deliveryHour" class="timeSelect">
+            <option *ngFor="let h of [5,6,7,8,9,10,11]" [ngValue]="h">
+              {{ h > 12 ? h - 12 : h }}:00 {{ h >= 12 ? 'PM' : 'AM' }}
+            </option>
+          </select>
+          <select [(ngModel)]="deliveryMinute" class="timeSelect">
+            <option [ngValue]="0">:00</option>
+            <option [ngValue]="15">:15</option>
+            <option [ngValue]="30">:30</option>
+            <option [ngValue]="45">:45</option>
+          </select>
+        </div>
+        <p class="timezoneNote">{{ timezone }}</p>
+      </div>
+    </section>
+
+    <!-- ── Navigation footer ────────────────────────────────────────── -->
+    <div class="navFooter">
+      <button
+        class="primary"
+        [disabled]="!canAdvance"
+        (click)="next()"
+      >
+        {{ step === 4 ? 'Finish & generate my Gist' : 'Continue' }}
+      </button>
+
+      <div class="stepLabel">Step {{ step }} of 4</div>
+    </div>
+  </main>
 </div>

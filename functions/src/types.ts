@@ -53,6 +53,8 @@ export type UserDoc = {
   delivery?: UserDelivery;
   calendarIntegration?: IntegrationStatus;
   emailIntegration?: IntegrationStatus;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
 };
 
 export type MorningGist = {
@@ -62,6 +64,7 @@ export type MorningGist = {
   timezone: string;
 
   weatherSummary: string;
+  moonPhase?: string;
   firstEvent?: string;
 
   dayItems: { time?: string; title: string; note?: string }[];
@@ -69,6 +72,11 @@ export type MorningGist = {
   emailCards: EmailCard[];
   gistBullets: string[];
   oneThing: string;
+  qualityScore?: {
+    editorialVoice: number;
+    crossReferenceDepth: number;
+    personalizationDepth: number;
+  };
 
   delivery: {
     method: DeliveryMethod;

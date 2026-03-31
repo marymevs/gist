@@ -1,0 +1,177 @@
+.admin {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.adminHeader {
+  margin-bottom: var(--space-xl);
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 400;
+    margin: 0;
+  }
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.loadingState {
+  font-size: 15px;
+  color: var(--muted);
+  font-style: italic;
+  padding: var(--space-xl) 0;
+}
+
+// Metrics row
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.metricCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  text-align: center;
+}
+
+.metricLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: var(--space-xs);
+}
+
+.metricValue {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--ink);
+}
+
+// Breakdown
+.breakdownRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.breakdownCard {
+  padding: var(--space-md);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 var(--space-sm);
+  }
+}
+
+.kvGrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.kvLabel { font-size: 14px; color: var(--muted); }
+.kvValue { font-family: var(--font-mono); font-size: 14px; text-align: right; }
+
+// Quality
+.qualityCard {
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 var(--space-md);
+  }
+}
+
+.qualityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+.qualityItem { text-align: center; }
+
+.qualityLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: var(--space-xs);
+}
+
+.qualityScore {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--ink);
+}
+
+.qualityMax { font-size: 14px; color: var(--muted); }
+.sampleNote { font-size: 12px; color: var(--muted); margin-top: var(--space-sm); }
+
+// Tables
+.deliveryCard, .recentCard {
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 var(--space-md);
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.emptyNote { font-size: 13px; color: var(--muted); font-style: italic; }
+
+@media (max-width: 768px) {
+  .metricsRow { grid-template-columns: 1fr; }
+  .breakdownRow { grid-template-columns: 1fr; }
+  .qualityGrid { grid-template-columns: 1fr; }
+  .recentTable { font-size: 11px; }
+}
