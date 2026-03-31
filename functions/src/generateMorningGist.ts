@@ -4,23 +4,16 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
 import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
-import { fetchEmailCards, type EmailCard } from './integrations/gmailInt';
+import { fetchEmailCards } from './integrations/gmailInt';
 import {
   OPENAI_API_KEY,
   generateDailyFocusSections,
 } from './integrations/openaiGist';
-import {
-  RESEND_API_KEY,
-  sendMorningGistEmail,
-  resolveUserEmail,
-} from './integrations/emailDelivery';
-import { buildEmailHtml, buildEmailSubject } from './integrations/emailTemplate';
+import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
   PHAXIO_API_KEY,
   PHAXIO_API_SECRET,
-  sendMorningGistFax,
 } from './integrations/faxDelivery';
-import { buildFaxHtml } from './integrations/faxTemplate';
 import {
   writeDeliveryLog,
   updateGistDeliveryStatus,
@@ -35,175 +28,25 @@ import {
   fetchCalendarItems,
 } from './integrations/googleCalendarInt';
 
+import type { UserDoc, MorningGist, GistPlan, IntegrationStatus } from './types';
+export type { DeliveryMethod, UserDoc } from './types';
+
+import {
+  hasConnectedIntegration,
+  resolveDeliveryMethod,
+  toDateKeyISO,
+  toDateLabel,
+  safeTimezone,
+  estimatePages,
+  normalizeDayItems,
+  normalizeEmailCards,
+} from './helpers';
+
+import { deliverByEmail } from './delivery/email';
+import { deliverByFax } from './delivery/fax';
+import { deliverByWeb } from './delivery/web';
+
 const db = getFirestore();
-
-/** === Types === */
-
-/** All delivery methods supported by the scheduler. */
-export type DeliveryMethod = 'web' | 'email' | 'fax';
-
-type GistPlan = 'web' | 'print' | 'loop';
-
-type UserPrefs = {
-  timezone?: string;
-  city?: string;
-  newsDomains?: string[];
-  tone?: string;
-  maxPages?: number;
-  email?: {
-    vipSenders?: string[];
-    includeUnreadOnly?: boolean;
-    includeInboxOnly?: boolean;
-    maxCards?: number;
-    lookbackHours?: number;
-    maxCandidates?: number;
-    enableAi?: boolean;
-  };
-};
-
-type UserDelivery = {
-  method?: DeliveryMethod;
-  /** E.164 or 10-digit fax number, e.g. "+12125551234" */
-  faxNumber?: string;
-  schedule?: {
-    hour?: number;
-    minute?: number;
-    weekdaysOnly?: boolean;
-  };
-};
-
-type IntegrationStatus = {
-  status?: 'connected' | 'disconnected';
-};
-
-export type UserDoc = {
-  uid: string;
-  email: string | null;
-  plan: GistPlan;
-  prefs?: UserPrefs;
-  delivery?: UserDelivery;
-  calendarIntegration?: IntegrationStatus;
-  emailIntegration?: IntegrationStatus;
-};
-
-type MorningGist = {
-  id: string;
-  userId: string;
-  date: string;
-  timezone: string;
-
-  weatherSummary: string;
-  firstEvent?: string;
-
-  dayItems: { time?: string; title: string; note?: string }[];
-  worldItems: { headline: string; implication: string }[];
-  emailCards: EmailCard[];
-  gistBullets: string[];
-  oneThing: string;
-
-  delivery: {
-    method: DeliveryMethod;
-    pages: number;
-    status: 'queued' | 'delivered' | 'failed';
-    deliveredAt?: Timestamp;
-    /** Phaxio fax ID — set for fax deliveries, used by faxWebhook to correlate callbacks. */
-    phaxioFaxId?: string;
-  };
-
-  createdAt: Timestamp;
-};
-
-/** === Helpers === */
-
-function hasConnectedIntegration(user: UserDoc): boolean {
-  return (
-    user.calendarIntegration?.status === 'connected' ||
-    user.emailIntegration?.status === 'connected'
-  );
-}
-
-/**
- * Resolve delivery method using plan-first routing.
- *
- *   print plan → fax  (physical delivery)
- *   loop/web   → email if Gmail connected, otherwise web
- *
- * This is intentional: the plan controls what you get. The print plan
- * subscriber wants paper; the loop/web subscriber gets digital.
- */
-function resolveDeliveryMethod(user: UserDoc): DeliveryMethod {
-  if (user.plan === 'print') return 'fax';
-  if (user.emailIntegration?.status === 'connected') return 'email';
-  return 'web';
-}
-
-function toDateKeyISO(date: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-
-  const y = parts.find((p) => p.type === 'year')?.value ?? '1970';
-  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
-  const d = parts.find((p) => p.type === 'day')?.value ?? '01';
-  return `${y}-${m}-${d}`;
-}
-
-function toDateLabel(date: Date, timeZone: string): string {
-  return date.toLocaleDateString('en-US', {
-    timeZone,
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function safeTimezone(tz?: string): string {
-  if (!tz) return 'America/New_York';
-  try {
-    Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
-    return tz;
-  } catch {
-    return 'America/New_York';
-  }
-}
-
-function estimatePages(maxPages?: number): number {
-  if (maxPages && maxPages > 0) return Math.min(maxPages, 3);
-  return 2;
-}
-
-function normalizeDayItems(
-  items: Array<{ time?: string; title: string; note?: string }>,
-): Array<{ time?: string; title: string; note?: string }> {
-  return items.map((item) => ({
-    title: item.title.trim(),
-    ...(item.time?.trim() ? { time: item.time.trim() } : {}),
-    ...(item.note?.trim() ? { note: item.note.trim() } : {}),
-  }));
-}
-
-function normalizeEmailCards(cards: EmailCard[]): EmailCard[] {
-  return cards.map((card) => ({
-    id: card.id,
-    threadId: card.threadId,
-    messageId: card.messageId,
-    subject: card.subject,
-    snippet: card.snippet,
-    receivedAt: card.receivedAt,
-    category: card.category,
-    urgency: card.urgency,
-    importance: card.importance,
-    why: card.why,
-    ...(card.fromName !== undefined ? { fromName: card.fromName } : {}),
-    ...(card.fromEmail !== undefined ? { fromEmail: card.fromEmail } : {}),
-    ...(card.suggestedNextStep !== undefined
-      ? { suggestedNextStep: card.suggestedNextStep }
-      : {}),
-  }));
-}
 
 async function fetchWorldItems(): Promise<
   Array<{ headline: string; implication: string }>
@@ -322,7 +165,6 @@ export async function generateMorningGistForUser(
     });
   }
 
-  // Initial delivery status — fax stays 'queued' until webhook confirms
   let finalStatus: 'queued' | 'delivered' | 'failed' = 'failed';
 
   try {
@@ -419,100 +261,44 @@ export async function generateMorningGistForUser(
 
     const dateLabel = toDateLabel(now, timezone);
 
-    // ── Email delivery ──────────────────────────────────────────────────────
+    // ── Delivery routing ───────────────────────────────────────────────────
     if (method === 'email') {
-      const toEmail = await resolveUserEmail(user.uid, user.email);
-
-      if (!toEmail) {
-        logger.warn('Skipping email delivery — no email address for user.', {
-          userId: user.uid,
-        });
-        finalStatus = 'delivered'; // gist is in Firestore; treat as web
-      } else {
-        const templateInput = {
-          date: dateLabel,
-          weatherSummary: weather,
-          dayItems: cleanDayItems,
-          worldItems,
-          emailCards: cleanEmailCards.map((c) => ({
-            fromName: c.fromName,
-            fromEmail: c.fromEmail,
-            subject: c.subject,
-            snippet: c.snippet,
-            category: c.category,
-            why: c.why,
-            suggestedNextStep: c.suggestedNextStep,
-          })),
-          gistBullets: sections.gistBullets,
-        };
-
-        const html = buildEmailHtml(templateInput);
-        const subject = buildEmailSubject(templateInput);
-        const result = await sendMorningGistEmail({ toEmail, subject, html });
-
-        if (result.success) {
-          finalStatus = 'delivered';
-          logger.info('Morning Gist email sent.', {
-            userId: user.uid,
-            toEmail,
-            dateKey,
-          });
-        } else {
-          finalStatus = 'failed';
-          logger.warn('Morning Gist email failed.', {
-            userId: user.uid,
-            error: result.error,
-          });
-        }
-      }
-
-    // ── Fax delivery ────────────────────────────────────────────────────────
-    } else if (method === 'fax') {
-      const faxNumber = user.delivery!.faxNumber!.trim();
-      const subscriberName = user.email?.split('@')[0] ?? 'Subscriber';
-
-      const html = buildFaxHtml({
-        subscriberName,
-        date: dateLabel,
+      const result = await deliverByEmail({
+        userId: user.uid,
+        userEmail: user.email,
+        dateLabel,
         weatherSummary: weather,
         dayItems: cleanDayItems,
         worldItems,
-        emailCards: cleanEmailCards.map((c) => ({
-          fromName: c.fromName,
-          subject: c.subject,
-          snippet: c.snippet,
-          category: c.category,
-          why: c.why,
-          suggestedNextStep: c.suggestedNextStep,
-        })),
+        emailCards: cleanEmailCards,
         gistBullets: sections.gistBullets,
       });
+      finalStatus = result.status;
 
-      const result = await sendMorningGistFax({ faxNumber, html, userId: user.uid });
+    } else if (method === 'fax') {
+      const faxNumber = user.delivery!.faxNumber!.trim();
+      const result = await deliverByFax({
+        userId: user.uid,
+        userEmail: user.email,
+        faxNumber,
+        dateLabel,
+        weatherSummary: weather,
+        dayItems: cleanDayItems,
+        worldItems,
+        emailCards: cleanEmailCards,
+        gistBullets: sections.gistBullets,
+      });
+      finalStatus = result.status;
 
-      if (result.success) {
-        // Store the Phaxio fax ID so the webhook can correlate the callback
+      if (result.status === 'queued' && result.faxId) {
         await gistRef.update({ 'delivery.phaxioFaxId': result.faxId });
-        // Status stays 'queued' — webhook will update to 'delivered'/'failed'
-        finalStatus = 'queued';
-        logger.info('Morning Gist fax queued.', {
-          userId: user.uid,
-          faxId: result.faxId,
-          dateKey,
-        });
-      } else {
-        finalStatus = 'failed';
-        logger.warn('Morning Gist fax failed.', {
-          userId: user.uid,
-          error: result.error,
-        });
+      } else if (result.status === 'failed') {
         await updateGistDeliveryStatus(user.uid, dateKey, 'failed');
       }
 
-    // ── Web delivery ────────────────────────────────────────────────────────
     } else {
-      finalStatus = 'delivered';
-      await updateGistDeliveryStatus(user.uid, dateKey, 'delivered');
+      const result = await deliverByWeb({ userId: user.uid, dateKey });
+      finalStatus = result.status;
     }
 
   } catch (error) {
@@ -528,7 +314,6 @@ export async function generateMorningGistForUser(
     }
   }
 
-  // Always write a delivery log entry (queued/delivered/failed)
   await writeDeliveryLog(user.uid, {
     type: 'morning',
     method,
@@ -547,12 +332,9 @@ export async function generateMorningGistForUser(
 /** === Scheduled job === */
 export const generateMorningGist = onSchedule(
   {
-    // Daily at 07:30 America/New_York
     schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    // Extended timeout: Phaxio HTML-to-fax dispatch adds ~500ms per user.
-    // 180s covers up to ~30 fax users comfortably at MVP scale.
     timeoutSeconds: 180,
     secrets: [
       WEATHERAPI_KEY,
