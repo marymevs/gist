@@ -19,95 +19,221 @@
 
     <div class="grid">
 
-      <!-- ── NEWSPAPER MAIN ─────────────────────────────── -->
       <ng-container *ngIf="gist$ | async as gist; else noGist">
-        <article class="newspaper" aria-label="Morning Gist">
+        <div class="broadsheet-wrap">
 
-          <!-- MASTHEAD -->
-          <header class="masthead">
-            <span class="wordmark">Gist</span>
-            <span class="masthead-dateline">
-              {{ prettyDateFromDateKey(gist.date) }}{{ gist.weatherSummary ? ' · ' + gist.weatherSummary : '' }}
-            </span>
-          </header>
-          <div class="masthead-rule"></div>
+          <!-- ── PAGE 1: THE BRIEFING ── -->
+          <div class="bs-page">
 
-          <!-- TODAY -->
-          <section class="np-section">
-            <h2 class="np-label">Today</h2>
-            <ng-container *ngIf="gist.dayItems?.length; else noDay">
-              <div class="cal-item" *ngFor="let item of gist.dayItems">
-                <span class="cal-time">{{ item.time || '—' }}</span>
-                <div class="cal-body">
-                  <div class="cal-title">{{ item.title }}</div>
-                  <div class="cal-note" *ngIf="item.note">{{ item.note }}</div>
+            <!-- Masthead -->
+            <div class="mast">
+              <div class="mast-pre">{{ np(gist).location }} &middot; For {{ np(gist).subscriberName }}</div>
+              <h1>The Gist</h1>
+              <div class="mast-post">Your morning, on paper</div>
+              <div class="mast-sub">
+                <span>{{ np(gist).dateFormatted }}</span>
+                <span>{{ np(gist).volumeIssue }}</span>
+                <span>{{ np(gist).deliveryTime }}</span>
+              </div>
+            </div>
+
+            <!-- Weather bar -->
+            <div class="wx">
+              <span class="wx-temp">{{ np(gist).weather.tempNow }}</span>
+              <span class="wx-cond">{{ np(gist).weather.conditions }}</span>
+              <div class="wx-week" *ngIf="np(gist).weather.forecast.length">
+                <div class="wx-day" *ngFor="let f of np(gist).weather.forecast">
+                  <div class="wx-day-name">{{ f.day }}</div>
+                  <div class="wx-day-hi">{{ f.high }}</div>
+                  <div class="wx-day-rain" *ngIf="f.condition">{{ f.condition }}</div>
                 </div>
               </div>
-            </ng-container>
-            <ng-template #noDay>
-              <p class="np-empty">No events today.</p>
-            </ng-template>
-          </section>
+            </div>
 
-          <!-- INBOX -->
-          <ng-container *ngIf="gist.emailCards?.length">
-            <section class="np-section">
-              <h2 class="np-label">Inbox</h2>
-              <div class="email-card" *ngFor="let email of gist.emailCards">
-                <div class="email-meta">
-                  <span class="email-cat">
-                    {{ email.category === 'WaitingOn' ? '[ WAITING ]' : '[ ' + email.category.toUpperCase() + ' ]' }}
-                  </span>
-                  <span class="email-from" *ngIf="email.fromName || email.fromEmail">
-                    {{ email.fromName || email.fromEmail }}
-                  </span>
+            <!-- Rhythms bar -->
+            <div class="rhythms" *ngIf="np(gist).rhythms as r">
+              <span *ngIf="r.moon"><b>Moon</b> {{ r.moon }}</span>
+              <span *ngIf="r.season"><b>Season</b> {{ r.season }}</span>
+              <span *ngIf="r.light && r.light !== '—'"><b>Light</b> {{ r.light }}</span>
+              <span *ngIf="r.countdown"><b>{{ r.countdown.split(' ')[0] }}</b> {{ r.countdown.split(' ').slice(1).join(' ') }}</span>
+            </div>
+
+            <!-- Lede -->
+            <div class="lede" *ngIf="np(gist).lede as lede">
+              <div class="lede-kicker">{{ lede.kicker }}</div>
+              <h2>{{ lede.headline }}</h2>
+              <p>{{ lede.paragraph }}</p>
+            </div>
+
+            <!-- Two-column body -->
+            <div class="cols">
+              <!-- Left: Schedule + Good News -->
+              <div class="c">
+                <div class="label" *ngIf="np(gist).schedule.length">Schedule</div>
+                <div class="ev" *ngFor="let ev of np(gist).schedule">
+                  <span class="ev-t">{{ ev.time }}</span>
+                  <div>
+                    <div class="ev-name">{{ ev.emoji ? ev.emoji + ' ' : '' }}{{ ev.name }}</div>
+                    <div class="ev-note" *ngIf="ev.note">{{ ev.note }}</div>
+                  </div>
                 </div>
-                <div class="email-subject">{{ email.subject }}</div>
-                <div class="email-snippet">{{ email.snippet }}</div>
-                <div class="email-next" *ngIf="email.suggestedNextStep">
-                  → {{ email.suggestedNextStep }}
+
+                <hr class="hr" *ngIf="np(gist).goodNews.length">
+
+                <div class="label" *ngIf="np(gist).goodNews.length">Good News from the World</div>
+                <div class="nw" *ngFor="let nw of np(gist).goodNews">
+                  <h4>{{ nw.headline }}</h4>
+                  <p>{{ nw.summary }}</p>
                 </div>
               </div>
-            </section>
-          </ng-container>
 
-          <!-- THE WORLD -->
-          <section class="np-section">
-            <h2 class="np-label">The World</h2>
-            <ng-container *ngIf="gist.worldItems?.length; else noWorld">
-              <div class="world-item" *ngFor="let w of gist.worldItems">
-                <div class="world-headline">{{ w.headline }}</div>
-                <div class="world-impl">{{ w.implication }}</div>
+              <!-- Right: Notifications + People + Quote -->
+              <div class="c">
+                <div class="label" *ngIf="np(gist).notifications.length">Notifications &amp; Life</div>
+                <div class="nt" *ngFor="let nt of np(gist).notifications">
+                  <span class="nt-ico">{{ nt.emoji }}</span>
+                  <div class="nt-body">
+                    <span class="nt-src">{{ nt.source }}</span><br>
+                    {{ nt.body }}
+                  </div>
+                </div>
+
+                <hr class="hr" *ngIf="np(gist).people.length">
+
+                <div class="label" *ngIf="np(gist).people.length">People</div>
+                <p class="sm" *ngFor="let p of np(gist).people">
+                  <span class="bd">{{ p.name }}</span> {{ p.nudge }}
+                </p>
+
+                <hr class="hr" *ngIf="np(gist).quote">
+
+                <div class="qt" *ngIf="np(gist).quote as q">
+                  <blockquote>&ldquo;{{ q.text }}&rdquo;</blockquote>
+                  <cite>{{ q.attribution }}</cite>
+                </div>
               </div>
-            </ng-container>
-            <ng-template #noWorld>
-              <p class="np-empty">No news today.</p>
-            </ng-template>
-          </section>
+            </div>
 
-          <!-- FOCUS -->
-          <ng-container *ngIf="gist.gistBullets?.length">
-            <section class="np-section">
-              <h2 class="np-label">Focus</h2>
-              <div class="focus-bullet" *ngFor="let b of gist.gistBullets">{{ b }}</div>
-            </section>
-          </ng-container>
+            <!-- Footer -->
+            <div class="ft">
+              <span>The Gist &middot; Page 1</span>
+              <span>mygist.app</span>
+              <span *ngIf="np(gist).moonFooter">&#9789; {{ np(gist).moonFooter }}</span>
+            </div>
+          </div>
 
-          <!-- ONE THING -->
-          <section class="np-section" *ngIf="gist.oneThing">
-            <h2 class="np-label">One Thing</h2>
-            <p class="one-thing">{{ gist.oneThing }}</p>
-            <p class="one-thing-tag">Because your attention is finite — and the internet is not.</p>
-          </section>
+          <!-- ── PAGE 2: THE REFLECTION ── -->
+          <div class="bs-page" *ngIf="np(gist).hasPage2">
 
-          <footer class="np-footer noPrint">mygist.app</footer>
-        </article>
+            <!-- Compact header -->
+            <div class="p2-header">
+              <span class="p2-title">The Gist</span>
+              <span class="p2-date">{{ np(gist).dateFormatted }} &middot; Page 2</span>
+            </div>
+
+            <div class="cols" style="border-top:none;">
+              <!-- Left: Body & Mind + Practice Arc + Moon + Closing -->
+              <div class="c">
+
+                <ng-container *ngIf="np(gist).bodyMind as bm">
+                  <div class="label">{{ bm.sectionLabel }}</div>
+                  <h3>{{ bm.title }}</h3>
+                  <p class="sm" *ngFor="let para of bm.paragraphs">{{ para }}</p>
+                  <p class="sm mt it" *ngIf="bm.coachingNote">{{ bm.coachingNote }}</p>
+                </ng-container>
+
+                <hr class="hr" *ngIf="np(gist).practiceArc">
+
+                <ng-container *ngIf="np(gist).practiceArc as pa">
+                  <div class="label">{{ pa.sectionLabel }}</div>
+                  <h3>{{ pa.title }}</h3>
+                  <p class="sm" *ngFor="let item of pa.items">
+                    <span class="bd">{{ item.label }}</span> {{ item.text }}
+                  </p>
+                  <p class="sm mt" *ngIf="pa.closingNote">{{ pa.closingNote }}</p>
+                </ng-container>
+
+                <hr class="hr" *ngIf="np(gist).moonHighlight">
+
+                <div class="hi" *ngIf="np(gist).moonHighlight as mh">
+                  <div class="hi-title">{{ mh.title }}</div>
+                  <p class="sm">{{ mh.paragraph }}</p>
+                </div>
+
+                <hr class="hr" *ngIf="np(gist).closingThought">
+                <p class="sm mt" *ngIf="np(gist).closingThought">{{ np(gist).closingThought }}</p>
+
+              </div>
+
+              <!-- Right: Intention + Fax Back + Personal Quote -->
+              <div class="c">
+
+                <div class="label">Morning Intention</div>
+                <p class="xs it mt">{{ np(gist).intentionPrompt }}</p>
+                <div class="wl"></div>
+                <div class="wl"></div>
+                <div class="wl"></div>
+
+                <hr class="hr">
+
+                <div class="label">End of Day &middot; Fax Back</div>
+                <p class="xs mt" style="margin-bottom:5pt;">Mark this up and fax it back. Your agents process overnight.</p>
+
+                <ng-container *ngFor="let q of np(gist).faxBackQuestions">
+                  <p class="sm bd">{{ q.prompt }}</p>
+                  <div class="fax-opts">
+                    <span *ngFor="let opt of q.options">&#9744; {{ opt }}</span>
+                  </div>
+                </ng-container>
+
+                <p class="sm bd" style="margin-top:3pt;">What's carrying over?</p>
+                <div class="wl"></div>
+                <div class="wl"></div>
+
+                <p class="sm bd" style="margin-top:3pt;">Tomorrow I'm finishing:</p>
+                <div class="wl"></div>
+
+                <p class="sm bd" style="margin-top:3pt;">Someone I want to reach out to:</p>
+                <div class="wl"></div>
+
+                <p class="sm bd" style="margin-top:3pt;">Something I'm grateful for:</p>
+                <div class="wl"></div>
+                <div class="wl"></div>
+
+                <hr class="hr" *ngIf="np(gist).personalQuote">
+
+                <div class="qt" *ngIf="np(gist).personalQuote as pq" style="padding:5pt 6pt;">
+                  <blockquote style="font-size:10pt;">&ldquo;{{ pq.text }}&rdquo;</blockquote>
+                  <cite>{{ pq.attribution }}</cite>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="ft">
+              <span>The Gist &middot; Page 2</span>
+              <span>&#9789; {{ np(gist).seasonFooter }} &middot; {{ np(gist).moonFooter }}</span>
+              <span>&copy; 2026 mygist.app</span>
+            </div>
+          </div>
+
+        </div>
       </ng-container>
 
       <ng-template #noGist>
-        <div class="newspaper no-gist-placeholder">
-          <div class="no-gist-title">No Morning Gist found.</div>
-          <div class="sub">Generate one (scheduled or "Run now"), then refresh.</div>
+        <div class="broadsheet-wrap">
+          <div class="bs-page" style="min-height: 300px;">
+            <div class="mast">
+              <div class="mast-pre">&nbsp;</div>
+              <h1>The Gist</h1>
+              <div class="mast-post">Your morning, on paper</div>
+            </div>
+            <div class="lede" style="padding: 32pt 0; text-align: center;">
+              <h2 style="font-size: 13pt; color: var(--mid);">No Morning Gist found.</h2>
+              <p style="color: var(--light); font-size: 9pt;">Generate one (scheduled or "Run now"), then refresh.</p>
+            </div>
+          </div>
         </div>
       </ng-template>
 

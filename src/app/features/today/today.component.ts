@@ -35,6 +35,34 @@ type EmailCard = {
   suggestedNextStep?: string;
 };
 
+type NewspaperData = {
+  lede?: { kicker?: string; headline?: string; paragraph?: string };
+  schedule?: Array<{ time?: string; emoji?: string; name?: string; note?: string }>;
+  notifications?: Array<{ emoji?: string; source?: string; body?: string }>;
+  goodNews?: Array<{ headline?: string; summary?: string }>;
+  people?: Array<{ name?: string; nudge?: string }>;
+  quote?: { text?: string; attribution?: string };
+  bodyMind?: { sectionLabel?: string; title?: string; paragraphs?: string[]; coachingNote?: string };
+  practiceArc?: { sectionLabel?: string; title?: string; items?: Array<{ label?: string; text?: string }>; closingNote?: string };
+  moonHighlight?: { title?: string; paragraph?: string };
+  closingThought?: string;
+  faxBackQuestions?: Array<{ prompt?: string; options?: string[] }>;
+  personalQuote?: { text?: string; attribution?: string };
+};
+
+type NewspaperMeta = {
+  subscriberName?: string;
+  location?: string;
+  dateFormatted?: string;
+  deliveryTime?: string;
+  volumeIssue?: string;
+  weather?: { tempNow?: string; conditions?: string; forecast?: Array<{ day?: string; high?: string; condition?: string }> };
+  rhythms?: { moon?: string; season?: string; light?: string; countdown?: string };
+  moonFooter?: string;
+  seasonFooter?: string;
+  intentionPrompt?: string;
+};
+
 type MorningGist = {
   id: string;
   userId: string;
@@ -42,6 +70,7 @@ type MorningGist = {
   timezone: string;
 
   weatherSummary: string;
+  moonPhase?: string;
   firstEvent?: string;
 
   dayItems: DayItem[];
@@ -49,6 +78,8 @@ type MorningGist = {
   emailCards: EmailCard[];
   gistBullets: string[];
   oneThing: string;
+
+  newspaper?: NewspaperData & NewspaperMeta;
 
   delivery?: {
     method: 'web' | 'email' | 'fax';
@@ -205,6 +236,92 @@ export class TodayComponent {
 
   goToDelivery(): void {
     this.router.navigate(['/delivery']);
+  }
+
+  // === Newspaper view model ===
+  /** Normalize gist data into the broadsheet view model.
+   *  If newspaper data exists, use it. Otherwise build from legacy fields. */
+  np(gist: MorningGist) {
+    const n = gist.newspaper;
+    if (n?.lede) {
+      // Full newspaper data — use as-is with defaults
+      return {
+        subscriberName: n.subscriberName || 'You',
+        location: n.location || 'Your City',
+        dateFormatted: n.dateFormatted || this.prettyDateFromDateKey(gist.date),
+        deliveryTime: n.deliveryTime || '',
+        volumeIssue: n.volumeIssue || '',
+        weather: {
+          tempNow: n.weather?.tempNow || '—',
+          conditions: n.weather?.conditions || gist.weatherSummary || '',
+          forecast: n.weather?.forecast || [],
+        },
+        rhythms: n.rhythms || { moon: '', season: '', light: '' },
+        lede: n.lede,
+        schedule: n.schedule || [],
+        goodNews: n.goodNews || [],
+        notifications: n.notifications || [],
+        people: n.people || [],
+        quote: n.quote,
+        bodyMind: n.bodyMind,
+        practiceArc: n.practiceArc,
+        moonHighlight: n.moonHighlight,
+        closingThought: n.closingThought || '',
+        faxBackQuestions: n.faxBackQuestions || [],
+        personalQuote: n.personalQuote,
+        moonFooter: n.moonFooter || '',
+        seasonFooter: n.seasonFooter || '',
+        intentionPrompt: n.intentionPrompt || 'What would make today feel complete — not just productive, but good?',
+        hasPage2: !!(n.bodyMind || n.practiceArc || n.faxBackQuestions?.length),
+      };
+    }
+
+    // Legacy fallback — build newspaper-shaped data from old fields
+    return {
+      subscriberName: 'You',
+      location: 'Your City',
+      dateFormatted: this.prettyDateFromDateKey(gist.date),
+      deliveryTime: '',
+      volumeIssue: '',
+      weather: {
+        tempNow: gist.weatherSummary?.match(/\d+°/)?.[0] || '—',
+        conditions: gist.weatherSummary || '',
+        forecast: [] as Array<{ day?: string; high?: string; condition?: string }>,
+      },
+      rhythms: { moon: gist.moonPhase || '', season: '', light: '' } as { moon: string; season: string; light: string; countdown?: string },
+      lede: {
+        kicker: 'Good Morning',
+        headline: gist.oneThing || 'Your Daily Briefing',
+        paragraph: gist.gistBullets?.join(' ') || '',
+      },
+      schedule: (gist.dayItems || []).map(d => ({
+        time: d.time || '',
+        emoji: '',
+        name: d.title,
+        note: d.note || '',
+      })),
+      goodNews: (gist.worldItems || []).map(w => ({
+        headline: w.headline,
+        summary: w.implication,
+      })),
+      notifications: (gist.emailCards || []).map(e => ({
+        emoji: e.category === 'Action' ? '📧' : e.category === 'WaitingOn' ? '⏳' : '📋',
+        source: e.fromName || e.fromEmail || e.subject,
+        body: e.snippet + (e.suggestedNextStep ? ` → ${e.suggestedNextStep}` : ''),
+      })),
+      people: [] as Array<{ name: string; nudge: string }>,
+      quote: null as { text: string; attribution: string } | null,
+      bodyMind: null as { sectionLabel: string; title: string; paragraphs: string[]; coachingNote?: string } | null,
+      practiceArc: null as { sectionLabel: string; title: string; items: Array<{ label: string; text: string }>; closingNote?: string } | null,
+      moonHighlight: null as { title: string; paragraph: string } | null,
+      closingThought: '',
+      faxBackQuestions: [] as Array<{ prompt: string; options: string[] }>,
+      personalQuote: null as { text: string; attribution: string } | null,
+      moonFooter: gist.moonPhase || '',
+      seasonFooter: '',
+      intentionPrompt: 'What would make today feel complete — not just productive, but good?',
+      hasPage2: false,
+    };
   }
 
   // === Helpers ===
