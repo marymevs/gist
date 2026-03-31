@@ -22,6 +22,7 @@ export const resendMorningGist = onCall(
   {
     region: 'us-central1',
     timeoutSeconds: 120,
+    memory: '512MiB',
     secrets: [
       WEATHERAPI_KEY,
       NYT_API_KEY,

@@ -20,6 +20,7 @@ import {
   sendMorningGistFax,
 } from './integrations/faxDelivery';
 import { buildFaxHtml } from './integrations/faxTemplate';
+import { convertHtmlToPdf } from './integrations/htmlToPdf';
 import {
   writeDeliveryLog,
   updateGistDeliveryStatus,
@@ -425,7 +426,10 @@ export async function generateMorningGistForUser(
         gistBullets: sections.gistBullets,
       });
 
-      const result = await sendMorningGistFax({ faxNumber, html, userId: user.uid });
+      const pdfBuffer = await convertHtmlToPdf(html);
+      const pdfBase64 = pdfBuffer.toString('base64');
+
+      const result = await sendMorningGistFax({ faxNumber, pdfBase64, userId: user.uid });
 
       if (result.success) {
         // Store the iFax job ID so the webhook can correlate the callback
@@ -488,9 +492,10 @@ export const generateMorningGist = onSchedule(
     schedule: '30 7 * * *',
     timeZone: 'America/New_York',
     region: 'us-central1',
-    // Extended timeout: iFax HTML-to-fax dispatch adds ~500ms per user.
+    // Chromium PDF rendering + iFax dispatch adds ~3-5s per fax user.
     // 180s covers up to ~30 fax users comfortably at MVP scale.
     timeoutSeconds: 180,
+    memory: '512MiB',
     secrets: [
       WEATHERAPI_KEY,
       NYT_API_KEY,

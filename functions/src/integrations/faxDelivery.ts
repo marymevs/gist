@@ -1,13 +1,13 @@
 /**
  * Fax delivery via iFax API.
  *
- * The HTML is base64-encoded and sent as a file attachment in the faxData array.
+ * The caller provides a pre-rendered PDF as base64, sent in the faxData array.
  *
  * Flow:
  *
  *   generateMorningGistForUser()
  *     └── sendMorningGistFax(params)
- *           ├── build JSON body  (faxNumber + faxData with base64 HTML)
+ *           ├── build JSON body  (faxNumber + faxData with base64 PDF)
  *           ├── POST /v1/customer/fax-send  (accessToken header)
  *           ├── [retry once on 5xx/timeout]
  *           └── return FaxResult { success, jobId? | error }
@@ -58,21 +58,19 @@ function getApiKey(): string | null {
  */
 async function attemptSend(
   faxNumber: string,
-  html: string,
+  pdfBase64: string,
   apiKey: string,
 ): Promise<
   | { ok: true; jobId: string }
   | { ok: false; permanent: boolean; message: string }
 > {
-  const fileData = Buffer.from(html).toString('base64');
-
   const body = JSON.stringify({
     faxNumber,
     faxData: [
       {
-        fileData,
-        fileName: 'gist.html',
-        fileType: 'text/html',
+        fileData: pdfBase64,
+        fileName: 'gist.pdf',
+        fileType: 'application/pdf',
       },
     ],
   });
@@ -155,10 +153,10 @@ async function attemptSend(
  */
 export async function sendMorningGistFax(params: {
   faxNumber: string;
-  html: string;
+  pdfBase64: string;
   userId: string; // for logging only
 }): Promise<FaxResult> {
-  const { faxNumber, html, userId } = params;
+  const { faxNumber, pdfBase64, userId } = params;
 
   if (!faxNumber.trim()) {
     return { success: false, error: 'No fax number provided.' };
@@ -176,7 +174,7 @@ export async function sendMorningGistFax(params: {
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     }
 
-    const result = await attemptSend(faxNumber, html, apiKey);
+    const result = await attemptSend(faxNumber, pdfBase64, apiKey);
 
     if (result.ok) {
       logger.info('iFax fax queued.', { userId, jobId: result.jobId, attempt });

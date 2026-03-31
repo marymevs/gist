@@ -64,7 +64,7 @@ describe('sendMorningGistFax', () => {
 
     const result = await sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-1',
     });
 
@@ -77,7 +77,7 @@ describe('sendMorningGistFax', () => {
 
     await sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-1',
     });
 
@@ -91,10 +91,10 @@ describe('sendMorningGistFax', () => {
     const body = JSON.parse(opts.body);
     expect(body.faxNumber).toBe('+12125551234');
     expect(body.faxData).toHaveLength(1);
-    expect(body.faxData[0].fileName).toBe('gist.html');
-    expect(body.faxData[0].fileType).toBe('text/html');
-    // fileData should be base64 of the HTML
-    expect(Buffer.from(body.faxData[0].fileData, 'base64').toString()).toBe('<html>test</html>');
+    expect(body.faxData[0].fileName).toBe('gist.pdf');
+    expect(body.faxData[0].fileType).toBe('application/pdf');
+    // fileData should be the base64 PDF passed through as-is
+    expect(body.faxData[0].fileData).toBe(Buffer.from('fake-pdf-content').toString('base64'));
   });
 
   it('returns failure immediately on 4xx (permanent error, no retry)', async () => {
@@ -103,7 +103,7 @@ describe('sendMorningGistFax', () => {
 
     const result = await sendMorningGistFax({
       faxNumber: '+12125550000',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-2',
     });
 
@@ -123,7 +123,7 @@ describe('sendMorningGistFax', () => {
     vi.useFakeTimers();
     const promise = sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-3',
     });
     await vi.runAllTimersAsync();
@@ -141,7 +141,7 @@ describe('sendMorningGistFax', () => {
     vi.useFakeTimers();
     const promise = sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-4',
     });
     await vi.runAllTimersAsync();
@@ -159,7 +159,7 @@ describe('sendMorningGistFax', () => {
     vi.useFakeTimers();
     const promise = sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-5',
     });
     await vi.runAllTimersAsync();
@@ -179,7 +179,7 @@ describe('sendMorningGistFax', () => {
 
     const result = await sendMorningGistFax({
       faxNumber: '   ',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-6',
     });
 
@@ -195,7 +195,7 @@ describe('sendMorningGistFax', () => {
 
     const result = await sendMorningGistFax({
       faxNumber: '+12125551234',
-      html: '<html>test</html>',
+      pdfBase64: Buffer.from('fake-pdf-content').toString('base64'),
       userId: 'user-7',
     });
 
