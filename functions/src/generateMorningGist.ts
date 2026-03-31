@@ -51,6 +51,7 @@ import { newsConnector } from './connectors/news';
 import { moonConnector } from './connectors/moon';
 
 import { readMemoryContext, formatMemoryForPrompt } from './personalization/memoryReader';
+import { isSubscriptionActive } from './billing/stripeUtils';
 import {
   observeCalendarPatterns,
   observeTopicAffinities,
@@ -86,6 +87,27 @@ export async function generateMorningGistForUser(
         userId: user.uid,
       });
       return;
+    }
+  }
+
+  // Billing gate: verify active subscription for paid plans
+  if (user.plan !== 'web') {
+    try {
+      const active = await isSubscriptionActive(user.stripeCustomerId, user.plan);
+      if (!active) {
+        logger.warn('Skipping gist generation — no active subscription for paid plan.', {
+          userId: user.uid,
+          plan: user.plan,
+          status: user.stripeSubscriptionStatus ?? 'none',
+        });
+        return;
+      }
+    } catch (err) {
+      // If Stripe is down, log but continue (graceful degradation)
+      logger.warn('Stripe subscription check failed, proceeding anyway.', {
+        userId: user.uid,
+        error: err instanceof Error ? err.message : err,
+      });
     }
   }
 
@@ -439,6 +461,8 @@ function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
     delivery: data.delivery ?? {},
     calendarIntegration: data.calendarIntegration,
     emailIntegration: data.emailIntegration,
+    stripeCustomerId: data.stripeCustomerId ?? null,
+    stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
   };
 }
 

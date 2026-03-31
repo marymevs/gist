@@ -88,6 +88,8 @@ export const generateGistOnDemand = onRequest(
       delivery: data.delivery ?? {},
       calendarIntegration: data.calendarIntegration,
       emailIntegration: data.emailIntegration,
+      stripeCustomerId: data.stripeCustomerId ?? null,
+      stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
     };
 
     logger.info('On-demand gist generation requested.', { userId: uid });

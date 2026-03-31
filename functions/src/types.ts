@@ -53,6 +53,8 @@ export type UserDoc = {
   delivery?: UserDelivery;
   calendarIntegration?: IntegrationStatus;
   emailIntegration?: IntegrationStatus;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
 };
 
 export type MorningGist = {

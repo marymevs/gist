@@ -150,20 +150,22 @@
 
         <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
           <button
-            class="secondary disabled-hint"
+            class="secondary"
             type="button"
-            disabled
-            title="Stripe billing coming soon"
+            [disabled]="isUpgrading"
+            (click)="onUpgradePlan(user)"
+            *ngIf="user.plan === 'web'"
           >
-            Change plan (coming soon)
+            {{ isUpgrading ? 'Redirecting\u2026' : 'Upgrade to Print ($25/mo)' }}
           </button>
           <button
-            class="secondary disabled-hint"
+            class="secondary"
             type="button"
-            disabled
-            title="Stripe billing coming soon"
+            [disabled]="isOpeningPortal"
+            (click)="onManageBilling()"
+            *ngIf="user.stripeSubscriptionStatus === 'active' || user.stripeSubscriptionStatus === 'past_due'"
           >
-            View invoices (coming soon)
+            {{ isOpeningPortal ? 'Opening\u2026' : 'Manage billing' }}
           </button>
         </div>
 

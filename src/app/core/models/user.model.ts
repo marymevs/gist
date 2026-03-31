@@ -61,8 +61,9 @@ export interface GistUser {
   // Onboarding state
   onboardingComplete?: boolean;
 
-  // Billing (stubbed for now)
+  // Billing
   stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
   stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
 
   calendarIntegration?: CalendarIntegration;
