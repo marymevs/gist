@@ -1,0 +1,129 @@
+<section class="admin" *ngIf="isAuthorized">
+  <header class="adminHeader">
+    <h1>Gist Admin</h1>
+    <span class="kicker">Founder Dashboard</span>
+  </header>
+
+  <div class="loadingState" *ngIf="loading">Loading metrics&hellip;</div>
+
+  <div class="dashboard" *ngIf="!loading">
+
+    <!-- Row 1: Key metrics -->
+    <div class="metricsRow">
+      <div class="metricCard">
+        <span class="metricLabel">Total Users</span>
+        <span class="metricValue">{{ totalUsers }}</span>
+      </div>
+      <div class="metricCard">
+        <span class="metricLabel">Active (7d)</span>
+        <span class="metricValue">{{ activeUsers }}</span>
+      </div>
+      <div class="metricCard">
+        <span class="metricLabel">Onboarded</span>
+        <span class="metricValue">{{ onboardedUsers }}</span>
+      </div>
+    </div>
+
+    <!-- Row 2: Plan + subscription breakdown -->
+    <div class="breakdownRow">
+      <div class="card breakdownCard">
+        <h2>Plans</h2>
+        <div class="kvGrid" *ngIf="planKeys().length > 0">
+          <ng-container *ngFor="let key of planKeys()">
+            <span class="kvLabel">{{ key }}</span>
+            <span class="kvValue">{{ planBreakdown[key] }}</span>
+          </ng-container>
+        </div>
+        <p class="emptyNote" *ngIf="planKeys().length === 0">No users yet.</p>
+      </div>
+
+      <div class="card breakdownCard">
+        <h2>Subscriptions</h2>
+        <div class="kvGrid" *ngIf="subKeys().length > 0">
+          <ng-container *ngFor="let key of subKeys()">
+            <span class="kvLabel">{{ key }}</span>
+            <span class="kvValue">{{ subscriptionBreakdown[key] }}</span>
+          </ng-container>
+        </div>
+        <p class="emptyNote" *ngIf="subKeys().length === 0">No subscriptions yet.</p>
+      </div>
+    </div>
+
+    <!-- Row 3: Quality self-eval -->
+    <div class="card qualityCard">
+      <h2>Quality Self-Eval (last 20 gists)</h2>
+      <div class="qualityGrid" *ngIf="qualitySampleCount > 0">
+        <div class="qualityItem">
+          <span class="qualityLabel">Editorial Voice</span>
+          <span class="qualityScore">{{ avgEditorialVoice }}<span class="qualityMax">/5</span></span>
+        </div>
+        <div class="qualityItem">
+          <span class="qualityLabel">Cross-reference</span>
+          <span class="qualityScore">{{ avgCrossRef }}<span class="qualityMax">/5</span></span>
+        </div>
+        <div class="qualityItem">
+          <span class="qualityLabel">Personalization</span>
+          <span class="qualityScore">{{ avgPersonalization }}<span class="qualityMax">/5</span></span>
+        </div>
+      </div>
+      <p class="emptyNote" *ngIf="qualitySampleCount === 0">No quality data yet.</p>
+      <p class="sampleNote" *ngIf="qualitySampleCount > 0">Based on {{ qualitySampleCount }} scored gists.</p>
+    </div>
+
+    <!-- Row 4: Delivery stats -->
+    <div class="card deliveryCard" *ngIf="deliveryKeys().length > 0">
+      <h2>Delivery (last 20 gists)</h2>
+      <table class="deliveryTable">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Total</th>
+            <th>Delivered</th>
+            <th>Failed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let method of deliveryKeys()">
+            <td>{{ method }}</td>
+            <td>{{ deliveryStats[method].total }}</td>
+            <td class="ok">{{ deliveryStats[method].delivered }}</td>
+            <td [class.bad]="deliveryStats[method].failed > 0">{{ deliveryStats[method].failed }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Row 5: Recent gists -->
+    <div class="card recentCard">
+      <h2>Recent Gists</h2>
+      <table class="recentTable" *ngIf="recentGists.length > 0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Date</th>
+            <th>Delivery</th>
+            <th>Status</th>
+            <th>Voice</th>
+            <th>X-ref</th>
+            <th>Personal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of recentGists">
+            <td class="mono">{{ g.userId | slice:0:8 }}&hellip;</td>
+            <td class="mono">{{ g.date }}</td>
+            <td>{{ g.delivery?.method || '—' }}</td>
+            <td [class.ok]="g.delivery?.status === 'delivered'" [class.bad]="g.delivery?.status === 'failed'">
+              {{ g.delivery?.status || '—' }}
+            </td>
+            <td class="mono">{{ g.qualityScore?.editorialVoice || '—' }}</td>
+            <td class="mono">{{ g.qualityScore?.crossReferenceDepth || '—' }}</td>
+            <td class="mono">{{ g.qualityScore?.personalizationDepth || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="emptyNote" *ngIf="recentGists.length === 0">No gists generated yet.</p>
+    </div>
+
+  </div>
+</section>
