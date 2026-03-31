@@ -28,6 +28,10 @@ export type UserPrefs = {
     maxCandidates?: number;
     enableAi?: boolean;
   };
+  countdown?: {
+    label: string;       // e.g. "Thesis", "Race"
+    targetDate: string;  // ISO date e.g. "2026-05-07"
+  };
 };
 
 export type UserDelivery = {
@@ -55,6 +59,12 @@ export type UserDoc = {
   emailIntegration?: IntegrationStatus;
   stripeCustomerId?: string | null;
   stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
+  /** Running issue count — incremented each generation. */
+  gistIssueCount?: number;
+  profile?: {
+    name?: string;
+    context?: string;
+  };
 };
 
 export type MorningGist = {
@@ -77,6 +87,9 @@ export type MorningGist = {
     crossReferenceDepth: number;
     personalizationDepth: number;
   };
+
+  /** Newspaper-format output (structured JSON from Claude). Stored for template rendering. */
+  newspaper?: Record<string, unknown>;
 
   delivery: {
     method: DeliveryMethod;

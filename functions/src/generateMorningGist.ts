@@ -8,10 +8,16 @@ import {
   ANTHROPIC_API_KEY,
   generateDailyFocusSections,
 } from './integrations/claudeGist';
-import { RESEND_API_KEY } from './integrations/emailDelivery';
+import { generateNewspaperGist } from './integrations/claudeNewspaper';
+import { buildNewspaperHtml } from './integrations/newspaperTemplate';
+import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrations/newspaperEmailTemplate';
+import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
+import { RESEND_API_KEY, resolveUserEmail, sendMorningGistEmail } from './integrations/emailDelivery';
+import { buildFaxHtml } from './integrations/faxTemplate';
 import {
   PHAXIO_API_KEY,
   PHAXIO_API_SECRET,
+  sendMorningGistFax,
 } from './integrations/faxDelivery';
 import {
   writeDeliveryLog,
@@ -131,7 +137,7 @@ export async function generateMorningGistForUser(
           toEmail,
           subject: 'Your Gist fax is paused',
           html: '<p>Your morning Gist fax was paused because your payment didn\'t go through. Update your payment at <a href="https://mygist.app/account">mygist.app/account</a> to resume delivery.</p>',
-        }).catch((err) => logger.warn('Failed to send payment-paused email.', { userId: user.uid, err }));
+        }).catch((err: unknown) => logger.warn('Failed to send payment-paused email.', { userId: user.uid, err }));
       }
       // Also send a one-page notification fax (primary channel for screenless users)
       const notifyHtml = buildFaxHtml({
@@ -147,7 +153,7 @@ export async function generateMorningGistForUser(
         faxNumber: user.delivery!.faxNumber!.trim(),
         html: notifyHtml,
         userId: user.uid,
-      }).catch((err) => logger.warn('Failed to send payment-paused notification fax.', { userId: user.uid, err }));
+      }).catch((err: unknown) => logger.warn('Failed to send payment-paused notification fax.', { userId: user.uid, err }));
       return;
     }
   }
@@ -289,6 +295,58 @@ export async function generateMorningGistForUser(
       });
     }
 
+    // Generate newspaper-format output (parallel with memory writes)
+    let newspaperData: Record<string, unknown> | undefined;
+    try {
+      const countdownPref = user.prefs?.countdown;
+      let countdownInput: { label: string; daysRemaining: number; targetDescription: string } | undefined;
+      if (countdownPref?.targetDate) {
+        const target = new Date(countdownPref.targetDate);
+        const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+        countdownInput = {
+          label: countdownPref.label,
+          daysRemaining,
+          targetDescription: `${countdownPref.label} in ${daysRemaining} days`,
+        };
+      }
+
+      const newspaperOutput = await generateNewspaperGist({
+        date: dateKey,
+        timezone,
+        subscriberName: user.profile?.name ?? 'Friend',
+        userContext: user.profile?.context,
+        weatherSummary: weather,
+        moonPhase: `${moon.emoji} ${moon.phase}`,
+        dayItems,
+        worldItems,
+        emailCards: cleanEmailCards.map((c) => ({
+          fromName: c.fromName,
+          subject: c.subject,
+          snippet: c.snippet,
+          category: c.category,
+          why: c.why,
+        })),
+        memoryContext: memoryPrompt || undefined,
+        countdown: countdownInput,
+        topics: user.prefs?.newsDomains,
+        tone: user.prefs?.tone,
+      });
+
+      newspaperData = newspaperOutput as unknown as Record<string, unknown>;
+
+      // Increment issue count
+      await db.collection('users').doc(user.uid).update({
+        gistIssueCount: (user.gistIssueCount ?? 0) + 1,
+      }).catch(() => {});
+
+      logger.info('Newspaper gist generated.', { userId: user.uid, dateKey });
+    } catch (err) {
+      logger.warn('Newspaper generation failed, falling back to legacy format.', {
+        userId: user.uid,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+
     // Write behavioral signals to memory (fire-and-forget)
     Promise.allSettled([
       observeCalendarPatterns(user.uid, dayItems),
@@ -313,6 +371,7 @@ export async function generateMorningGistForUser(
       gistBullets: sections.gistBullets,
       oneThing: sections.oneThing,
       qualityScore: sections.qualityScore,
+      ...(newspaperData ? { newspaper: newspaperData } : {}),
       delivery: {
         method,
         pages,
@@ -324,6 +383,78 @@ export async function generateMorningGistForUser(
     await gistRef.set({ ...gist, dayItems: cleanDayItems }, { merge: true });
 
     const dateLabel = toDateLabel(now, timezone);
+
+    // ── Build newspaper template input (if newspaper data available) ───
+    let newspaperTemplateInput: NewspaperTemplateInput | undefined;
+    if (newspaperData) {
+      try {
+        const issueNum = (user.gistIssueCount ?? 0) + 1;
+        const countdownPref = user.prefs?.countdown;
+        let countdownRhythm: string | undefined;
+        if (countdownPref?.targetDate) {
+          const target = new Date(countdownPref.targetDate);
+          const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+          countdownRhythm = `${countdownPref.label} ${daysLeft} days`;
+        }
+
+        // Format date for masthead
+        const dateFormatted = now.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: timezone,
+        });
+
+        // Delivery time from user schedule or default
+        const schedHour = user.delivery?.schedule?.hour ?? 7;
+        const schedMin = user.delivery?.schedule?.minute ?? 0;
+        const ampm = schedHour >= 12 ? 'PM' : 'AM';
+        const displayHour = schedHour > 12 ? schedHour - 12 : schedHour || 12;
+        const tzAbbr = timezone.includes('Pacific') ? 'PT'
+          : timezone.includes('Central') ? 'CT'
+          : timezone.includes('Mountain') ? 'MT'
+          : timezone.includes('Eastern') ? 'ET'
+          : timezone.replace(/.*\//, '');
+        const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
+
+        // Season estimate from month
+        const month = now.getMonth(); // 0-indexed
+        const season = month <= 1 || month === 11 ? 'Winter'
+          : month <= 4 ? 'Spring'
+          : month <= 7 ? 'Summer'
+          : 'Autumn';
+        const dayOfSeason = ((month % 3) * 30) + now.getDate();
+
+        newspaperTemplateInput = {
+          ...(newspaperData as unknown as import('./integrations/newspaperTypes').NewspaperGistOutput),
+          subscriberName: user.profile?.name ?? 'Friend',
+          location: user.prefs?.city ?? 'your city',
+          dateFormatted,
+          deliveryTime,
+          volumeIssue: `Vol. I · No. ${issueNum}`,
+          weather: {
+            tempNow: weather.match(/\d+°/)?.[0] ?? '—',
+            conditions: weather,
+            forecast: [],
+          },
+          rhythms: {
+            moon: `${moon.phase} ${Math.round(moon.illumination * 100)}%`,
+            season: `${season}, Day ${dayOfSeason}`,
+            light: '—',
+            ...(countdownRhythm ? { countdown: countdownRhythm } : {}),
+          },
+          moonFooter: moon.phase,
+          seasonFooter: season,
+          intentionPrompt: 'What is your one intention for today?',
+        };
+      } catch (err) {
+        logger.warn('Failed to build newspaper template input.', {
+          userId: user.uid,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
 
     // ── Delivery routing ───────────────────────────────────────────────────
     if (method === 'email') {
@@ -337,6 +468,7 @@ export async function generateMorningGistForUser(
         worldItems,
         emailCards: cleanEmailCards,
         gistBullets: sections.gistBullets,
+        newspaperInput: newspaperTemplateInput,
       });
       finalStatus = result.status;
 
@@ -352,6 +484,7 @@ export async function generateMorningGistForUser(
         worldItems,
         emailCards: cleanEmailCards,
         gistBullets: sections.gistBullets,
+        newspaperInput: newspaperTemplateInput,
       });
       finalStatus = result.status;
 
@@ -525,6 +658,8 @@ function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
     emailIntegration: data.emailIntegration,
     stripeCustomerId: data.stripeCustomerId ?? null,
     stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
+    gistIssueCount: data.gistIssueCount ?? 0,
+    profile: data.profile ?? {},
   };
 }
 
