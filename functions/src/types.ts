@@ -62,6 +62,7 @@ export type MorningGist = {
   timezone: string;
 
   weatherSummary: string;
+  moonPhase?: string;
   firstEvent?: string;
 
   dayItems: { time?: string; title: string; note?: string }[];

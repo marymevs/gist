@@ -2,9 +2,8 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { WEATHERAPI_KEY, fetchWeatherSummary } from './integrations/weather';
-import { NYT_API_KEY, fetchNytTopStories } from './integrations/nytTopStories';
-import { fetchEmailCards } from './integrations/gmailInt';
+import { WEATHERAPI_KEY } from './integrations/weather';
+import { NYT_API_KEY } from './integrations/nytTopStories';
 import {
   OPENAI_API_KEY,
   generateDailyFocusSections,
@@ -24,7 +23,6 @@ initializeApp();
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  fetchCalendarItems,
 } from './integrations/googleCalendarInt';
 
 import type { UserDoc, MorningGist, GistPlan, IntegrationStatus } from './types';
@@ -45,18 +43,14 @@ import { deliverByEmail } from './delivery/email';
 import { deliverByFax } from './delivery/fax';
 import { deliverByWeb } from './delivery/web';
 
-const db = getFirestore();
+import type { ConnectorContext } from './connectors/types';
+import { weatherConnector } from './connectors/weather';
+import { calendarConnector } from './connectors/calendar';
+import { gmailConnector } from './connectors/gmail';
+import { newsConnector } from './connectors/news';
+import { moonConnector } from './connectors/moon';
 
-async function fetchWorldItems(): Promise<
-  Array<{ headline: string; implication: string }>
-> {
-  try {
-    return await fetchNytTopStories({ section: 'world', limit: 3 });
-  } catch (error) {
-    logger.warn('Failed to fetch NYT world items.', { error });
-    return [];
-  }
-}
+const db = getFirestore();
 
 /** === Core generator === */
 export async function generateMorningGistForUser(
@@ -87,35 +81,45 @@ export async function generateMorningGistForUser(
     }
   }
 
-  let weather = 'Weather unavailable';
-  try {
-    const weatherResp = await fetchWeatherSummary({
-      q: city,
-      days: 1,
-      aqi: false,
-      alerts: true,
-    });
-    weather = weatherResp.summary;
-  } catch (error) {
-    logger.warn('Failed to fetch weather summary.', {
-      error,
-      userId: user.uid,
-    });
-  }
+  // Build connector context
+  const connectorCtx: ConnectorContext = {
+    userId: user.uid,
+    userEmail: user.email ?? undefined,
+    dateKey,
+    timezone,
+    city,
+    prefs: user.prefs,
+    now,
+  };
 
   let finalStatus: 'queued' | 'delivered' | 'failed' = 'failed';
 
   try {
-    const [dayItems, worldItems, emailCards] = await Promise.all([
-      fetchCalendarItems(user.uid, dateKey, timezone),
-      fetchWorldItems(),
-      fetchEmailCards({
-        userId: user.uid,
-        userEmail: user.email ?? undefined,
-        prefs: user.prefs?.email,
-        now,
-      }),
-    ]);
+    // Pull all data sources in parallel via connectors
+    const [weatherResult, calendarResult, newsResult, emailResult, moonResult] =
+      await Promise.all([
+        weatherConnector.pull(connectorCtx),
+        calendarConnector.pull(connectorCtx),
+        newsConnector.pull(connectorCtx),
+        gmailConnector.pull(connectorCtx),
+        moonConnector.pull(connectorCtx),
+      ]);
+
+    // Log any connector failures
+    for (const r of [weatherResult, calendarResult, newsResult, emailResult, moonResult]) {
+      if (r.status === 'failed') {
+        logger.warn('Connector returned failed status.', {
+          userId: user.uid,
+          error: r.error,
+        });
+      }
+    }
+
+    const weather = weatherResult.data.summary;
+    const dayItems = calendarResult.data;
+    const worldItems = newsResult.data;
+    const emailCards = emailResult.data;
+    const moon = moonResult.data;
 
     const gistRef = db
       .collection('users')
@@ -181,6 +185,7 @@ export async function generateMorningGistForUser(
       date: dateKey,
       timezone,
       weatherSummary: weather,
+      moonPhase: `${moon.emoji} ${moon.phase}`,
       ...(firstEvent !== undefined ? { firstEvent } : {}),
       dayItems,
       worldItems,
