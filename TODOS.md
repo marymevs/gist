@@ -46,6 +46,27 @@
 - **Priority:** P2 — needed before external users, not MVP blocker.
 - **Depends on:** Fax delivery working (webhook infrastructure in place).
 
+### Evening reflection Gist
+- **What:** Second daily Gist closing the loop. User receives an evening summary and can mark up the paper and fax/scan it back.
+- **Why:** Validates the two-way paper interface vision. Morning Gist is one-way delivery; evening Gist introduces user feedback loop.
+- **Implementation:** Reuse the morning generation pipeline with an evening-specific prompt. `/evening` route already exists as placeholder. New Cloud Scheduler job at user-configured evening time.
+- **Priority:** P2 — validate morning Gist first, build evening post-launch.
+- **Depends on:** Sessions 1-3 complete (connector architecture, Claude generation, onboarding).
+
+### Delivery confirmation + retry
+- **What:** Bounce detection for email-to-print deliveries via Resend webhooks. Email fallback for failed printer deliveries.
+- **Why:** Users need to know if their paper Gist didn't arrive. Closed loop matters for trust and retention.
+- **Implementation:** Subscribe to Resend delivery webhooks (bounce, complaint, delivery). On bounce, retry once to printer email. On second failure, send a web notification + fallback email with PDF attachment. Write delivery status to `morningGists/{date}.delivery.status`.
+- **Priority:** P2 — needed before external paying users on paper plan.
+- **Depends on:** Email-to-print delivery working (Session 2+).
+
+### Founder analytics dashboard
+- **What:** Admin page at `/admin` showing health metrics (active users, generation success rate, delivery status, quality self-eval trends) and revenue (Stripe MRR).
+- **Why:** Founder currently queries Firestore directly. Unsustainable past ~20 users. Needed for investor demo (Session 6).
+- **Implementation:** Protected Angular route with `canActivate` guard checking admin UID. Read-only Firestore aggregation queries. Charts via lightweight library (e.g., Chart.js or just styled HTML tables).
+- **Priority:** P3 — use Firebase console + Firestore queries until user count exceeds ~20.
+- **Depends on:** Stripe integration (Session 5) for revenue metrics.
+
 ## Completed
 
 ### PDF download for web plan users (Print → newspaper layout)
