@@ -2,9 +2,15 @@
 /dist
 .angular
 /src/.DS_Store
+.DS_Store
 
 # Firebase
 .firebase
 *-debug.log
 .runtimeconfig.json
 .gstack/
+
+# Misc
+/scripts
+.claude/
+/docs
