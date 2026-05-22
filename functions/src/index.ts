@@ -1,3 +1,6 @@
+import { ensureFirebaseApp } from './firebaseAdmin';
+ensureFirebaseApp();
+
 export { generateMorningGist } from './generateMorningGist';
 export { generateGistOnDemand } from './generateGistOnDemand';
 export { emailFeedback } from './emailFeedback';

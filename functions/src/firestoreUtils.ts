@@ -8,9 +8,10 @@
  *   users/{uid}/deliveryLogs/{auto-id}   ← append-only log, one entry per event
  */
 
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getDb } from './firebaseAdmin';
 
-const db = getFirestore();
+const db = getDb();
 
 export type DeliveryMethod = 'web' | 'email' | 'fax';
 export type DeliveryStatus = 'queued' | 'delivered' | 'failed';

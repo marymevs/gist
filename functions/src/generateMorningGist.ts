@@ -1,6 +1,6 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
-import { initializeApp } from 'firebase-admin/app';
+import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
@@ -25,7 +25,7 @@ import {
 } from './firestoreUtils';
 import { checkSubscriptionActive } from './integrations/stripeUtils';
 
-initializeApp();
+if (!getApps().length) initializeApp();
 
 import {
   GOOGLE_CLIENT_ID,
