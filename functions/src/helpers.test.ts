@@ -30,27 +30,17 @@ function makeUser(overrides: Partial<UserDoc> = {}): UserDoc {
 // ── resolveDeliveryMethod ───────────────────────────────────────────────────
 
 describe('resolveDeliveryMethod', () => {
-  it('returns fax for print plan regardless of integrations', () => {
-    expect(resolveDeliveryMethod(makeUser({ plan: 'print' }))).toBe('fax');
-  });
-
-  it('returns fax for print plan even when Gmail is connected', () => {
-    expect(
-      resolveDeliveryMethod(
-        makeUser({ plan: 'print', emailIntegration: { status: 'connected' } }),
-      ),
-    ).toBe('fax');
-  });
-
-  it('returns email for web plan when Gmail is connected', () => {
+  it('returns email when Gmail is connected (regardless of plan)', () => {
     expect(
       resolveDeliveryMethod(
         makeUser({ plan: 'web', emailIntegration: { status: 'connected' } }),
       ),
     ).toBe('email');
-  });
-
-  it('returns email for loop plan when Gmail is connected', () => {
+    expect(
+      resolveDeliveryMethod(
+        makeUser({ plan: 'print', emailIntegration: { status: 'connected' } }),
+      ),
+    ).toBe('email');
     expect(
       resolveDeliveryMethod(
         makeUser({ plan: 'loop', emailIntegration: { status: 'connected' } }),
@@ -58,7 +48,9 @@ describe('resolveDeliveryMethod', () => {
     ).toBe('email');
   });
 
-  it('returns web for loop plan when Gmail is disconnected', () => {
+  it('returns web when Gmail is disconnected (regardless of plan)', () => {
+    expect(resolveDeliveryMethod(makeUser({ plan: 'web' }))).toBe('web');
+    expect(resolveDeliveryMethod(makeUser({ plan: 'print' }))).toBe('web');
     expect(
       resolveDeliveryMethod(
         makeUser({ plan: 'loop', emailIntegration: { status: 'disconnected' } }),
@@ -66,8 +58,17 @@ describe('resolveDeliveryMethod', () => {
     ).toBe('web');
   });
 
-  it('returns web for web plan with no integrations', () => {
-    expect(resolveDeliveryMethod(makeUser({ plan: 'web' }))).toBe('web');
+  it('never returns fax — that path was removed in Phase 1.2', () => {
+    const candidates = [
+      makeUser({ plan: 'print' }),
+      makeUser({ plan: 'print', emailIntegration: { status: 'connected' } }),
+      makeUser({ plan: 'print', emailIntegration: { status: 'disconnected' } }),
+      makeUser({ plan: 'web' }),
+      makeUser({ plan: 'loop' }),
+    ];
+    for (const user of candidates) {
+      expect(resolveDeliveryMethod(user)).not.toBe('fax');
+    }
   });
 });
 
