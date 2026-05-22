@@ -165,7 +165,7 @@
 
               </div>
 
-              <!-- Right: Intention + Fax Back + Personal Quote -->
+              <!-- Right: Intention + Reflection + Personal Quote -->
               <div class="c">
 
                 <div class="label">Morning Intention</div>
@@ -176,15 +176,7 @@
 
                 <hr class="hr">
 
-                <div class="label">End of Day &middot; Fax Back</div>
-                <p class="xs mt" style="margin-bottom:5pt;">Mark this up and fax it back. Your agents process overnight.</p>
-
-                <ng-container *ngFor="let q of np(gist).faxBackQuestions">
-                  <p class="sm bd">{{ q.prompt }}</p>
-                  <div class="fax-opts">
-                    <span *ngFor="let opt of q.options">&#9744; {{ opt }}</span>
-                  </div>
-                </ng-container>
+                <div class="label">End of Day &middot; Reflection</div>
 
                 <p class="sm bd" style="margin-top:3pt;">What's carrying over?</p>
                 <div class="wl"></div>
@@ -244,8 +236,7 @@
         <div class="status">{{ statusText }}</div>
 
         <div class="kv">
-          <span>Mode</span><b>Fax + Web</b>
-          <span>Fax</span><b>(•••) •••-1234</b>
+          <span>Mode</span><b>Email + Web</b>
           <span>Schedule</span><b>Weekdays 7:30 AM ET</b>
           <span>Format</span><b>Standard · 2 pages max</b>
         </div>
@@ -273,7 +264,6 @@
 
         <div class="actions" style="margin-top: 12px">
           <button class="secondary" type="button" (click)="goToDelivery()">Change schedule</button>
-          <button class="secondary" type="button" (click)="goToDelivery()">Update fax</button>
         </div>
       </aside>
 
