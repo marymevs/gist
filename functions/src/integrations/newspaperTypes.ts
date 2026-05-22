@@ -84,11 +84,6 @@ export const closingQuoteSchema = z.object({
   attribution: z.string(),   // e.g. "Ralph Waldo Emerson" or "The Gist, for Riley"
 });
 
-export const faxBackQuestionSchema = z.object({
-  prompt: z.string(),        // e.g. "Did the thing ship?"
-  options: z.array(z.string()).min(2).max(4), // e.g. ["Shipped", "In progress", "Blocked"]
-});
-
 export const qualityScoreSchema = z.object({
   editorialVoice: z.number().min(1).max(5),
   crossReferenceDepth: z.number().min(1).max(5),
@@ -111,7 +106,6 @@ export const newspaperGistOutputSchema = z.object({
   practiceArc: practiceArcSchema,
   moonHighlight: moonHighlightSchema,
   closingThought: z.string().optional(),
-  faxBackQuestions: z.array(faxBackQuestionSchema).length(2),
   personalQuote: closingQuoteSchema,
 
   // Quality self-eval

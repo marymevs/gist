@@ -3,7 +3,7 @@
  *
  * Produces the full NewspaperGistOutput — lede, schedule with coaching notes,
  * notifications, people nudges, body & mind, practice arc, moon highlight,
- * closing quotes, and fax-back questions. All Zod-validated.
+ * and closing quotes. All Zod-validated.
  *
  * The editorial voice is warm, specific, and occasionally funny.
  * Not a summary. An editorial.
@@ -144,10 +144,6 @@ OUTPUT: Return a JSON object matching this structure exactly:
     "paragraph": "Metaphorical paragraph connecting moon phase to the reader's life situation"
   },
   "closingThought": "Optional: a warm, grounding closing sentence for page 2 left column",
-  "faxBackQuestions": [
-    { "prompt": "How was today?", "options": ["Really good", "Fine", "Hard"] },
-    { "prompt": "Did the thing ship?", "options": ["Shipped", "In progress", "Blocked"] }
-  ],
   "personalQuote": {
     "text": "A personal closing message in editorial voice — not a famous quote. Speaks directly to the reader.",
     "attribution": "The Gist, for [Name]"
@@ -164,7 +160,6 @@ RULES:
 - notifications: 3-6 items. Synthesize from email signals, calendar reminders, and general life context.
 - goodNews: exactly 3 items. Select the most relevant to this person. Personalize the summary.
 - people: 2-4 people. Include at least one accountability nudge.
-- faxBackQuestions: exactly 2 questions with 3 options each. The first should be about the day's overall feel. The second about their main deliverable.
 - personalQuote: This is NOT a famous quote. This is you (The Gist) speaking directly to the reader. It should be the last thing they read. Make it count.
 - No emojis in any text field except schedule event emojis and notification emojis.
 - No markdown formatting. Plain text only.
@@ -262,10 +257,6 @@ function fallbackNewspaperGist(input: NewspaperGenerationInput): NewspaperGistOu
       title: input.moonPhase ?? 'The Moon Watches',
       paragraph: 'Whatever phase the moon is in, it keeps showing up. So do you. That counts for something.',
     },
-    faxBackQuestions: [
-      { prompt: 'How was today?', options: ['Really good', 'Fine', 'Hard'] },
-      { prompt: 'Did the thing ship?', options: ['Shipped', 'In progress', 'Blocked'] },
-    ],
     personalQuote: {
       text: 'You showed up today. That matters more than you think.',
       attribution: `The Gist, for ${input.subscriberName}`,
