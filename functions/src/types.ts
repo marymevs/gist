@@ -11,8 +11,6 @@ import type { EmailCard } from './integrations/gmailInt';
 /** All delivery methods supported by the scheduler. */
 export type DeliveryMethod = 'web' | 'email';
 
-export type GistPlan = 'web' | 'print' | 'loop';
-
 export type UserPrefs = {
   timezone?: string;
   city?: string;
@@ -36,8 +34,6 @@ export type UserPrefs = {
 
 export type UserDelivery = {
   method?: DeliveryMethod;
-  /** E.164 or 10-digit fax number, e.g. "+12125551234" */
-  faxNumber?: string;
   schedule?: {
     hour?: number;
     minute?: number;
@@ -52,13 +48,10 @@ export type IntegrationStatus = {
 export type UserDoc = {
   uid: string;
   email: string | null;
-  plan: GistPlan;
   prefs?: UserPrefs;
   delivery?: UserDelivery;
   calendarIntegration?: IntegrationStatus;
   emailIntegration?: IntegrationStatus;
-  stripeCustomerId?: string | null;
-  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
   /** Running issue count — incremented each generation. */
   gistIssueCount?: number;
   profile?: {

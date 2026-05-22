@@ -18,7 +18,7 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 import { generateMorningGistForUser } from './generateMorningGist';
-import type { UserDoc, GistPlan, IntegrationStatus } from './types';
+import type { UserDoc, IntegrationStatus } from './types';
 
 const db = getFirestore();
 
@@ -77,13 +77,10 @@ export const generateGistOnDemand = onRequest(
     const user: UserDoc = {
       uid,
       email: data.email ?? null,
-      plan: (data.plan as GistPlan) ?? 'web',
       prefs: data.prefs ?? {},
       delivery: data.delivery ?? {},
       calendarIntegration: data.calendarIntegration,
       emailIntegration: data.emailIntegration,
-      stripeCustomerId: data.stripeCustomerId ?? null,
-      stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
     };
 
     logger.info('On-demand gist generation requested.', { userId: uid });
