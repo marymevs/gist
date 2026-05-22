@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { TodayComponent } from 'src/app/features/today/today.component';
-import { EveningComponent } from './features/evening/evening.component';
 import { ArchiveComponent } from './features/archive/archive.component';
 import { DeliveryComponent } from './features/delivery/delivery.component';
 import { AccountComponent } from './features/account/account.component';
@@ -12,7 +11,10 @@ import { AdminComponent } from './features/admin/admin.component';
 import { PrivacyPolicyComponent } from './features/privacy-policy/privacy-policy.component';
 import { TermsOfServiceComponent } from './features/terms-of-service/terms-of-service.component';
 import { authGuard } from './core/guards/auth.guard';
-import { requireOnboardingGuard, skipIfOnboardedGuard } from './core/guards/onboarding.guard';
+import {
+  requireOnboardingGuard,
+  skipIfOnboardedGuard,
+} from './core/guards/onboarding.guard';
 
 export const routes: Routes = [
   {
