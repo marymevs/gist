@@ -1,9 +1,8 @@
 /**
  * Email delivery for morning gists.
  *
- * When newspaper template input is provided, uses the editorial newspaper
- * email template (Fraunces/IBM Plex, warm amber). Otherwise falls back
- * to the legacy email template.
+ * Uses the newspaper email template (Fraunces/IBM Plex, warm amber).
+ * Throws if newspaper template input is missing — no silent fallback.
  */
 
 import { logger } from 'firebase-functions';
@@ -11,7 +10,6 @@ import {
   sendMorningGistEmail,
   resolveUserEmail,
 } from '../integrations/emailDelivery';
-import { buildEmailHtml, buildEmailSubject } from '../integrations/emailTemplate';
 import {
   buildNewspaperEmailHtml,
   buildNewspaperEmailSubject,
@@ -51,35 +49,13 @@ export async function deliverByEmail(input: EmailDeliveryInput): Promise<Deliver
   let html: string;
   let subject: string;
 
-  if (input.newspaperInput) {
-    // ── Newspaper template (new editorial format) ──────────────────────
-    html = buildNewspaperEmailHtml(input.newspaperInput);
-    subject = buildNewspaperEmailSubject(input.newspaperInput);
-    logger.info('Using newspaper email template.', { userId: input.userId });
-  } else {
-    // ── Legacy template ────────────────────────────────────────────────
-    const templateInput = {
-      date: input.dateLabel,
-      weatherSummary: input.weatherSummary,
-      dayItems: input.dayItems,
-      worldItems: input.worldItems,
-      emailCards: input.emailCards.map((c) => ({
-        id: c.id,
-        fromName: c.fromName,
-        fromEmail: c.fromEmail,
-        subject: c.subject,
-        snippet: c.snippet,
-        category: c.category,
-        why: c.why,
-        suggestedNextStep: c.suggestedNextStep,
-      })),
-      gistBullets: input.gistBullets,
-      userId: input.userId,
-      gistDate: input.gistDate,
-    };
-    html = buildEmailHtml(templateInput);
-    subject = buildEmailSubject(templateInput);
+  if (!input.newspaperInput) {
+    throw new Error(`deliverByEmail: newspaperInput is required (userId=${input.userId})`);
   }
+
+  html = buildNewspaperEmailHtml(input.newspaperInput);
+  subject = buildNewspaperEmailSubject(input.newspaperInput);
+  logger.info('Sending newspaper email.', { userId: input.userId });
 
   const result = await sendMorningGistEmail({ toEmail, subject, html });
 
