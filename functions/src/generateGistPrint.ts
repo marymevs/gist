@@ -4,7 +4,7 @@
  *
  * The frontend opens the response in a new tab. The user can then hit
  * Cmd+P (or Ctrl+P) to get a perfect US Letter PDF — or just print it.
- * The fax template's @page CSS makes it letter-perfect with no manual setup.
+ * The newspaper template's @page CSS makes it letter-perfect with no manual setup.
  *
  * Usage:
  *   GET /generateGistPrint?date=YYYY-MM-DD
@@ -20,8 +20,8 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { buildFaxHtml, type FaxTemplateInput } from './integrations/faxTemplate';
-import type { EmailCard } from './integrations/gmailInt';
+import { buildNewspaperHtml } from './integrations/newspaperTemplate';
+import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,80 @@ function isValidDateKey(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
+function buildTemplateInput(
+  newspaper: Record<string, unknown>,
+  user: Record<string, unknown>,
+  dateKey: string,
+  timezone: string,
+  weatherSummary: string,
+): NewspaperTemplateInput {
+  const issueNum = (user['gistIssueCount'] as number | undefined ?? 0) + 1;
+
+  const [y, mo, d] = dateKey.split('-').map(Number);
+  const anchor = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0));
+  const dateFormatted = anchor.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: timezone,
+  });
+
+  const delivery = user['delivery'] as Record<string, unknown> | undefined;
+  const schedule = delivery?.['schedule'] as Record<string, unknown> | undefined;
+  const schedHour = (schedule?.['hour'] as number | undefined) ?? 7;
+  const schedMin = (schedule?.['minute'] as number | undefined) ?? 0;
+  const ampm = schedHour >= 12 ? 'PM' : 'AM';
+  const displayHour = schedHour > 12 ? schedHour - 12 : schedHour || 12;
+  const tzAbbr = timezone.includes('Pacific') ? 'PT'
+    : timezone.includes('Central') ? 'CT'
+    : timezone.includes('Mountain') ? 'MT'
+    : timezone.includes('Eastern') ? 'ET'
+    : timezone.replace(/.*\//, '');
+  const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
+
+  const month = anchor.getUTCMonth(); // 0-indexed
+  const season = month <= 1 || month === 11 ? 'Winter'
+    : month <= 4 ? 'Spring'
+    : month <= 7 ? 'Summer'
+    : 'Autumn';
+  const dayOfSeason = ((month % 3) * 30) + anchor.getUTCDate();
+
+  const prefs = user['prefs'] as Record<string, unknown> | undefined;
+  const countdownPref = prefs?.['countdown'] as Record<string, unknown> | undefined;
+  let countdownRhythm: string | undefined;
+  if (countdownPref?.['targetDate']) {
+    const target = new Date(countdownPref['targetDate'] as string);
+    const daysLeft = Math.max(0, Math.ceil((target.getTime() - anchor.getTime()) / (1000 * 60 * 60 * 24)));
+    countdownRhythm = `${countdownPref['label'] ?? 'Countdown'} ${daysLeft} days`;
+  }
+
+  const profile = user['profile'] as Record<string, unknown> | undefined;
+
+  return {
+    ...(newspaper as unknown as import('./integrations/newspaperTypes').NewspaperGistOutput),
+    subscriberName: (profile?.['name'] as string | undefined) ?? 'Friend',
+    location: (prefs?.['city'] as string | undefined) ?? 'your city',
+    dateFormatted,
+    deliveryTime,
+    volumeIssue: `Vol. I · No. ${issueNum}`,
+    weather: {
+      tempNow: weatherSummary.match(/\d+°/)?.[0] ?? '—',
+      conditions: weatherSummary,
+      forecast: [],
+    },
+    rhythms: {
+      moon: '—',
+      season: `${season}, Day ${dayOfSeason}`,
+      light: '—',
+      ...(countdownRhythm ? { countdown: countdownRhythm } : {}),
+    },
+    moonFooter: '—',
+    seasonFooter: season,
+    intentionPrompt: 'What is your one intention for today?',
+  };
+}
+
 // ── Cloud Function ────────────────────────────────────────────────────────────
 
 export const generateGistPrint = onRequest(
@@ -75,11 +149,9 @@ export const generateGistPrint = onRequest(
     }
 
     let uid: string;
-    let userEmail: string | null;
     try {
       const decoded = await getAuth().verifyIdToken(token);
       uid = decoded.uid;
-      userEmail = decoded.email ?? null;
     } catch (err) {
       logger.warn('generateGistPrint: invalid token', { err });
       res.status(401).send('Unauthorized');
@@ -98,58 +170,33 @@ export const generateGistPrint = onRequest(
       .collection('morningGists')
       .doc(dateKey);
 
-    const snap = await gistRef.get();
-    if (!snap.exists) {
+    const [gistSnap, userSnap] = await Promise.all([
+      gistRef.get(),
+      db.collection('users').doc(uid).get(),
+    ]);
+
+    if (!gistSnap.exists) {
       res.status(404).send('No gist found for this date.');
       return;
     }
 
-    const gist = snap.data() as {
-      weatherSummary?: string;
-      timezone?: string;
-      dayItems?: FaxTemplateInput['dayItems'];
-      worldItems?: FaxTemplateInput['worldItems'];
-      emailCards?: EmailCard[];
-      gistBullets?: string[];
-    };
+    const gist = gistSnap.data() as Record<string, unknown>;
+    const newspaper = gist['newspaper'] as Record<string, unknown> | undefined;
 
-    // ── Derive subscriber name ──────────────────────────────────────────────
-    // Try the user doc first, fall back to email prefix.
-    let subscriberName = userEmail?.split('@')[0] ?? 'Subscriber';
-    try {
-      const userSnap = await db.collection('users').doc(uid).get();
-      const userData = userSnap.data();
-      if (typeof userData?.['email'] === 'string' && userData['email'].includes('@')) {
-        subscriberName = userData['email'].split('@')[0];
-      }
-    } catch {
-      // non-fatal — keep the email-derived name
+    if (!newspaper) {
+      res.status(422).send('Gist exists but has no newspaper data. Re-generate it to get the print view.');
+      return;
     }
 
     // ── Build template input ────────────────────────────────────────────────
-    const timezone = typeof gist.timezone === 'string' ? gist.timezone : 'America/New_York';
+    const timezone = typeof gist['timezone'] === 'string' ? gist['timezone'] : 'America/New_York';
+    const weatherSummary = typeof gist['weatherSummary'] === 'string' ? gist['weatherSummary'] : 'Weather unavailable';
+    const userData = (userSnap.data() ?? {}) as Record<string, unknown>;
 
-    const emailCards: FaxTemplateInput['emailCards'] = (gist.emailCards ?? []).map((c) => ({
-      fromName: c.fromName,
-      subject: c.subject,
-      snippet: c.snippet,
-      category: c.category,
-      why: c.why,
-      suggestedNextStep: c.suggestedNextStep,
-    }));
-
-    const input: FaxTemplateInput = {
-      subscriberName,
-      date: dateLabel(dateKey, timezone),
-      weatherSummary: gist.weatherSummary ?? 'Weather unavailable',
-      dayItems: gist.dayItems ?? [],
-      worldItems: gist.worldItems ?? [],
-      emailCards,
-      gistBullets: gist.gistBullets ?? [],
-    };
+    const input = buildTemplateInput(newspaper, userData, dateKey, timezone, weatherSummary);
 
     // ── Render and return ───────────────────────────────────────────────────
-    const html = buildFaxHtml(input);
+    const html = buildNewspaperHtml(input);
 
     logger.info('generateGistPrint: rendered', { uid, dateKey });
 
