@@ -21,7 +21,9 @@
             (click)="onConnectGoogleCalendar()"
             [disabled]="isConnectingCalendar"
           >
-            {{ isConnectingCalendar ? 'Connecting…' : 'Connect Google Calendar' }}
+            {{
+              isConnectingCalendar ? "Connecting…" : "Connect Google Calendar"
+            }}
           </button>
         </div>
 
@@ -32,7 +34,7 @@
             (click)="onConnectGmail()"
             [disabled]="isConnectingGmail"
           >
-            {{ isConnectingGmail ? 'Connecting…' : 'Connect Gmail' }}
+            {{ isConnectingGmail ? "Connecting…" : "Connect Gmail" }}
           </button>
         </div>
 
@@ -59,7 +61,7 @@
             (click)="onSaveVipSenders(user, vipInput.value)"
             [disabled]="isSavingVipSenders"
           >
-            {{ isSavingVipSenders ? 'Saving…' : 'Save VIPs' }}
+            {{ isSavingVipSenders ? "Saving…" : "Save VIPs" }}
           </button>
         </div>
       </div>
@@ -72,13 +74,17 @@
         <!-- Display mode -->
         <ng-container *ngIf="!isEditingPreferences">
           <div class="kv" style="grid-template-columns: 140px 1fr">
-            <span>Length</span><b>{{ lengthLabel(user) }}</b>
-            <span>Tone</span><b>{{ toneLabel(user) }}</b>
-            <span>Quiet days</span><b>{{ quietDaysLabel(user) }}</b>
+            <span>Length</span><b>{{ lengthLabel(user) }}</b> <span>Tone</span
+            ><b>{{ toneLabel(user) }}</b> <span>Quiet days</span
+            ><b>{{ quietDaysLabel(user) }}</b>
           </div>
 
           <div style="margin-top: 12px">
-            <button class="secondary" type="button" (click)="onEditPreferences(user)">
+            <button
+              class="secondary"
+              type="button"
+              (click)="onEditPreferences(user)"
+            >
               Edit preferences
             </button>
           </div>
@@ -88,7 +94,9 @@
         <ng-container *ngIf="isEditingPreferences">
           <div class="prefsForm">
             <div>
-              <label class="sub" style="display: block; margin-bottom: 4px">Length</label>
+              <label class="sub" style="display: block; margin-bottom: 4px"
+                >Length</label
+              >
               <select class="textInput" [(ngModel)]="editLength">
                 <option *ngFor="let opt of lengthOptions" [value]="opt.value">
                   {{ opt.label }}
@@ -97,7 +105,9 @@
             </div>
 
             <div style="margin-top: 10px">
-              <label class="sub" style="display: block; margin-bottom: 4px">Tone</label>
+              <label class="sub" style="display: block; margin-bottom: 4px"
+                >Tone</label
+              >
               <select class="textInput" [(ngModel)]="editTone">
                 <option *ngFor="let opt of toneOptions" [value]="opt.value">
                   {{ opt.label }}
@@ -106,9 +116,14 @@
             </div>
 
             <div style="margin-top: 10px">
-              <label class="sub" style="display: block; margin-bottom: 4px">Quiet days</label>
+              <label class="sub" style="display: block; margin-bottom: 4px"
+                >Quiet days</label
+              >
               <div class="quietDaysRow">
-                <label *ngFor="let day of dayLabels; let i = index" class="checkLabel">
+                <label
+                  *ngFor="let day of dayLabels; let i = index"
+                  class="checkLabel"
+                >
                   <input type="checkbox" [(ngModel)]="editQuietDays[i]" />
                   {{ day }}
                 </label>
@@ -122,7 +137,7 @@
                 (click)="onSavePreferences(user)"
                 [disabled]="isSavingPreferences"
               >
-                {{ isSavingPreferences ? 'Saving…' : 'Save' }}
+                {{ isSavingPreferences ? "Saving…" : "Save" }}
               </button>
               <button
                 class="secondary"
@@ -137,89 +152,28 @@
         </ng-container>
       </div>
 
-      <!-- Billing -->
-      <div class="card" style="padding: 16px">
-        <h2 style="font-size: 16px; margin: 0 0 10px">Billing</h2>
-        <div class="sub">Business-first and transparent.</div>
-
-        <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Plan</span><b>{{ planLabel(user.plan) }}</b>
-          <span>Price</span><b>{{ planPrice(user.plan) }}</b>
-          <span>Status</span><b>{{ user.stripeSubscriptionStatus || 'demo' }}</b>
-        </div>
-
-        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
-          <button
-            class="secondary"
-            type="button"
-            [disabled]="isUpgrading"
-            (click)="onUpgradePlan(user)"
-            *ngIf="user.plan === 'web'"
-          >
-            {{ isUpgrading ? 'Redirecting\u2026' : 'Upgrade to Print ($25/mo)' }}
-          </button>
-          <button
-            class="secondary"
-            type="button"
-            [disabled]="isOpeningPortal"
-            (click)="onManageBilling()"
-            *ngIf="user.stripeSubscriptionStatus === 'active' || user.stripeSubscriptionStatus === 'past_due'"
-          >
-            {{ isOpeningPortal ? 'Opening\u2026' : 'Manage billing' }}
-          </button>
-        </div>
-
-        <!-- Fax number — print plan only -->
-        <ng-container *ngIf="user.plan === 'print'">
-          <div class="divider"></div>
-          <div>
-            <label class="sub" style="display: block; margin-bottom: 6px">
-              Fax number
-            </label>
-            <input
-              #faxInput
-              class="textInput"
-              type="tel"
-              placeholder="+12125551234"
-              [value]="user.delivery?.faxNumber || ''"
-            />
-            <div class="sub" style="margin-top: 6px">
-              E.164 format (+12125551234) or 10-digit. Your Gist is faxed here each morning.
-            </div>
-            <button
-              class="secondary"
-              type="button"
-              style="margin-top: 8px"
-              (click)="onSaveFaxNumber(user, faxInput.value)"
-              [disabled]="isSavingFaxNumber"
-            >
-              {{ isSavingFaxNumber ? 'Saving…' : 'Save fax number' }}
-            </button>
-          </div>
-        </ng-container>
-      </div>
-
       <!-- Security -->
       <div class="card" style="padding: 16px">
         <h2 style="font-size: 16px; margin: 0 0 10px">Security</h2>
         <div class="sub">Minimal, boring, safe.</div>
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
-          <span>Email</span><b>{{ user.email }}</b>
-          <span>2FA</span><b>Managed by Firebase Auth</b>
+          <span>Email</span><b>{{ user.email }}</b> <span>2FA</span
+          ><b>Managed by Firebase Auth</b>
         </div>
 
         <div style="margin-top: 12px">
           <button class="secondary" type="button" (click)="toggleSecurity()">
-            {{ isSecurityExpanded ? 'Hide details' : 'Security details' }}
+            {{ isSecurityExpanded ? "Hide details" : "Security details" }}
           </button>
         </div>
 
         <ng-container *ngIf="isSecurityExpanded">
           <div class="divider"></div>
           <div class="sub">
-            Two-factor authentication is managed by your sign-in provider (Google or email/password via Firebase Auth).
-            To enable 2FA, configure it in your Google account settings.
+            Two-factor authentication is managed by your sign-in provider
+            (Google or email/password via Firebase Auth). To enable 2FA,
+            configure it in your Google account settings.
           </div>
           <div style="margin-top: 10px">
             <button
