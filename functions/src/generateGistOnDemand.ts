@@ -14,10 +14,6 @@ import {
 } from './integrations/claudeGist';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
-  PHAXIO_API_KEY,
-  PHAXIO_API_SECRET,
-} from './integrations/faxDelivery';
-import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
@@ -38,8 +34,6 @@ export const generateGistOnDemand = onRequest(
       GOOGLE_CLIENT_SECRET,
       ANTHROPIC_API_KEY,
       RESEND_API_KEY,
-      PHAXIO_API_KEY,
-      PHAXIO_API_SECRET,
     ],
   },
   async (req, res) => {
