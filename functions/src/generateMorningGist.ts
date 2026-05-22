@@ -192,57 +192,49 @@ export async function generateMorningGistForUser(
       });
     }
 
-    // Generate newspaper-format output (parallel with memory writes)
-    let newspaperData: Record<string, unknown> | undefined;
-    try {
-      const countdownPref = user.prefs?.countdown;
-      let countdownInput: { label: string; daysRemaining: number; targetDescription: string } | undefined;
-      if (countdownPref?.targetDate) {
-        const target = new Date(countdownPref.targetDate);
-        const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-        countdownInput = {
-          label: countdownPref.label,
-          daysRemaining,
-          targetDescription: `${countdownPref.label} in ${daysRemaining} days`,
-        };
-      }
-
-      const newspaperOutput = await generateNewspaperGist({
-        date: dateKey,
-        timezone,
-        subscriberName: user.profile?.name ?? 'Friend',
-        userContext: user.profile?.context,
-        weatherSummary: weather,
-        moonPhase: `${moon.emoji} ${moon.phase}`,
-        dayItems,
-        worldItems,
-        emailCards: cleanEmailCards.map((c) => ({
-          fromName: c.fromName,
-          subject: c.subject,
-          snippet: c.snippet,
-          category: c.category,
-          why: c.why,
-        })),
-        memoryContext: memoryPrompt || undefined,
-        countdown: countdownInput,
-        topics: user.prefs?.newsDomains,
-        tone: user.prefs?.tone,
-      });
-
-      newspaperData = newspaperOutput as unknown as Record<string, unknown>;
-
-      // Increment issue count
-      await db.collection('users').doc(user.uid).update({
-        gistIssueCount: (user.gistIssueCount ?? 0) + 1,
-      }).catch(() => {});
-
-      logger.info('Newspaper gist generated.', { userId: user.uid, dateKey });
-    } catch (err) {
-      logger.warn('Newspaper generation failed, falling back to legacy format.', {
-        userId: user.uid,
-        error: err instanceof Error ? err.message : err,
-      });
+    // Generate newspaper-format output — throws on failure (no silent fallback)
+    const countdownPref = user.prefs?.countdown;
+    let countdownInput: { label: string; daysRemaining: number; targetDescription: string } | undefined;
+    if (countdownPref?.targetDate) {
+      const target = new Date(countdownPref.targetDate);
+      const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      countdownInput = {
+        label: countdownPref.label,
+        daysRemaining,
+        targetDescription: `${countdownPref.label} in ${daysRemaining} days`,
+      };
     }
+
+    const newspaperOutput = await generateNewspaperGist({
+      date: dateKey,
+      timezone,
+      subscriberName: user.profile?.name ?? 'Friend',
+      userContext: user.profile?.context,
+      weatherSummary: weather,
+      moonPhase: `${moon.emoji} ${moon.phase}`,
+      dayItems,
+      worldItems,
+      emailCards: cleanEmailCards.map((c) => ({
+        fromName: c.fromName,
+        subject: c.subject,
+        snippet: c.snippet,
+        category: c.category,
+        why: c.why,
+      })),
+      memoryContext: memoryPrompt || undefined,
+      countdown: countdownInput,
+      topics: user.prefs?.newsDomains,
+      tone: user.prefs?.tone,
+    });
+
+    const newspaperData: Record<string, unknown> = newspaperOutput as unknown as Record<string, unknown>;
+
+    // Increment issue count
+    await db.collection('users').doc(user.uid).update({
+      gistIssueCount: (user.gistIssueCount ?? 0) + 1,
+    }).catch(() => {});
+
+    logger.info('Newspaper gist generated.', { userId: user.uid, dateKey });
 
     // Write behavioral signals to memory (fire-and-forget)
     Promise.allSettled([
