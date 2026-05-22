@@ -13,5 +13,7 @@
 # Misc
 scripts/__pycache__/
 scripts/spike-output/
+scripts/gist-doc-to-pdf.py
+scripts/gist-design-review-to-pdf.py
 .claude/
 /docs
