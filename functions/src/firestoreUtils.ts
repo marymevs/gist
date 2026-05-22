@@ -1,6 +1,6 @@
 /**
- * Shared Firestore helpers used by both the morning gist scheduler and the
- * fax webhook handler. Extracted here to avoid circular imports.
+ * Shared Firestore helpers used by the morning gist scheduler.
+ * Extracted here to avoid circular imports.
  *
  * Data model:
  *
@@ -13,15 +13,14 @@ import { getDb } from './firebaseAdmin';
 
 const db = getDb();
 
-export type DeliveryMethod = 'web' | 'email' | 'fax';
+export type DeliveryMethod = 'web' | 'email';
 export type DeliveryStatus = 'queued' | 'delivered' | 'failed';
 
 // ─── updateGistDeliveryStatus ─────────────────────────────────────────────────
 
 /**
  * Update the delivery.status (and optionally delivery.deliveredAt) on a
- * morningGists document. Called by the scheduler after email/web delivery and
- * by the fax webhook after Phaxio confirms the fax.
+ * morningGists document. Called by the scheduler after email/web delivery.
  */
 export async function updateGistDeliveryStatus(
   userId: string,
