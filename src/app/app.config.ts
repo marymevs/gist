@@ -1,7 +1,7 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
-import { provideAuth, getAuth, connectAuthEmulator } from '@angular/fire/auth';
+import { provideAuth, getAuth } from '@angular/fire/auth';
 import {
   provideFirestore,
   getFirestore,
@@ -38,11 +38,9 @@ export const appConfig: ApplicationConfig = {
       if (useEmulators) connectFirestoreEmulator(firestore, 'localhost', 8080);
       return firestore;
     }),
-    provideAuth(() => {
-      const auth = getAuth();
-      if (useEmulators) connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-      return auth;
-    }),
+    // Auth always hits production — Google OAuth doesn't work through the emulator.
+    // Real ID tokens issued by production Auth are accepted by the Functions emulator.
+    provideAuth(() => getAuth()),
     provideFunctions(() => {
       const functions = getFunctions();
       if (useEmulators) connectFunctionsEmulator(functions, 'localhost', 5001);
