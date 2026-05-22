@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0.0] - 2026-05-22
+
+Phase 1 of the prune-and-realign plan — pivoting from fax-first delivery to email-to-print as the primary delivery path. Stripe billing was also retired (no charging during the solo-dogfooding phase). The codebase is now ~200 LOC lighter in the daily generation path with no functional regression for the active delivery route.
+
+### Removed
+- Cloud Function exports for `createCheckoutSession`, `createPortalSession`, `stripeWebhook`, `stripeWebhookV2`, `stripeCreateCheckout`, `faxWebhook`, `sendTestFax` — 7 functions no longer deployed.
+- Fax delivery branch in `generateMorningGistForUser` (skip-if-no-fax-number, duplicate-fax idempotency, payment-paused notification flow).
+- Stripe billing gate in `generateMorningGistForUser` (no-subscription skip + Stripe-down graceful degradation).
+- Legacy-users scheduler fallback — users without `nextDeliveryAt` are no longer auto-picked-up via the `onboardingComplete` query.
+- `else if (method === 'fax')` delivery dispatch branch.
+- `PHAXIO_API_KEY` / `PHAXIO_API_SECRET` secret bindings from all three Cloud Function entry points (`generateMorningGist`, `generateGistOnDemand`, `resendMorningGist`).
+- `print → fax` routing in `resolveDeliveryMethod` — it now always returns `email` (when Gmail is connected) or `web`.
+
+### Fixed
+- Firebase Admin app is now initialized before any module-top-level `getFirestore()` call. `ensureFirebaseApp()` is called at the top of `functions/src/index.ts`, and `firestoreUtils.ts` uses the guarded `getDb()` helper. Resolves the `FirebaseAppError: default Firebase app does not exist` error that had been blocking deploys.
+
+### Notes
+- The fax/Stripe implementation files still exist on disk — they're deleted in Phase 3.
+- The `DeliveryMethod` type union still includes `'fax'` and the `MorningGist.delivery.method` field still allows it — narrowing happens in Phase 5 alongside the broader schema cleanup.
+- `OPENAI_API_KEY` is still wired into `resendMorningGist`'s secrets array — cleanup belongs to Phase 3 when `openai*.ts` files get deleted.
+
 ## [0.1.0.0] - 2026-03-27
 
 ### Added
