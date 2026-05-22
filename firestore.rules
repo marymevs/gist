@@ -10,12 +10,10 @@ service cloud.firestore {
       // Any authenticated user can create their own doc (signup flow).
       allow create: if request.auth != null && request.auth.uid == uid;
 
-      // Updates are allowed but the client may never change the plan field.
-      // plan is set server-side only (Admin SDK).
-      // TODO(phase-5): remove this plan guard once plan field is deleted from schema.
+      // Users can update their own doc. The plan-field guard was removed
+      // in Phase 5 alongside the plan field itself.
       allow update: if request.auth != null
-        && request.auth.uid == uid
-        && !('plan' in request.resource.data.diff(resource.data).affectedKeys());
+        && request.auth.uid == uid;
 
       // Morning gists — readable by owning user; written by Cloud Functions (Admin SDK)
       match /morningGists/{gistId} {
