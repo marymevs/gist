@@ -11,7 +11,8 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == uid;
 
       // Updates are allowed but the client may never change the plan field.
-      // plan is set server-side only (Admin SDK / Stripe webhook).
+      // plan is set server-side only (Admin SDK).
+      // TODO(phase-5): remove this plan guard once plan field is deleted from schema.
       allow update: if request.auth != null
         && request.auth.uid == uid
         && !('plan' in request.resource.data.diff(resource.data).affectedKeys());
