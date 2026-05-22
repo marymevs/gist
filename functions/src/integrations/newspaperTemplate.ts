@@ -319,36 +319,6 @@ function moonHighlightHtml(input: NewspaperTemplateInput): string {
       </div>`;
 }
 
-function faxBackHtml(input: NewspaperTemplateInput): string {
-  const questions = input.faxBackQuestions
-    .map((q) => {
-      const options = q.options
-        .map((o) => `<span>&#9744; ${esc(o)}</span>`)
-        .join('');
-      return `
-      <p class="sm bd">${escSmart(q.prompt)}</p>
-      <div style="display:flex;gap:12pt;margin:2pt 0 5pt;font-family:'IBM Plex Mono',monospace;font-size:7pt;font-weight:300;">
-        ${options}
-      </div>`;
-    })
-    .join('\n');
-
-  return `
-      <div class="label">End of Day &middot; Fax Back</div>
-      <p class="xs mt" style="margin-bottom:5pt;">Mark this up and fax it back. Your agents process overnight.</p>
-      ${questions}
-      <p class="sm bd">What&rsquo;s carrying over?</p>
-      <div class="wl"></div>
-      <div class="wl"></div>
-      <p class="sm bd" style="margin-top:3pt;">Tomorrow I&rsquo;m finishing:</p>
-      <div class="wl"></div>
-      <p class="sm bd" style="margin-top:3pt;">Someone I want to reach out to:</p>
-      <div class="wl"></div>
-      <p class="sm bd" style="margin-top:3pt;">Something I&rsquo;m grateful for:</p>
-      <div class="wl"></div>
-      <div class="wl"></div>`;
-}
-
 function page2(input: NewspaperTemplateInput): string {
   const closingThought = input.closingThought
     ? `<hr class="hr"><p class="sm mt">${escSmart(input.closingThought)}</p>`
@@ -377,7 +347,12 @@ function page2(input: NewspaperTemplateInput): string {
       <div class="wl"></div>
       <div class="wl"></div>
       <hr class="hr">
-      ${faxBackHtml(input)}
+      <div class="wl"></div>
+      <div class="wl"></div>
+      <div class="wl"></div>
+      <div class="wl"></div>
+      <div class="wl"></div>
+      <div class="wl"></div>
       <hr class="hr">
       ${quoteHtml(input.personalQuote, '10pt')}
     </div>
@@ -395,7 +370,7 @@ function page2(input: NewspaperTemplateInput): string {
 
 /**
  * Build the complete 2-page newspaper HTML.
- * Used for fax, print, PDF, and web preview.
+ * Used for print, PDF, and web preview.
  */
 export function buildNewspaperHtml(input: NewspaperTemplateInput): string {
   return `<!DOCTYPE html>
