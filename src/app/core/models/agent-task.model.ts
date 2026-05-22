@@ -1,7 +1,6 @@
 export interface AgentExecution {
   id: string;
   userId: string;
-  eveningGistId: string;
 
   taskType: 'email' | 'calendar' | 'web' | 'other';
 

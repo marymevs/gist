@@ -93,7 +93,7 @@ type MorningGist = {
 
 type DeliveryLog = {
   id: string;
-  type: string; // 'morning'|'evening'
+  type: string; // 'morning'
   method: string; // 'fax'|'web'|'email'
   status: string; // queued|delivered|failed|received...
   pages?: number | null;
