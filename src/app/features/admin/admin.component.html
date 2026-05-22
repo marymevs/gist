@@ -24,20 +24,6 @@
       </div>
     </div>
 
-    <!-- Row 2: Plan breakdown -->
-    <div class="breakdownRow">
-      <div class="card breakdownCard">
-        <h2>Plans</h2>
-        <div class="kvGrid" *ngIf="planKeys().length > 0">
-          <ng-container *ngFor="let key of planKeys()">
-            <span class="kvLabel">{{ key }}</span>
-            <span class="kvValue">{{ planBreakdown[key] }}</span>
-          </ng-container>
-        </div>
-        <p class="emptyNote" *ngIf="planKeys().length === 0">No users yet.</p>
-      </div>
-    </div>
-
     <!-- Row 3: Quality self-eval -->
     <div class="card qualityCard">
       <h2>Quality Self-Eval (last 20 gists)</h2>

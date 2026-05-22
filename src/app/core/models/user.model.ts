@@ -1,5 +1,3 @@
-export type GistPlan = 'web' | 'print' | 'loop';
-
 export interface CalendarIntegration {
   provider?: 'google';
   status?: 'connected' | 'disconnected';
@@ -17,8 +15,6 @@ export interface EmailIntegration {
 export interface GistUser {
   uid: string;
   email: string | null;
-
-  plan: GistPlan;
 
   createdAt: any; // Firestore Timestamp
   updatedAt: any;
