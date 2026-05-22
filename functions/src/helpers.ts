@@ -14,13 +14,15 @@ export function hasConnectedIntegration(user: UserDoc): boolean {
 }
 
 /**
- * Resolve delivery method using plan-first routing.
+ * Resolve delivery method.
  *
- *   print plan → fax  (physical delivery)
- *   loop/web   → email if Gmail connected, otherwise web
+ *   Gmail connected → email  (primary; email-to-print is the active delivery path)
+ *   otherwise       → web    (rendered at /today, no email sent)
+ *
+ * Note: `plan` is no longer consulted. Fax used to route here for `print`
+ * plans; that path was removed in Phase 1.2 of the prune-and-realign plan.
  */
 export function resolveDeliveryMethod(user: UserDoc): DeliveryMethod {
-  if (user.plan === 'print') return 'fax';
   if (user.emailIntegration?.status === 'connected') return 'email';
   return 'web';
 }
