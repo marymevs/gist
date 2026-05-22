@@ -42,18 +42,17 @@ describe('resendMorningGist', () => {
     const uid = 'user-456';
     const firestoreData = {
       email: 'test@example.com',
-      plan: 'web' as const,
     };
 
     // The function sets userDoc.uid = uid from auth
     const userDoc = { ...firestoreData, uid };
     expect(userDoc.uid).toBe(uid);
-    expect(userDoc.plan).toBe('web');
+    expect(userDoc.email).toBe('test@example.com');
   });
 
   it('delegates to generateMorningGistForUser with current time', () => {
     const generateFn = vi.fn();
-    const userDoc = { uid: 'user-789', email: 'a@b.com', plan: 'print' as const };
+    const userDoc = { uid: 'user-789', email: 'a@b.com' };
     const now = new Date();
 
     generateFn(userDoc, now);

@@ -24,7 +24,7 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 
-import type { UserDoc, MorningGist, GistPlan, IntegrationStatus } from './types';
+import type { UserDoc, MorningGist, IntegrationStatus } from './types';
 export type { DeliveryMethod, UserDoc } from './types';
 
 import {
@@ -480,13 +480,10 @@ function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
   return {
     uid,
     email: data.email ?? null,
-    plan: (data.plan as GistPlan) ?? 'web',
     prefs: data.prefs ?? {},
     delivery: data.delivery ?? {},
     calendarIntegration: data.calendarIntegration,
     emailIntegration: data.emailIntegration,
-    stripeCustomerId: data.stripeCustomerId ?? null,
-    stripeSubscriptionStatus: data.stripeSubscriptionStatus ?? 'demo',
     gistIssueCount: data.gistIssueCount ?? 0,
     profile: data.profile ?? {},
   };
