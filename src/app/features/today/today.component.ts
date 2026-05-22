@@ -158,6 +158,7 @@ export class TodayComponent {
   // UI state
   hasGistToday = false;
   pdfLoading = false;
+  isGenerating = false;
 
   // Toolbar / sidebar text — derived from gist$ + deliveryLogs$ in constructor
   metaText = '—';
@@ -246,11 +247,36 @@ export class TodayComponent {
   }
 
   onResend(): void {
-    // For now keep demo behavior. Later we’ll call a Cloud Function.
+    // For now keep demo behavior. Later we'll call a Cloud Function.
     this.statusText = 'Queued…';
     window.setTimeout(() => {
       this.statusText = 'Delivered';
     }, 900);
+  }
+
+  async onGenerateOnDemand(): Promise<void> {
+    if (this.isGenerating) return;
+    this.isGenerating = true;
+    try {
+      const token = await this.auth.currentUser?.getIdToken();
+      if (!token) return;
+      const projectId = this.auth.app.options.projectId;
+      const baseUrl = `https://us-central1-${projectId}.cloudfunctions.net`;
+      const resp = await fetch(`${baseUrl}/generateGistOnDemand`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!resp.ok) throw new Error(`Generation failed: ${resp.status}`);
+      // gist$ is a real-time Firestore listener — page updates automatically
+    } catch (err) {
+      console.error('generateGistOnDemand failed', err);
+    } finally {
+      this.isGenerating = false;
+    }
   }
 
   onEditTomorrow(): void {
@@ -412,7 +438,7 @@ export class TodayComponent {
         this.prettyDateFromDateKey(gist.date)
       : '—';
 
-    // Later we’ll pull city + schedule from user prefs/delivery. For now:
+    // Later we'll pull city + schedule from user prefs/delivery. For now:
     const city = 'New York, NY';
     const schedule = 'Scheduled 7:30 AM ET';
     const metaText = `${dateStr} • ${city} • ${schedule}`;
