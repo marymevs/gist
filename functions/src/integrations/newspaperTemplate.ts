@@ -2,7 +2,7 @@
  * Newspaper-style HTML template for the morning Gist.
  *
  * 2-page broadsheet layout: Fraunces + IBM Plex Sans/Mono.
- * Replaces faxTemplate.ts for print/fax/PDF delivery.
+ * Used for print, PDF, and web preview.
  * For email delivery, see newspaperEmailTemplate.ts (table-based).
  *
  * Design reference: gist-sample-riley.html, gist-sample-jordan.html
