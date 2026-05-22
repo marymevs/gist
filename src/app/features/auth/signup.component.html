@@ -1,28 +1,6 @@
 <section class="card page auth">
   <h1>Create your account</h1>
-  <div class="sub">Choose a plan. You can change it later.</div>
-
-  <div class="planGrid">
-    <button
-      type="button"
-      class="card plan"
-      [class.selected]="selectedPlan === p.id"
-      *ngFor="let p of plans"
-      (click)="pickPlan(p.id)"
-    >
-      <div class="planTop">
-        <div>
-          <div class="planName">{{ p.name }}</div>
-          <div class="planSub">{{ p.subLabel }}</div>
-        </div>
-        <div class="planPrice">{{ p.priceLabel }}</div>
-      </div>
-
-      <ul class="planBullets">
-        <li *ngFor="let b of p.bullets">{{ b }}</li>
-      </ul>
-    </button>
-  </div>
+  <div class="sub">Your daily brief, printed and waiting — no screen required.</div>
 
   <div class="divider"></div>
 
@@ -67,10 +45,6 @@
       <a class="link" routerLink="/login">Already have an account? Log in</a>
     </div>
 
-    <div class="error" ngIf="error">{{ error }}</div>
-
-    <div class="fineprint">
-      Demo billing for now. Next step: connect Stripe Checkout per plan.
-    </div>
+    <div class="error" *ngIf="error">{{ error }}</div>
   </form>
 </section>

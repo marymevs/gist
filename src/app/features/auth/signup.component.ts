@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { GistPlan } from '../../core/models/plan.model';
 
 import {
   Firestore,
@@ -26,30 +25,8 @@ import {
 export class SignupComponent {
   email = '';
   password = '';
-  selectedPlan: GistPlan = 'print';
   loading = false;
   error = '';
-
-  readonly plans: Array<{ id: GistPlan; name: string; subLabel: string; priceLabel: string; bullets: string[] }> = [
-    {
-      id: 'print',
-      name: 'Print',
-      subLabel: 'Delivered by fax every morning',
-      priceLabel: '$15/mo',
-      bullets: ['Daily morning brief', 'Fax delivery', 'Calendar + Gmail summary'],
-    },
-    {
-      id: 'web',
-      name: 'Web',
-      subLabel: 'Read online at any time',
-      priceLabel: 'Free',
-      bullets: ['Daily morning brief', 'Web access only'],
-    },
-  ];
-
-  pickPlan(plan: GistPlan): void {
-    this.selectedPlan = plan;
-  }
 
   constructor(
     private auth: Auth,
@@ -98,10 +75,8 @@ export class SignupComponent {
       ref,
       {
         email,
-        plan: this.selectedPlan,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        stripeSubscriptionStatus: 'demo',
       },
       { merge: true },
     );
