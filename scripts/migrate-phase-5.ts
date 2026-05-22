@@ -24,8 +24,9 @@
  *     MIGRATE_UID=<your-uid> \
  *     npx tsx scripts/migrate-phase-5.ts --apply
  *
- * After running with --apply and confirming via the Firebase console,
- * delete this script (it's a one-off).
+ * Kept in scripts/ as a historical record of the Phase 5 data migration —
+ * even though it's one-off, the script doubles as documentation of what
+ * the live schema used to look like.
  * ────────────────────────────────────────────────────────────────────────
  */
 
@@ -126,7 +127,7 @@ async function main(): Promise<void> {
   }
 
   console.log('All target fields removed. Migration complete.');
-  console.log('Verify in the Firebase console, then delete this script.');
+  console.log('Verify in the Firebase console.');
 }
 
 main().catch((err) => {

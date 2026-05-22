@@ -11,6 +11,7 @@
 .gstack/
 
 # Misc
-/scripts
+scripts/__pycache__/
+scripts/spike-output/
 .claude/
 /docs
