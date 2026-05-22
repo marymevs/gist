@@ -130,8 +130,4 @@ export class DeliveryComponent {
   editSchedule() {
     this.router.navigate(['/account']);
   }
-
-  updateFax() {
-    this.router.navigate(['/account']);
-  }
 }
