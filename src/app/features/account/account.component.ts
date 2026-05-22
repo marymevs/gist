@@ -35,7 +35,6 @@ export class AccountComponent {
   isConnectingCalendar = false;
   isConnectingGmail = false;
   isSavingVipSenders = false;
-  isSavingFaxNumber = false;
   isSavingPreferences = false;
   isUpgrading = false;
   isOpeningPortal = false;
@@ -94,7 +93,10 @@ export class AccountComponent {
 
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
-      this.toast.show('Please sign in before connecting your calendar.', 'error');
+      this.toast.show(
+        'Please sign in before connecting your calendar.',
+        'error',
+      );
       return;
     }
 
@@ -103,12 +105,21 @@ export class AccountComponent {
       const { authorizationUrl, callbackOrigin } =
         await this.startGoogleCalendarAuth(currentUser);
 
-      const popup = this.openOAuthPopup(authorizationUrl, 'google-calendar-oauth');
+      const popup = this.openOAuthPopup(
+        authorizationUrl,
+        'google-calendar-oauth',
+      );
       if (!popup) {
-        throw new Error('Popup was blocked. Please allow popups and try again.');
+        throw new Error(
+          'Popup was blocked. Please allow popups and try again.',
+        );
       }
 
-      await this.waitForOAuthResult(popup, callbackOrigin, 'google-calendar-oauth');
+      await this.waitForOAuthResult(
+        popup,
+        callbackOrigin,
+        'google-calendar-oauth',
+      );
       this.toast.show('Google Calendar connected.', 'success');
     } catch (error) {
       const message =
@@ -137,10 +148,16 @@ export class AccountComponent {
 
       const popup = this.openOAuthPopup(authorizationUrl, 'google-gmail-oauth');
       if (!popup) {
-        throw new Error('Popup was blocked. Please allow popups and try again.');
+        throw new Error(
+          'Popup was blocked. Please allow popups and try again.',
+        );
       }
 
-      await this.waitForOAuthResult(popup, callbackOrigin, 'google-gmail-oauth');
+      await this.waitForOAuthResult(
+        popup,
+        callbackOrigin,
+        'google-gmail-oauth',
+      );
       this.toast.show('Gmail connected.', 'success');
     } catch (error) {
       const message =
@@ -181,34 +198,6 @@ export class AccountComponent {
       this.toast.show(message, 'error');
     } finally {
       this.isSavingVipSenders = false;
-    }
-  }
-
-  async onSaveFaxNumber(user: GistUser, raw: string): Promise<void> {
-    if (this.isSavingFaxNumber) return;
-    if (!user?.uid) {
-      this.toast.show('Sign in to save your fax number.', 'error');
-      return;
-    }
-
-    const faxNumber = raw.trim().replace(/\s+/g, '');
-    if (!faxNumber) {
-      this.toast.show('Please enter a fax number.', 'info');
-      return;
-    }
-
-    this.isSavingFaxNumber = true;
-    try {
-      await this.accountData.updateFaxNumber(user.uid, faxNumber);
-      this.toast.show('Fax number saved.', 'success');
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to save fax number right now.';
-      this.toast.show(message, 'error');
-    } finally {
-      this.isSavingFaxNumber = false;
     }
   }
 
@@ -265,34 +254,11 @@ export class AccountComponent {
     }
   }
 
-  async onChangePlan(): Promise<void> {
-    try {
-      const token = await this.auth.currentUser?.getIdToken();
-      if (!token) return;
-      const response = await fetch('/api/stripeCreateCheckout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ plan: 'print' }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert(data.error ?? 'Could not start checkout.');
-      }
-    } catch {
-      alert('Could not connect to billing. Try again.');
-    }
-  }
-
-  onViewInvoices(): void {
-    // Opens Stripe customer portal — URL configured in Stripe dashboard
-    window.open('https://billing.stripe.com/p/login/test', '_blank');
-  }
-
   lengthLabel(user: GistUser): string {
     const val = user.prefs?.length ?? 'standard';
-    return LENGTH_OPTIONS.find((o) => o.value === val)?.label ?? 'Standard (2 pages)';
+    return (
+      LENGTH_OPTIONS.find((o) => o.value === val)?.label ?? 'Standard (2 pages)'
+    );
   }
 
   toneLabel(user: GistUser): string {
@@ -337,7 +303,8 @@ export class AccountComponent {
 
       window.location.href = data.url;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unable to start checkout.';
+      const msg =
+        error instanceof Error ? error.message : 'Unable to start checkout.';
       this.toast.show(msg, 'error');
     } finally {
       this.isUpgrading = false;
@@ -373,7 +340,10 @@ export class AccountComponent {
 
       window.location.href = data.url;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Unable to open billing portal.';
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Unable to open billing portal.';
       this.toast.show(msg, 'error');
     } finally {
       this.isOpeningPortal = false;
@@ -460,7 +430,9 @@ export class AccountComponent {
     };
     if (!response.ok) {
       const errorMessage =
-        typeof payload.error === 'string' ? payload.error : 'Failed to start OAuth';
+        typeof payload.error === 'string'
+          ? payload.error
+          : 'Failed to start OAuth';
       throw new Error(errorMessage);
     }
 
@@ -502,7 +474,9 @@ export class AccountComponent {
     };
     if (!response.ok) {
       const errorMessage =
-        typeof payload.error === 'string' ? payload.error : 'Failed to start OAuth';
+        typeof payload.error === 'string'
+          ? payload.error
+          : 'Failed to start OAuth';
       throw new Error(errorMessage);
     }
 
@@ -523,7 +497,9 @@ export class AccountComponent {
         console.warn('[gmail] Missing redirect_uri in authorization URL');
       }
     } catch {
-      console.warn('[gmail] Unable to parse authorization URL for redirect_uri');
+      console.warn(
+        '[gmail] Unable to parse authorization URL for redirect_uri',
+      );
     }
 
     return {
@@ -610,12 +586,15 @@ export class AccountComponent {
         }
       }, 250);
 
-      const timeoutHandle = window.setTimeout(() => {
-        if (!popup.closed) {
-          popup.close();
-        }
-        finish(new Error('Timed out waiting for Google authorization.'));
-      }, 5 * 60 * 1000);
+      const timeoutHandle = window.setTimeout(
+        () => {
+          if (!popup.closed) {
+            popup.close();
+          }
+          finish(new Error('Timed out waiting for Google authorization.'));
+        },
+        5 * 60 * 1000,
+      );
     });
   }
 }
