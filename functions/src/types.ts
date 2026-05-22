@@ -96,8 +96,6 @@ export type MorningGist = {
     pages: number;
     status: 'queued' | 'delivered' | 'failed';
     deliveredAt?: Timestamp;
-    /** Phaxio fax ID — set for fax deliveries, used by faxWebhook to correlate callbacks. */
-    phaxioFaxId?: string;
   };
 
   createdAt: Timestamp;
