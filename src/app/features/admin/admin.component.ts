@@ -22,7 +22,6 @@ type UserRow = {
   email: string | null;
   plan: string;
   onboardingComplete?: boolean;
-  stripeSubscriptionStatus?: string;
   lastGeneratedDate?: string;
   createdAt?: any;
 };
@@ -57,7 +56,6 @@ export class AdminComponent implements OnInit, OnDestroy {
   activeUsers = 0; // generated in last 7 days
   onboardedUsers = 0;
   planBreakdown: Record<string, number> = {};
-  subscriptionBreakdown: Record<string, number> = {};
 
   // Quality
   avgEditorialVoice = 0;
@@ -130,7 +128,6 @@ export class AdminComponent implements OnInit, OnDestroy {
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
     const plans: Record<string, number> = {};
-    const subs: Record<string, number> = {};
     let onboarded = 0;
     let active = 0;
 
@@ -138,10 +135,6 @@ export class AdminComponent implements OnInit, OnDestroy {
       // Plan breakdown
       const plan = u.plan || 'web';
       plans[plan] = (plans[plan] || 0) + 1;
-
-      // Subscription breakdown
-      const status = u.stripeSubscriptionStatus || 'demo';
-      subs[status] = (subs[status] || 0) + 1;
 
       // Onboarding
       if (u.onboardingComplete) onboarded++;
@@ -153,7 +146,6 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.planBreakdown = plans;
-    this.subscriptionBreakdown = subs;
     this.onboardedUsers = onboarded;
     this.activeUsers = active;
   }
@@ -205,10 +197,6 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   planKeys(): string[] {
     return Object.keys(this.planBreakdown);
-  }
-
-  subKeys(): string[] {
-    return Object.keys(this.subscriptionBreakdown);
   }
 
   deliveryKeys(): string[] {
