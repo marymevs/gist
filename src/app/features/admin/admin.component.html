@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <!-- Row 2: Plan + subscription breakdown -->
+    <!-- Row 2: Plan breakdown -->
     <div class="breakdownRow">
       <div class="card breakdownCard">
         <h2>Plans</h2>
@@ -35,17 +35,6 @@
           </ng-container>
         </div>
         <p class="emptyNote" *ngIf="planKeys().length === 0">No users yet.</p>
-      </div>
-
-      <div class="card breakdownCard">
-        <h2>Subscriptions</h2>
-        <div class="kvGrid" *ngIf="subKeys().length > 0">
-          <ng-container *ngFor="let key of subKeys()">
-            <span class="kvLabel">{{ key }}</span>
-            <span class="kvValue">{{ subscriptionBreakdown[key] }}</span>
-          </ng-container>
-        </div>
-        <p class="emptyNote" *ngIf="subKeys().length === 0">No subscriptions yet.</p>
       </div>
     </div>
 
