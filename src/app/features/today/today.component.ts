@@ -261,7 +261,10 @@ export class TodayComponent {
       const token = await this.auth.currentUser?.getIdToken();
       if (!token) return;
       const projectId = this.auth.app.options.projectId;
-      const baseUrl = `https://us-central1-${projectId}.cloudfunctions.net`;
+      const isLocal = window.location.hostname === 'localhost';
+      const baseUrl = isLocal
+        ? `http://localhost:5001/${projectId}/us-central1`
+        : `https://us-central1-${projectId}.cloudfunctions.net`;
       const resp = await fetch(`${baseUrl}/generateGistOnDemand`, {
         method: 'POST',
         headers: {
