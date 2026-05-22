@@ -28,14 +28,32 @@ import {
 } from '@angular/fire/analytics';
 import { getDatabase, provideDatabase } from '@angular/fire/database';
 
+const useEmulators = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => getFirestore()),
-    provideAuth(() => getAuth()),
-    provideFunctions(() => getFunctions()),
+    provideFirestore(() => {
+      const firestore = getFirestore();
+      if (useEmulators) connectFirestoreEmulator(firestore, 'localhost', 8080);
+      return firestore;
+    }),
+    provideAuth(() => {
+      const auth = getAuth();
+      if (useEmulators) connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+      return auth;
+    }),
+    provideFunctions(() => {
+      const functions = getFunctions();
+      if (useEmulators) connectFunctionsEmulator(functions, 'localhost', 5001);
+      return functions;
+    }),
+    provideStorage(() => {
+      const storage = getStorage();
+      if (useEmulators) connectStorageEmulator(storage, 'localhost', 9199);
+      return storage;
+    }),
     provideMessaging(() => getMessaging()),
-    provideStorage(() => getStorage()),
     provideRouter(routes),
   ],
 };
