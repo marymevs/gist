@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0.0] - 2026-05-22
+
+Phase 4 (newspaper template prune). Fax-back questions are fully removed from the generation pipeline. Page 2's right column is now a pure reflection space — morning intention prompt followed by ruled writing lines, then the personal quote. The two-page editorial weight stays. Newspaper generation no longer has a silent fallback — failures throw.
+
+### Removed
+- `faxBackQuestionSchema` and `faxBackQuestions` field from `newspaperTypes.ts` — Claude no longer generates end-of-day checkbox questions.
+- `faxBackQuestions` from `claudeNewspaper.ts` — prompt JSON example, schema rules, fallback object, and header comment.
+- `faxBackHtml()` function from `newspaperTemplate.ts` and its call site in Page 2.
+- "Newspaper generation failed, falling back to legacy format" try/catch in `generateMorningGist.ts` — failures now surface immediately rather than silently producing a partial gist.
+
+### Changed
+- Page 2 right column: fax-back checkboxes replaced with a continuous reflection space — morning intention prompt + 3 writing lines, then a horizontal rule, then 6 blank ruled writing lines, then the personal quote.
+- `newspaperData` in `generateMorningGist.ts` is now `const` (was `let`/`undefined`-typed) since it's no longer conditionally assigned.
+
+### Notes
+- Ticket 4.6 (snapshot test for Page 2 reflection layout) was closed without implementation — the proposed assertions were paranoid rather than structural and would have aged poorly. A codebase grep is the right tool for the regression fear.
+- The intention-prompt + writing-lines layout has visual unevenness in the rendered output. Tracked in #122.
+
 ## [0.3.0.0] - 2026-05-22
 
 Phase 2 (frontend prune) and Phase 3 (backend file deletion) land together. The Angular app no longer shows any fax/Stripe UI. All fax and Stripe implementation files are deleted from the functions codebase. Claude is the sole LLM. The newspaper template is the sole email renderer. The codebase now reflects what actually runs.
