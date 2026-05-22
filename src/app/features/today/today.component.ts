@@ -46,7 +46,6 @@ type NewspaperData = {
   practiceArc?: { sectionLabel?: string; title?: string; items?: Array<{ label?: string; text?: string }>; closingNote?: string };
   moonHighlight?: { title?: string; paragraph?: string };
   closingThought?: string;
-  faxBackQuestions?: Array<{ prompt?: string; options?: string[] }>;
   personalQuote?: { text?: string; attribution?: string };
 };
 
@@ -267,12 +266,11 @@ export class TodayComponent {
         practiceArc: n.practiceArc,
         moonHighlight: n.moonHighlight,
         closingThought: n.closingThought || '',
-        faxBackQuestions: n.faxBackQuestions || [],
         personalQuote: n.personalQuote,
         moonFooter: n.moonFooter || '',
         seasonFooter: n.seasonFooter || '',
         intentionPrompt: n.intentionPrompt || 'What would make today feel complete — not just productive, but good?',
-        hasPage2: !!(n.bodyMind || n.practiceArc || n.faxBackQuestions?.length),
+        hasPage2: !!(n.bodyMind || n.practiceArc),
       };
     }
 
@@ -315,7 +313,6 @@ export class TodayComponent {
       practiceArc: null as { sectionLabel: string; title: string; items: Array<{ label: string; text: string }>; closingNote?: string } | null,
       moonHighlight: null as { title: string; paragraph: string } | null,
       closingThought: '',
-      faxBackQuestions: [] as Array<{ prompt: string; options: string[] }>,
       personalQuote: null as { text: string; attribution: string } | null,
       moonFooter: gist.moonPhase || '',
       seasonFooter: '',
@@ -387,7 +384,6 @@ export class TodayComponent {
     ).toString();
     const methodLower = (method ?? '').toLowerCase();
     const methodLabel =
-      methodLower === 'fax' ? 'Fax' :
       methodLower === 'email' ? 'Email' :
       methodLower === 'web' ? 'Web' :
       `${method}`.toUpperCase();
