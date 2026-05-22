@@ -2,22 +2,14 @@ import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
 import { provideAuth, getAuth } from '@angular/fire/auth';
-import {
-  provideFirestore,
-  getFirestore,
-  connectFirestoreEmulator,
-} from '@angular/fire/firestore';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 import {
   provideFunctions,
   getFunctions,
   connectFunctionsEmulator,
 } from '@angular/fire/functions';
 import { provideMessaging, getMessaging } from '@angular/fire/messaging';
-import {
-  provideStorage,
-  getStorage,
-  connectStorageEmulator,
-} from '@angular/fire/storage';
+import { provideStorage, getStorage } from '@angular/fire/storage';
 import { routes } from './app.routes';
 import { provideRouter } from '@angular/router';
 import {
@@ -33,11 +25,8 @@ const useEmulators = typeof window !== 'undefined' && window.location.hostname =
 export const appConfig: ApplicationConfig = {
   providers: [
     provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => {
-      const firestore = getFirestore();
-      if (useEmulators) connectFirestoreEmulator(firestore, 'localhost', 8080);
-      return firestore;
-    }),
+    // Firestore always hits production — real user doc needed for function to work.
+    provideFirestore(() => getFirestore()),
     // Auth always hits production — Google OAuth doesn't work through the emulator.
     // Real ID tokens issued by production Auth are accepted by the Functions emulator.
     provideAuth(() => getAuth()),
@@ -46,11 +35,7 @@ export const appConfig: ApplicationConfig = {
       if (useEmulators) connectFunctionsEmulator(functions, 'localhost', 5001);
       return functions;
     }),
-    provideStorage(() => {
-      const storage = getStorage();
-      if (useEmulators) connectStorageEmulator(storage, 'localhost', 9199);
-      return storage;
-    }),
+    provideStorage(() => getStorage()),
     provideMessaging(() => getMessaging()),
     provideRouter(routes),
   ],
