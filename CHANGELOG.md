@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0.0] - 2026-05-22
+
+Phase 2 (frontend prune) and Phase 3 (backend file deletion) land together. The Angular app no longer shows any fax/Stripe UI. All fax and Stripe implementation files are deleted from the functions codebase. Claude is the sole LLM. The newspaper template is the sole email renderer. The codebase now reflects what actually runs.
+
+### Removed (Phase 2 — frontend)
+- Evening gist feature (`/evening` route and component) — YAGNI; revive later.
+- Fax number form and "Update fax" button from Account page.
+- Stripe portal / upgrade section from Account page.
+- Fax delivery card from Delivery settings page.
+- Plan picker grid from Signup page.
+- Fax-back questions rendering from Today page.
+- "Fax + Web" delivery label from Today, Landing, Privacy, and Terms pages.
+- "Billing lives here" subtitle from Account page.
+- Subscriptions and Billing section from Terms of Service.
+- `user-profile.service.ts` — confirmed zero importers.
+
+### Removed (Phase 3 — backend)
+- `faxDelivery.ts`, `faxWebhook.ts`, `faxTemplate.ts`, `testFax.ts`, `delivery/fax.ts` — fax delivery implementation.
+- `billing/` directory, `stripeWebhook.ts`, `stripeCheckout.ts`, `stripeUtils.ts` — Stripe billing implementation.
+- `openaiGist.ts`, `openaiEmail.ts`, `openaiUtils.ts` — OpenAI integration (Claude is the sole LLM).
+- `emailTemplate.ts` — legacy email template, superseded by `newspaperEmailTemplate.ts`.
+- `morningGistRouting.test.ts` — stale test with an inlined copy of `resolveDeliveryMethod`.
+- `deliverByFax` re-export from `delivery/index.ts`.
+
+### Changed (Phase 3 — backend)
+- `generateGistPrint.ts` and `integrations/generatePdf.ts` ported from `buildFaxHtml` to `buildNewspaperHtml`. Both now read `gist.newspaper` from Firestore and return 422 loudly if the field is missing.
+- `delivery/email.ts`: legacy flat-field `else` branch removed. Throws if `newspaperInput` is absent — no silent fallback.
+- `firestoreUtils.ts`: `DeliveryMethod` narrowed to `'web' | 'email'`; JSDoc references to the deleted fax webhook removed.
+- `types.ts`: `DeliveryMethod` narrowed to match.
+- `resendMorningGist.ts`: `OPENAI_API_KEY` import and secret binding removed.
+- `firestore.rules`: stale "Stripe webhook" comment removed from `plan`-field update rule. `TODO(phase-5)` marker added.
+
+### Added
+- "Generate on demand" button on `/today` toolbar — calls `generateGistOnDemand` directly against the deployed function, updates the page via the Firestore real-time listener.
+
+### Notes
+- `claudeEmail.ts` was NOT deleted — still imported by `gmailInt.ts` for email classification.
+- Residual `stripeCustomerId` / `stripeSubscriptionStatus` field reads in `generateMorningGist.ts` and `generateGistOnDemand.ts` are data-model leftovers addressed in Phase 5.
+- The `plan` guard in `firestore.rules` stays until Phase 5 removes the field from the schema.
+
 ## [0.2.0.0] - 2026-05-22
 
 Phase 1 of the prune-and-realign plan — pivoting from fax-first delivery to email-to-print as the primary delivery path. Stripe billing was also retired (no charging during the solo-dogfooding phase). The codebase is now ~200 LOC lighter in the daily generation path with no functional regression for the active delivery route.
