@@ -37,13 +37,28 @@ type EmailCard = {
 
 type NewspaperData = {
   lede?: { kicker?: string; headline?: string; paragraph?: string };
-  schedule?: Array<{ time?: string; emoji?: string; name?: string; note?: string }>;
+  schedule?: Array<{
+    time?: string;
+    emoji?: string;
+    name?: string;
+    note?: string;
+  }>;
   notifications?: Array<{ emoji?: string; source?: string; body?: string }>;
   goodNews?: Array<{ headline?: string; summary?: string }>;
   people?: Array<{ name?: string; nudge?: string }>;
   quote?: { text?: string; attribution?: string };
-  bodyMind?: { sectionLabel?: string; title?: string; paragraphs?: string[]; coachingNote?: string };
-  practiceArc?: { sectionLabel?: string; title?: string; items?: Array<{ label?: string; text?: string }>; closingNote?: string };
+  bodyMind?: {
+    sectionLabel?: string;
+    title?: string;
+    paragraphs?: string[];
+    coachingNote?: string;
+  };
+  practiceArc?: {
+    sectionLabel?: string;
+    title?: string;
+    items?: Array<{ label?: string; text?: string }>;
+    closingNote?: string;
+  };
   moonHighlight?: { title?: string; paragraph?: string };
   closingThought?: string;
   personalQuote?: { text?: string; attribution?: string };
@@ -55,8 +70,17 @@ type NewspaperMeta = {
   dateFormatted?: string;
   deliveryTime?: string;
   volumeIssue?: string;
-  weather?: { tempNow?: string; conditions?: string; forecast?: Array<{ day?: string; high?: string; condition?: string }> };
-  rhythms?: { moon?: string; season?: string; light?: string; countdown?: string };
+  weather?: {
+    tempNow?: string;
+    conditions?: string;
+    forecast?: Array<{ day?: string; high?: string; condition?: string }>;
+  };
+  rhythms?: {
+    moon?: string;
+    season?: string;
+    light?: string;
+    countdown?: string;
+  };
   moonFooter?: string;
   seasonFooter?: string;
   intentionPrompt?: string;
@@ -81,7 +105,7 @@ type MorningGist = {
   newspaper?: NewspaperData & NewspaperMeta;
 
   delivery?: {
-    method: 'web' | 'email' | 'fax';
+    method: 'web' | 'email';
     pages: number;
     status: 'queued' | 'delivered' | 'failed' | string;
     deliveredAt?: Timestamp;
@@ -93,7 +117,7 @@ type MorningGist = {
 type DeliveryLog = {
   id: string;
   type: string; // 'morning'
-  method: string; // 'fax'|'web'|'email'
+  method: string; // 'web'|'email'
   status: string; // queued|delivered|failed|received...
   pages?: number | null;
   createdAt?: Timestamp;
@@ -201,10 +225,10 @@ export class TodayComponent {
       const token = await this.auth.currentUser?.getIdToken();
       if (!token) return;
       const response = await fetch('/api/generateGistPdf', {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
-        alert('PDF couldn\'t be generated.');
+        alert("PDF couldn't be generated.");
         return;
       }
       const html = await response.text();
@@ -215,7 +239,7 @@ export class TodayComponent {
         printWindow.document.close();
       }
     } catch {
-      alert('PDF couldn\'t be generated.');
+      alert("PDF couldn't be generated.");
     } finally {
       this.pdfLoading = false;
     }
@@ -230,7 +254,9 @@ export class TodayComponent {
   }
 
   onEditTomorrow(): void {
-    this.router.navigate(['/account'], { queryParams: { section: 'preferences' } });
+    this.router.navigate(['/account'], {
+      queryParams: { section: 'preferences' },
+    });
   }
 
   goToDelivery(): void {
@@ -269,7 +295,9 @@ export class TodayComponent {
         personalQuote: n.personalQuote,
         moonFooter: n.moonFooter || '',
         seasonFooter: n.seasonFooter || '',
-        intentionPrompt: n.intentionPrompt || 'What would make today feel complete — not just productive, but good?',
+        intentionPrompt:
+          n.intentionPrompt ||
+          'What would make today feel complete — not just productive, but good?',
         hasPage2: !!(n.bodyMind || n.practiceArc),
       };
     }
@@ -284,39 +312,65 @@ export class TodayComponent {
       weather: {
         tempNow: gist.weatherSummary?.match(/\d+°/)?.[0] || '—',
         conditions: gist.weatherSummary || '',
-        forecast: [] as Array<{ day?: string; high?: string; condition?: string }>,
+        forecast: [] as Array<{
+          day?: string;
+          high?: string;
+          condition?: string;
+        }>,
       },
-      rhythms: { moon: gist.moonPhase || '', season: '', light: '' } as { moon: string; season: string; light: string; countdown?: string },
+      rhythms: { moon: gist.moonPhase || '', season: '', light: '' } as {
+        moon: string;
+        season: string;
+        light: string;
+        countdown?: string;
+      },
       lede: {
         kicker: 'Good Morning',
         headline: gist.oneThing || 'Your Daily Briefing',
         paragraph: gist.gistBullets?.join(' ') || '',
       },
-      schedule: (gist.dayItems || []).map(d => ({
+      schedule: (gist.dayItems || []).map((d) => ({
         time: d.time || '',
         emoji: '',
         name: d.title,
         note: d.note || '',
       })),
-      goodNews: (gist.worldItems || []).map(w => ({
+      goodNews: (gist.worldItems || []).map((w) => ({
         headline: w.headline,
         summary: w.implication,
       })),
-      notifications: (gist.emailCards || []).map(e => ({
-        emoji: e.category === 'Action' ? '📧' : e.category === 'WaitingOn' ? '⏳' : '📋',
+      notifications: (gist.emailCards || []).map((e) => ({
+        emoji:
+          e.category === 'Action'
+            ? '📧'
+            : e.category === 'WaitingOn'
+              ? '⏳'
+              : '📋',
         source: e.fromName || e.fromEmail || e.subject,
-        body: e.snippet + (e.suggestedNextStep ? ` → ${e.suggestedNextStep}` : ''),
+        body:
+          e.snippet + (e.suggestedNextStep ? ` → ${e.suggestedNextStep}` : ''),
       })),
       people: [] as Array<{ name: string; nudge: string }>,
       quote: null as { text: string; attribution: string } | null,
-      bodyMind: null as { sectionLabel: string; title: string; paragraphs: string[]; coachingNote?: string } | null,
-      practiceArc: null as { sectionLabel: string; title: string; items: Array<{ label: string; text: string }>; closingNote?: string } | null,
+      bodyMind: null as {
+        sectionLabel: string;
+        title: string;
+        paragraphs: string[];
+        coachingNote?: string;
+      } | null,
+      practiceArc: null as {
+        sectionLabel: string;
+        title: string;
+        items: Array<{ label: string; text: string }>;
+        closingNote?: string;
+      } | null,
       moonHighlight: null as { title: string; paragraph: string } | null,
       closingThought: '',
       personalQuote: null as { text: string; attribution: string } | null,
       moonFooter: gist.moonPhase || '',
       seasonFooter: '',
-      intentionPrompt: 'What would make today feel complete — not just productive, but good?',
+      intentionPrompt:
+        'What would make today feel complete — not just productive, but good?',
       hasPage2: false,
     };
   }
@@ -384,9 +438,11 @@ export class TodayComponent {
     ).toString();
     const methodLower = (method ?? '').toLowerCase();
     const methodLabel =
-      methodLower === 'email' ? 'Email' :
-      methodLower === 'web' ? 'Web' :
-      `${method}`.toUpperCase();
+      methodLower === 'email'
+        ? 'Email'
+        : methodLower === 'web'
+          ? 'Web'
+          : `${method}`.toUpperCase();
 
     const pagesLabel = pages ? `${pages} page${pages === 1 ? '' : 's'}` : '—';
 

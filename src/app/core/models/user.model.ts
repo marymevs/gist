@@ -35,24 +35,22 @@ export interface GistUser {
     };
     length?: 'brief' | 'standard' | 'detailed';
     tone?: 'calm' | 'detailed' | 'concise';
-    topics?: string[];     // chip selections from onboarding
-    rhythms?: string[];    // chip selections from onboarding
-    quietDays?: number[];  // 0=Sun, 1=Mon, ..., 6=Sat
+    topics?: string[]; // chip selections from onboarding
+    rhythms?: string[]; // chip selections from onboarding
+    quietDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
     timezone?: string;
     city?: string;
     countdown?: {
-      label: string;       // e.g. "Thesis", "Race"
-      targetDate: string;  // ISO date e.g. "2026-05-07"
+      label: string; // e.g. "Thesis", "Race"
+      targetDate: string; // ISO date e.g. "2026-05-07"
     };
   };
 
   // Delivery schedule (per-user delivery times)
   delivery?: {
-    method?: 'web' | 'email' | 'fax';
-    /** E.164 or 10-digit fax number, e.g. "+12125551234" */
-    faxNumber?: string;
+    method?: 'web' | 'email';
     schedule?: {
-      hour?: number;   // 0-23, default 7
+      hour?: number; // 0-23, default 7
       minute?: number; // 0-59, default 30
     };
   };
@@ -68,11 +66,7 @@ export interface GistUser {
   // Onboarding state
   onboardingComplete?: boolean;
 
-  // Billing
-  stripeCustomerId?: string | null;
-  stripeSubscriptionId?: string | null;
-  stripeSubscriptionStatus?: 'demo' | 'active' | 'past_due' | 'canceled';
-
+  // Integrations
   calendarIntegration?: CalendarIntegration;
   emailIntegration?: EmailIntegration;
 }
