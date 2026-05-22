@@ -9,7 +9,7 @@ import type { Timestamp } from 'firebase-admin/firestore';
 import type { EmailCard } from './integrations/gmailInt';
 
 /** All delivery methods supported by the scheduler. */
-export type DeliveryMethod = 'web' | 'email' | 'fax';
+export type DeliveryMethod = 'web' | 'email';
 
 export type GistPlan = 'web' | 'print' | 'loop';
 
