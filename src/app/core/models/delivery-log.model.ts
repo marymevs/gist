@@ -5,7 +5,7 @@ export interface DeliveryLog {
   type: 'morning';
   method: 'web' | 'email';
 
-  status: 'queued' | 'delivered' | 'received' | 'failed';
+  status: 'queued' | 'delivered' | 'failed';
 
   pages?: number;
 

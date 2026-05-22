@@ -55,7 +55,6 @@ export class AdminComponent implements OnInit, OnDestroy {
   totalUsers = 0;
   activeUsers = 0; // generated in last 7 days
   onboardedUsers = 0;
-  planBreakdown: Record<string, number> = {};
 
   // Quality
   avgEditorialVoice = 0;
@@ -127,15 +126,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
-    const plans: Record<string, number> = {};
     let onboarded = 0;
     let active = 0;
 
     for (const u of usersSnap) {
-      // Plan breakdown
-      const plan = u.plan || 'web';
-      plans[plan] = (plans[plan] || 0) + 1;
-
       // Onboarding
       if (u.onboardingComplete) onboarded++;
 
@@ -145,7 +139,6 @@ export class AdminComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.planBreakdown = plans;
     this.onboardedUsers = onboarded;
     this.activeUsers = active;
   }
@@ -193,10 +186,6 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.deliveryStats = delivery;
-  }
-
-  planKeys(): string[] {
-    return Object.keys(this.planBreakdown);
   }
 
   deliveryKeys(): string[] {

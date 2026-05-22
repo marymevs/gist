@@ -425,7 +425,7 @@ export class TodayComponent {
 
   private statusToClass(status?: string): 'ok' | 'warn' | 'bad' {
     const s = (status ?? '').toLowerCase();
-    if (['delivered', 'received', 'complete', 'completed', 'done'].includes(s))
+    if (['delivered', 'complete', 'completed', 'done'].includes(s))
       return 'ok';
     if (['failed', 'error'].includes(s)) return 'bad';
     return 'warn';

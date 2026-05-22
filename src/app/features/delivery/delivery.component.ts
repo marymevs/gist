@@ -86,9 +86,7 @@ export class DeliveryComponent {
     const s = (status ?? '').toLowerCase();
 
     if (
-      ['delivered', 'received', 'complete', 'completed', 'done', 'ok'].includes(
-        s,
-      )
+      ['delivered', 'complete', 'completed', 'done', 'ok'].includes(s)
     ) {
       return 'ok';
     }
