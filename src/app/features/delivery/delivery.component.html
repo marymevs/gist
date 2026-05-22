@@ -44,7 +44,7 @@
             [ngClass]="{
               ok: log.statusClass === 'ok',
               warn: log.statusClass === 'warn',
-              bad: log.statusClass === 'bad'
+              bad: log.statusClass === 'bad',
             }"
             style="text-transform: capitalize"
           >
@@ -62,11 +62,6 @@
               <!-- Morning -->
               <ng-container *ngSwitchCase="'morning'">
                 <button class="secondary" (click)="resend(log)">Resend</button>
-              </ng-container>
-
-              <!-- Evening -->
-              <ng-container *ngSwitchCase="'evening'">
-                <button class="secondary" (click)="view(log)">View</button>
               </ng-container>
 
               <!-- Fallback -->

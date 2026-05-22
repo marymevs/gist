@@ -50,13 +50,6 @@ export const routes: Routes = [
   },
 
   {
-    path: 'evening',
-    component: EveningComponent,
-    canActivate: [authGuard],
-    title: 'Evening Gist',
-  },
-
-  {
     path: 'archive',
     component: ArchiveComponent,
     canActivate: [authGuard],
