@@ -39,21 +39,6 @@ export class AccountDataService {
         plan: 'print', // sensible default for your product
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        stripeSubscriptionStatus: 'demo',
-      },
-      { merge: true }
-    );
-  }
-
-  async updateFaxNumber(uid: string, faxNumber: string): Promise<void> {
-    const ref = doc(this.firestore, 'users', uid);
-    await setDoc(
-      ref,
-      {
-        delivery: {
-          faxNumber: faxNumber.trim(),
-        },
-        updatedAt: serverTimestamp(),
       },
       { merge: true }
     );
