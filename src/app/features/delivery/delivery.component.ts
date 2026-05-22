@@ -21,7 +21,7 @@ import { ToastService } from '../../shared/services/toast.service';
 
 type DeliveryLog = {
   id: string;
-  type: 'morning' | 'evening' | string;
+  type: 'morning' | string;
   method: string;
   status: string;
   pages?: number | null;
@@ -58,9 +58,9 @@ export class DeliveryComponent {
       const q = query(logsCol, orderBy('createdAt', 'desc'), limit(50));
 
       return collectionData(q, { idField: 'id' }).pipe(
-        map((rows) => (rows as DeliveryLog[]).map((r) => this.toRow(r)))
+        map((rows) => (rows as DeliveryLog[]).map((r) => this.toRow(r))),
       );
-    })
+    }),
   );
 
   /** UI helpers */
@@ -70,7 +70,7 @@ export class DeliveryComponent {
     const createdAtDate = createdAt?.toDate ? createdAt.toDate() : undefined;
 
     const createdAtLabel = createdAtDate
-      ? this.datePipe.transform(createdAtDate, 'MMM d, h:mm a') ?? '—'
+      ? (this.datePipe.transform(createdAtDate, 'MMM d, h:mm a') ?? '—')
       : '—';
 
     const statusClass = this.statusToClass(log.status);
@@ -86,7 +86,9 @@ export class DeliveryComponent {
     const s = (status ?? '').toLowerCase();
 
     if (
-      ['delivered', 'received', 'complete', 'completed', 'done', 'ok'].includes(s)
+      ['delivered', 'received', 'complete', 'completed', 'done', 'ok'].includes(
+        s,
+      )
     ) {
       return 'ok';
     }
@@ -107,7 +109,9 @@ export class DeliveryComponent {
       this.toast.show('Gist resend queued.', 'success');
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Unable to resend — try again later.';
+        error instanceof Error
+          ? error.message
+          : 'Unable to resend — try again later.';
       this.toast.show(message, 'error');
     } finally {
       this.isResending = false;

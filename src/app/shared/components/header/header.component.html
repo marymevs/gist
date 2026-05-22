@@ -8,7 +8,6 @@
 
   <nav aria-label="Primary navigation">
     <a class="tab" routerLink="/today" routerLinkActive="active"> Today </a>
-    <a class="tab" routerLink="/evening" routerLinkActive="active"> Evening </a>
     <a class="tab" routerLink="/archive" routerLinkActive="active"> Archive </a>
     <a class="tab" routerLink="/delivery" routerLinkActive="active">Delivery</a>
     <a class="tab" routerLink="/account" routerLinkActive="active"> Account </a>
@@ -18,12 +17,10 @@
       (click)="toggleTheme()"
       [attr.aria-pressed]="theme() === 'dark'"
       [attr.aria-label]="
-        theme() === 'dark'
-          ? 'Switch to light mode'
-          : 'Switch to dark mode'
+        theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
       "
     >
-      {{ theme() === 'dark' ? 'Light mode' : 'Dark mode' }}
+      {{ theme() === "dark" ? "Light mode" : "Dark mode" }}
     </button>
   </nav>
 </header>
