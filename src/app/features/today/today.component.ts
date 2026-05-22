@@ -261,7 +261,8 @@ export class TodayComponent {
       const token = await this.auth.currentUser?.getIdToken();
       if (!token) return;
       const projectId = this.auth.app.options.projectId;
-      const isLocal = window.location.hostname === 'localhost';
+      const h = window.location.hostname;
+      const isLocal = h === 'localhost' || h === '127.0.0.1' || h === '::1';
       const baseUrl = isLocal
         ? `http://localhost:5001/${projectId}/us-central1`
         : `https://us-central1-${projectId}.cloudfunctions.net`;

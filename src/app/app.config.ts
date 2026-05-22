@@ -20,7 +20,11 @@ import {
 } from '@angular/fire/analytics';
 import { getDatabase, provideDatabase } from '@angular/fire/database';
 
-const useEmulators = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+const useEmulators =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '::1');
 
 export const appConfig: ApplicationConfig = {
   providers: [
