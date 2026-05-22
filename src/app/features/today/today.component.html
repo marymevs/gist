@@ -13,6 +13,13 @@
         </button>
         <button class="secondary" type="button" (click)="onResend()">Resend</button>
         <button class="secondary" type="button" (click)="onEditTomorrow()">Edit tomorrow</button>
+        <button
+          class="secondary"
+          type="button"
+          style="border-color: #b91c1c; color: #b91c1c;"
+          (click)="onGenerateOnDemand()"
+          [disabled]="isGenerating"
+        >{{ isGenerating ? 'Generating…' : 'Generate on demand' }}</button>
       </div>
       <div class="status">{{ statusText }}</div>
     </div>
