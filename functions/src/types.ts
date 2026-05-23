@@ -14,7 +14,11 @@ export type DeliveryMethod = 'web' | 'email';
 export type UserPrefs = {
   timezone?: string;
   city?: string;
-  newsDomains?: string[];
+  /** Renamed from newsDomains in Phase 1.6. Onboarding writes prefs.topics. */
+  topics?: string[];
+  rhythms?: string[];
+  /** Important people in the user's life — used to ground the People section. */
+  importantPeople?: { name: string; relationship: string }[];
   tone?: string;
   maxPages?: number;
   email?: {

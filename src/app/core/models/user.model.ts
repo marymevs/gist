@@ -33,6 +33,7 @@ export interface GistUser {
     tone?: 'calm' | 'detailed' | 'concise';
     topics?: string[]; // chip selections from onboarding
     rhythms?: string[]; // chip selections from onboarding
+    importantPeople?: { name: string; relationship: string }[];
     quietDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
     timezone?: string;
     city?: string;

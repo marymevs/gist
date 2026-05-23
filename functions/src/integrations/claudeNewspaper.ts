@@ -41,6 +41,10 @@ export type NewspaperGenerationInput = {
   countdown?: { label: string; daysRemaining: number; targetDescription: string };
   topics?: string[];
   tone?: string;
+  location?: string;
+  rhythms?: string[];
+  vipSenders?: string[];
+  importantPeople?: { name: string; relationship: string }[];
 };
 
 // ─── Prompt injection hardening ─────────────────────────────────────────────
@@ -60,13 +64,23 @@ function serializeContext(input: NewspaperGenerationInput): string {
   ];
 
   if (input.moonPhase) parts.push(`<moon>${input.moonPhase}</moon>`);
+  if (input.location) parts.push(`<location>${input.location}</location>`);
   if (input.userContext) parts.push(`<user_context>${input.userContext}</user_context>`);
   if (input.tone) parts.push(`<tone>${input.tone}</tone>`);
+  if (input.rhythms?.length) {
+    parts.push(`<rhythms>${input.rhythms.join(', ')}</rhythms>`);
+  }
   if (input.countdown) {
     parts.push(`<countdown label="${input.countdown.label}" days="${input.countdown.daysRemaining}">${input.countdown.targetDescription}</countdown>`);
   }
   if (input.topics?.length) {
     parts.push(`<interests>${input.topics.join(', ')}</interests>`);
+  }
+  if (input.importantPeople?.length) {
+    parts.push(safeUserData('important_people', input.importantPeople));
+  }
+  if (input.vipSenders?.length) {
+    parts.push(`<vip_senders>${input.vipSenders.join(', ')}</vip_senders>`);
   }
 
   parts.push(safeUserData('calendar_items', input.dayItems.slice(0, 12)));
@@ -112,7 +126,10 @@ The moon highlight should be metaphorical — connecting the current moon phase 
 PERSONALIZATION:
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
-- Reference the reader's city, weather, and season to ground the writing.
+- Reference <location>, weather, and season to ground the writing in the reader's specific place.
+- Use <important_people> to ground the People section in actual relationships. Reference them BY NAME and BY RELATIONSHIP. Do not invent people from calendar attendees or email senders alone — only surface names you can map to <important_people> or that appear explicitly in <calendar_items>/<email_signals>.
+- Use <vip_senders> to prioritize email signals — surface emails from these senders first in the Notifications section.
+- Use <rhythms> to understand WHEN and HOW the reader engages with the Gist. A "Morning quiet time" reader can absorb longer paragraphs; a "Commute briefing" reader needs scannable chunks; "With coffee" suggests a slower, more savored pace.
 
 OUTPUT: Return a JSON object matching this structure exactly:
 
