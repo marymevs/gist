@@ -177,7 +177,6 @@ export async function generateMorningGistForUser(
       worldItems,
       emailCards: cleanEmailCards.map((c) => ({
         fromName: c.fromName,
-        fromEmail: c.fromEmail,
         subject: c.subject,
         snippet: c.snippet,
         category: c.category,

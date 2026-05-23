@@ -30,7 +30,6 @@ export type NewspaperGenerationInput = {
   worldItems: { headline: string; implication: string }[];
   emailCards?: {
     fromName?: string;
-    fromEmail?: string;
     subject: string;
     snippet: string;
     category: string;
@@ -124,9 +123,7 @@ PERSONALIZATION:
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
 - Reference <location>, weather, and season to ground the writing in the reader's specific place.
-- Use <important_people> as the source of truth for who matters in the reader's life. Two distinct uses:
-  (1) Ground the People section — reference them BY NAME and BY RELATIONSHIP. Do not invent people from calendar/email alone; only surface names you can map to <important_people> or that appear explicitly in <calendar_items>/<email_signals>.
-  (2) Prioritize email signals — when a sender in <email_signals> matches someone in <important_people> (by email when set, by name otherwise), surface that email FIRST in the Notifications section and contextualize it with the relationship ("Sarah, your agent, wrote..." rather than "Sarah Chen wrote...").
+- <important_people> is context, not a filter. When someone in <calendar_items> or <email_signals> matches someone in <important_people>, use the relationship to contextualize ("Sarah, your agent, wrote..." rather than "Sarah Chen wrote...") and lean toward prioritizing them. But the People and Notifications sections can absolutely surface people NOT in <important_people> when the data shows clear signal — multiple recent emails, calendar prominence, etc. Do not invent people who don't appear anywhere in the data; that's the only hard rule.
 - Use <rhythms> to understand WHEN and HOW the reader engages with the Gist. A "Morning quiet time" reader can absorb longer paragraphs; a "Commute briefing" reader needs scannable chunks; "With coffee" suggests a slower, more savored pace.
 
 OUTPUT: Return a JSON object matching this structure exactly:
