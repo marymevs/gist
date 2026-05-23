@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0.0] - 2026-05-23
+
+Phase 6 (onboarding slim-down + docs rewrite). Closes out the prune-and-realign plan. The product story now matches the code — every sentence in DESIGN.md and README describes what's actually running. Onboarding's last commerce remnant is gone; delivery time picker no longer pretends mornings are the only valid choice.
+
+### Changed
+- **Onboarding step 4** reworked: dropped the Paper / \$25-per-month vs Web+Email Free pricing chooser; replaced with informational copy describing the email + web delivery model. Time picker lifted the morning-only constraint (was 5–11 AM hardcode) — now a standard `[1–12] : [00/15/30/45] [AM/PM]` shape, full 24-hour range. The 4-page onboarding structure stays — each page is a coherent input chunk and the integrations page is meant to grow.
+- `deliveryMethod` state field dropped from onboarding; runtime `resolveDeliveryMethod()` is the source of truth (\`'email'\` if Gmail connected, \`'web'\` otherwise). `user.delivery.method` had zero readers in either functions or src.
+- **DESIGN.md** thesis rewritten for email-to-print primary, SBC daemon future. Page 2 reflection note: "Fax Back checkboxes/write lines" → "reflection writing space". Output channel list, anti-patterns, and Decisions Log entry for the two-page structure all updated. Added a new Delivery Infrastructure section documenting the email-to-print primary path and the future SBC daemon path. Aesthetic system (typography, color, spacing, motion, paper grain, production marks) intentionally untouched — those still describe the product accurately.
+- **README.md** rewritten from Angular CLI boilerplate + outdated punch list into a one-screen description of what Gist is, the stack, doc pointers, and the dev/deploy commands that actually matter.
+- **TODOS.md** pruned to forward-looking items only — per-user delivery time, email feedback loop, domain setup for email delivery. The Completed section dropped entirely; CHANGELOG.md is the canonical record.
+
+### Added
+- **DESIGN.md** Decisions Log entry (2026-05-21): "Pruned fax + Stripe; realigned to email-to-print primary + SBC daemon future."
+- `deliveryHour24` getter on the onboarding component to derive the 24-hour value from the displayed 12-hour selector + AM/PM meridiem.
+
+### Removed
+- TODOS items now N/A: onboarding → Stripe checkout redirect; Phaxio webhook no-callback timeout; Anthropic vs OpenAI evaluation; Tier 2 fax cost modeling; evening gist MVP; referral invite system.
+- TODOS Completed section (Phaxio webhook validation, Stripe billing gate, fax idempotency, completed PDF download with fax-template framing) — preserved historically in earlier CHANGELOG entries instead.
+- README broken link to deleted `gist-v1-launch-spec.md`. README "Next Steps" / "Doing" punch list referencing `plan.model`, `evening`, `user-profile.service` and other deleted artifacts.
+- "Old fax template had a cover page" archaeology note from DESIGN.md anti-patterns.
+
+### Notes
+- Phase 6 closes the prune-and-realign plan. Phase 7 (lock email-to-print for daily delivery — real sender domain, printer testing, 7-day self-validation) and Phase 8 (SBC daemon design) are future work, out of scope here.
+- The audit (#139) surfaced two scope changes from the original plan: onboarding's "Plan Selection" and "Stripe checkout stub" were already gone (some earlier sweep removed them); `gist-v1-launch-spec.md` is also already gone; \`CLAUDE.md\` was already clean. The plan was written from an older snapshot than what the code actually looked like.
+
 ## [0.5.0.0] - 2026-05-23
 
 Phase 5 (schema + types cleanup). The data model now matches what the app actually uses. `GistPlan`, the `plan` field, Stripe subscription fields, and `faxNumber` are gone from both the functions `UserDoc` and the Angular `GistUser`. The live Firestore user doc was migrated locally to match. The `UserDoc` type now describes what a user actually has: identity, prefs, delivery, integrations, profile, gistIssueCount. Nothing commerce, nothing fax.
