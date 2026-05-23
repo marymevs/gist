@@ -30,6 +30,7 @@ export type NewspaperGenerationInput = {
   worldItems: { headline: string; implication: string }[];
   emailCards?: {
     fromName?: string;
+    fromEmail?: string;
     subject: string;
     snippet: string;
     category: string;
