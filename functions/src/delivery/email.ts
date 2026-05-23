@@ -26,8 +26,7 @@ export type EmailDeliveryInput = {
   dayItems: Array<{ time?: string; title: string; note?: string }>;
   worldItems: Array<{ headline: string; implication: string }>;
   emailCards: EmailCard[];
-  gistBullets: string[];
-  /** When present, use the newspaper email template instead of the legacy template. */
+  /** Newspaper template input (required since Phase 4). */
   newspaperInput?: NewspaperTemplateInput;
 };
 

@@ -35,8 +35,6 @@ export interface MorningGist {
     suggestedNextStep?: string;
   }[];
 
-  gistBullets: string[];
-
   delivery: {
     method: 'web' | 'email';
     pages: number;

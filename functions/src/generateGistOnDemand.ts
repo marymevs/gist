@@ -9,9 +9,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
-import {
-  ANTHROPIC_API_KEY,
-} from './integrations/claudeGist';
+import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
   GOOGLE_CLIENT_ID,

@@ -73,7 +73,6 @@ export type MorningGist = {
   dayItems: { time?: string; title: string; note?: string }[];
   worldItems: { headline: string; implication: string }[];
   emailCards: EmailCard[];
-  gistBullets: string[];
   qualityScore?: {
     editorialVoice: number;
     crossReferenceDepth: number;

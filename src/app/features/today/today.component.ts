@@ -99,7 +99,6 @@ type MorningGist = {
   dayItems: DayItem[];
   worldItems: WorldItem[];
   emailCards: EmailCard[];
-  gistBullets: string[];
 
   newspaper?: NewspaperData & NewspaperMeta;
 
@@ -356,7 +355,7 @@ export class TodayComponent {
       lede: {
         kicker: 'Good Morning',
         headline: gist.newspaper?.lede?.headline || 'Your Daily Briefing',
-        paragraph: gist.newspaper?.lede?.paragraph || gist.gistBullets?.join(' ') || '',
+        paragraph: gist.newspaper?.lede?.paragraph || '',
       },
       schedule: (gist.dayItems || []).map((d) => ({
         time: d.time || '',

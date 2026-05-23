@@ -4,10 +4,7 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
-import {
-  ANTHROPIC_API_KEY,
-  generateDailyFocusSections,
-} from './integrations/claudeGist';
+import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
 import { generateNewspaperGist } from './integrations/claudeNewspaper';
 import { buildNewspaperHtml } from './integrations/newspaperTemplate';
 import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrations/newspaperEmailTemplate';
@@ -138,53 +135,21 @@ export async function generateMorningGistForUser(
     const calendarUnchanged =
       JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
-    const reusableBullets = Array.isArray(existingData?.gistBullets)
-      ? existingData.gistBullets
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0)
-      : [];
-
-    const reusableQualityScore = existingData?.qualityScore ?? undefined;
-
-    const reusableSections =
-      reusableBullets.length === 3
-        ? { gistBullets: reusableBullets, qualityScore: reusableQualityScore }
-        : null;
-
-    const shouldReuseSections = calendarUnchanged && reusableSections !== null;
+    // Track whether the calendar is unchanged from yesterday (informational; no longer
+    // gates section reuse — the newspaper is regenerated each morning regardless).
+    if (calendarUnchanged) {
+      logger.info('Calendar unchanged from existing doc.', { userId: user.uid, dateKey });
+    }
 
     // Read memory context for personalization
     let memoryPrompt = '';
-    if (!shouldReuseSections) {
-      try {
-        const memory = await readMemoryContext(user.uid);
-        memoryPrompt = formatMemoryForPrompt(memory);
-      } catch (err) {
-        logger.warn('Failed to read memory context, proceeding without.', {
-          userId: user.uid,
-          error: err instanceof Error ? err.message : err,
-        });
-      }
-    }
-
-    const sections = shouldReuseSections
-      ? reusableSections
-      : await generateDailyFocusSections({
-          date: dateKey,
-          timezone,
-          weatherSummary: weather,
-          moonPhase: `${moon.emoji} ${moon.phase}`,
-          firstEvent,
-          dayItems,
-          worldItems,
-          memoryContext: memoryPrompt || undefined,
-        });
-
-    if (shouldReuseSections) {
-      logger.info('Reusing existing daily focus sections (calendar unchanged).', {
+    try {
+      const memory = await readMemoryContext(user.uid);
+      memoryPrompt = formatMemoryForPrompt(memory);
+    } catch (err) {
+      logger.warn('Failed to read memory context, proceeding without.', {
         userId: user.uid,
-        dateKey,
+        error: err instanceof Error ? err.message : err,
       });
     }
 
@@ -236,8 +201,8 @@ export async function generateMorningGistForUser(
     Promise.allSettled([
       observeCalendarPatterns(user.uid, dayItems),
       observeTopicAffinities(user.uid, worldItems, user.prefs?.newsDomains),
-      sections.qualityScore
-        ? observeQualityScore(user.uid, sections.qualityScore)
+      newspaperOutput.qualityScore
+        ? observeQualityScore(user.uid, newspaperOutput.qualityScore)
         : Promise.resolve(),
       pruneExpiredMemory(user.uid),
     ]).catch(() => {});
@@ -253,8 +218,7 @@ export async function generateMorningGistForUser(
       dayItems,
       worldItems,
       emailCards: cleanEmailCards,
-      gistBullets: sections.gistBullets,
-      qualityScore: sections.qualityScore,
+      qualityScore: newspaperOutput.qualityScore,
       ...(newspaperData ? { newspaper: newspaperData } : {}),
       delivery: {
         method,
@@ -351,7 +315,6 @@ export async function generateMorningGistForUser(
         dayItems: cleanDayItems,
         worldItems,
         emailCards: cleanEmailCards,
-        gistBullets: sections.gistBullets,
         newspaperInput: newspaperTemplateInput,
       });
       finalStatus = result.status;
