@@ -27,13 +27,19 @@ export interface GistUser {
 
   prefs?: {
     email?: {
+      /** Legacy — kept for Account UI; not passed to the prompt (importantPeople is). */
       vipSenders?: string[];
     };
     length?: 'brief' | 'standard' | 'detailed';
     tone?: 'calm' | 'detailed' | 'concise';
     topics?: string[]; // chip selections from onboarding
     rhythms?: string[]; // chip selections from onboarding
-    importantPeople?: { name: string; relationship: string }[];
+    importantPeople?: {
+      name: string;
+      relationship: string;
+      /** Optional email for direct matching against email senders. */
+      email?: string;
+    }[];
     quietDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
     timezone?: string;
     city?: string;

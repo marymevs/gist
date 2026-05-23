@@ -43,8 +43,7 @@ export type NewspaperGenerationInput = {
   tone?: string;
   location?: string;
   rhythms?: string[];
-  vipSenders?: string[];
-  importantPeople?: { name: string; relationship: string }[];
+  importantPeople?: { name: string; relationship: string; email?: string }[];
 };
 
 // ─── Prompt injection hardening ─────────────────────────────────────────────
@@ -78,9 +77,6 @@ function serializeContext(input: NewspaperGenerationInput): string {
   }
   if (input.importantPeople?.length) {
     parts.push(safeUserData('important_people', input.importantPeople));
-  }
-  if (input.vipSenders?.length) {
-    parts.push(`<vip_senders>${input.vipSenders.join(', ')}</vip_senders>`);
   }
 
   parts.push(safeUserData('calendar_items', input.dayItems.slice(0, 12)));
@@ -127,8 +123,9 @@ PERSONALIZATION:
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
 - Reference <location>, weather, and season to ground the writing in the reader's specific place.
-- Use <important_people> to ground the People section in actual relationships. Reference them BY NAME and BY RELATIONSHIP. Do not invent people from calendar attendees or email senders alone — only surface names you can map to <important_people> or that appear explicitly in <calendar_items>/<email_signals>.
-- Use <vip_senders> to prioritize email signals — surface emails from these senders first in the Notifications section.
+- Use <important_people> as the source of truth for who matters in the reader's life. Two distinct uses:
+  (1) Ground the People section — reference them BY NAME and BY RELATIONSHIP. Do not invent people from calendar/email alone; only surface names you can map to <important_people> or that appear explicitly in <calendar_items>/<email_signals>.
+  (2) Prioritize email signals — when a sender in <email_signals> matches someone in <important_people> (by email when set, by name otherwise), surface that email FIRST in the Notifications section and contextualize it with the relationship ("Sarah, your agent, wrote..." rather than "Sarah Chen wrote...").
 - Use <rhythms> to understand WHEN and HOW the reader engages with the Gist. A "Morning quiet time" reader can absorb longer paragraphs; a "Commute briefing" reader needs scannable chunks; "With coffee" suggests a slower, more savored pace.
 
 OUTPUT: Return a JSON object matching this structure exactly:

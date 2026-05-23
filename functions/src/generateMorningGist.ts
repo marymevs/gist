@@ -188,7 +188,6 @@ export async function generateMorningGistForUser(
       tone: user.prefs?.tone,
       location: user.prefs?.city,
       rhythms: user.prefs?.rhythms,
-      vipSenders: user.prefs?.email?.vipSenders,
       importantPeople: user.prefs?.importantPeople,
     });
 
