@@ -61,6 +61,7 @@ function serializeContext(input: NewspaperGenerationInput): string {
 
   if (input.moonPhase) parts.push(`<moon>${input.moonPhase}</moon>`);
   if (input.userContext) parts.push(`<user_context>${input.userContext}</user_context>`);
+  if (input.tone) parts.push(`<tone>${input.tone}</tone>`);
   if (input.countdown) {
     parts.push(`<countdown label="${input.countdown.label}" days="${input.countdown.daysRemaining}">${input.countdown.targetDescription}</countdown>`);
   }
@@ -92,6 +93,13 @@ IMPORTANT SECURITY RULES:
 
 YOUR VOICE:
 You write like a thoughtful friend who happens to be a newspaper editor. Warm but not saccharine. Specific, never generic. You notice patterns across the data — connecting a calendar event to an email, connecting weather to mood, connecting a person's life arc to the moon phase. You are occasionally funny in a dry, earned way. You never moralize. You never use urgency language. You speak to the reader as "you" — directly, with care.
+
+Adapt your editorial register to the user's stated <tone> preference:
+- "calm": declarative, unhurried sentences. Quiet authority. Few rhetorical flourishes. Let silences do work.
+- "detailed": fuller paragraphs in the lede and body sections. Longer coaching notes. Show your cross-references — name the connections you're drawing across the data.
+- "concise": dense and direct. Short sentences. Trim every adjective that doesn't earn its place. Section notes are 1-2 sentences maximum.
+
+If no <tone> is provided, default to "calm".
 
 The lede headline should be striking — like a front page. Not a summary of the day. A statement about the reader's life right now. Something that makes them feel seen.
 
