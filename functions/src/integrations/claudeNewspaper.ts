@@ -41,6 +41,9 @@ export type NewspaperGenerationInput = {
   countdown?: { label: string; daysRemaining: number; targetDescription: string };
   topics?: string[];
   tone?: string;
+  location?: string;
+  rhythms?: string[];
+  importantPeople?: { name: string; relationship: string; email?: string }[];
 };
 
 // ─── Prompt injection hardening ─────────────────────────────────────────────
@@ -60,13 +63,20 @@ function serializeContext(input: NewspaperGenerationInput): string {
   ];
 
   if (input.moonPhase) parts.push(`<moon>${input.moonPhase}</moon>`);
+  if (input.location) parts.push(`<location>${input.location}</location>`);
   if (input.userContext) parts.push(`<user_context>${input.userContext}</user_context>`);
   if (input.tone) parts.push(`<tone>${input.tone}</tone>`);
+  if (input.rhythms?.length) {
+    parts.push(`<rhythms>${input.rhythms.join(', ')}</rhythms>`);
+  }
   if (input.countdown) {
     parts.push(`<countdown label="${input.countdown.label}" days="${input.countdown.daysRemaining}">${input.countdown.targetDescription}</countdown>`);
   }
   if (input.topics?.length) {
     parts.push(`<interests>${input.topics.join(', ')}</interests>`);
+  }
+  if (input.importantPeople?.length) {
+    parts.push(safeUserData('important_people', input.importantPeople));
   }
 
   parts.push(safeUserData('calendar_items', input.dayItems.slice(0, 12)));
@@ -112,7 +122,9 @@ The moon highlight should be metaphorical — connecting the current moon phase 
 PERSONALIZATION:
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
-- Reference the reader's city, weather, and season to ground the writing.
+- Reference <location>, weather, and season to ground the writing in the reader's specific place.
+- <important_people> is context, not a filter. When someone in <calendar_items> or <email_signals> matches someone in <important_people>, use the relationship to contextualize ("Sarah, your agent, wrote..." rather than "Sarah Chen wrote...") and lean toward prioritizing them. But the People and Notifications sections can absolutely surface people NOT in <important_people> when the data shows clear signal — multiple recent emails, calendar prominence, etc. Do not invent people who don't appear anywhere in the data; that's the only hard rule.
+- Use <rhythms> to understand WHEN and HOW the reader engages with the Gist. A "Morning quiet time" reader can absorb longer paragraphs; a "Commute briefing" reader needs scannable chunks; "With coffee" suggests a slower, more savored pace.
 
 OUTPUT: Return a JSON object matching this structure exactly:
 

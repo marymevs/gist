@@ -14,10 +14,30 @@ export type DeliveryMethod = 'web' | 'email';
 export type UserPrefs = {
   timezone?: string;
   city?: string;
-  newsDomains?: string[];
+  /** Renamed from newsDomains in Phase 1.6. Onboarding writes prefs.topics. */
+  topics?: string[];
+  rhythms?: string[];
+  /**
+   * Important people in the user's life. Single source of truth for the prompt —
+   * used to ground the People section AND to prioritize email signals in the
+   * generated brief. The legacy email.vipSenders field below is retained for the
+   * Gmail fetch/scoring layer (gmailInt.ts) and the Account UI until those are
+   * migrated to derive from importantPeople in a follow-up PR.
+   */
+  importantPeople?: {
+    name: string;
+    relationship: string;
+    /** Optional email — enables direct matching against email senders. */
+    email?: string;
+  }[];
   tone?: string;
   maxPages?: number;
   email?: {
+    /**
+     * Legacy field consumed by gmailInt.ts email scoring and the Account UI.
+     * Not passed to the prompt — the prompt uses importantPeople instead.
+     * Will be derived from importantPeople in a future PR.
+     */
     vipSenders?: string[];
     includeUnreadOnly?: boolean;
     includeInboxOnly?: boolean;

@@ -184,8 +184,11 @@ export async function generateMorningGistForUser(
       })),
       memoryContext: memoryPrompt || undefined,
       countdown: countdownInput,
-      topics: user.prefs?.newsDomains,
+      topics: user.prefs?.topics,
       tone: user.prefs?.tone,
+      location: user.prefs?.city,
+      rhythms: user.prefs?.rhythms,
+      importantPeople: user.prefs?.importantPeople,
     });
 
     const newspaperData: Record<string, unknown> = newspaperOutput as unknown as Record<string, unknown>;
@@ -200,7 +203,7 @@ export async function generateMorningGistForUser(
     // Write behavioral signals to memory (fire-and-forget)
     Promise.allSettled([
       observeCalendarPatterns(user.uid, dayItems),
-      observeTopicAffinities(user.uid, worldItems, user.prefs?.newsDomains),
+      observeTopicAffinities(user.uid, worldItems, user.prefs?.topics),
       newspaperOutput.qualityScore
         ? observeQualityScore(user.uid, newspaperOutput.qualityScore)
         : Promise.resolve(),
