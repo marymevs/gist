@@ -65,8 +65,9 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   selectedTopics: string[] = [];
   selectedRhythms: string[] = [];
 
-  // Screen 4: Delivery
-  deliveryMethod: 'web' | 'email' = 'web';
+  // Screen 4: Delivery time
+  // Delivery method itself is not stored — runtime resolveDeliveryMethod()
+  // returns 'email' if Gmail is connected, 'web' otherwise.
   deliveryHour = 7;
   deliveryMinute = 30;
   timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -293,7 +294,6 @@ export class OnboardingComponent implements OnInit, OnDestroy {
             timezone: this.timezone,
           },
           delivery: {
-            method: this.deliveryMethod,
             schedule: {
               hour: this.deliveryHour,
               minute: this.deliveryMinute,

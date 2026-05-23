@@ -167,30 +167,14 @@
       <h2 class="screenTitle">Delivery</h2>
       <p class="screenSub">When and how you get your morning Gist.</p>
 
-      <div class="deliveryCards">
-        <button
-          class="deliveryCard"
-          [class.selected]="deliveryMethod === 'web'"
-          (click)="deliveryMethod = 'web'"
-        >
-          <div class="deliveryCardTop">
-            <span class="deliveryName">Web + Email</span>
-            <span class="deliveryPrice">Free</span>
-          </div>
-          <span class="deliverySub">Read online or in your inbox</span>
-        </button>
-
-        <button
-          class="deliveryCard"
-          [class.selected]="deliveryMethod === 'email'"
-          (click)="deliveryMethod = 'email'"
-        >
-          <div class="deliveryCardTop">
-            <span class="deliveryName">Paper</span>
-            <span class="deliveryPrice">$25/mo</span>
-          </div>
-          <span class="deliverySub">Printed and mailed to your door</span>
-        </button>
+      <div class="deliveryInfo">
+        <p class="deliveryInfoLead">
+          Each morning at the time you choose, your Gist arrives in your inbox.
+          It&rsquo;s always also viewable on the web at <code class="deliveryInfoPath">/today</code>.
+        </p>
+        <p class="deliveryInfoNote">
+          Print it for a screen-free morning, or read it on your phone &mdash; whatever fits the day.
+        </p>
       </div>
 
       <div class="timeSection">

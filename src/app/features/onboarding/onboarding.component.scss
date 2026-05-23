@@ -186,25 +186,10 @@
 
 // ── Delivery (Screen 4) ──
 
-.deliveryCards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-xl); }
-
-.deliveryCard {
-  text-align: left;
-  padding: var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color 0.15s ease-out;
-  &:hover { border-color: var(--border-strong); }
-  &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-  &.selected { border-color: var(--ink); }
-}
-
-.deliveryCardTop { display: flex; justify-content: space-between; align-items: baseline; }
-.deliveryName { font-family: var(--font-display); font-size: 18px; }
-.deliveryPrice { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
-.deliverySub { display: block; font-size: 13px; color: var(--muted); margin-top: var(--space-xs); }
+.deliveryInfo { margin-bottom: var(--space-xl); }
+.deliveryInfoLead { font-size: 15px; line-height: 1.55; margin-bottom: var(--space-sm); }
+.deliveryInfoNote { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.deliveryInfoPath { font-family: var(--font-mono); font-size: 13px; padding: 1px 4px; background: var(--surface); border-radius: 2px; }
 
 .timeSection { margin-top: var(--space-md); }
 .timeRow { display: flex; gap: var(--space-sm); }
@@ -271,5 +256,4 @@
   .brandTagline { display: none; }
   .stepIndicator { padding-bottom: 0; }
   .formPanel { padding: var(--space-lg); max-width: none; }
-  .deliveryCards { grid-template-columns: 1fr; }
 }
