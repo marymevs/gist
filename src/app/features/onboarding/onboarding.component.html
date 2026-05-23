@@ -246,7 +246,7 @@
         <h3 class="chipLabel">Delivery time</h3>
         <div class="timeRow">
           <select [(ngModel)]="deliveryHour" class="timeSelect timeSelect--hour" aria-label="Hour">
-            <option *ngFor="let h of [5, 6, 7, 8, 9, 10, 11]" [ngValue]="h">{{ h }}</option>
+            <option *ngFor="let h of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]" [ngValue]="h">{{ h }}</option>
           </select>
           <span class="timeColon" aria-hidden="true">:</span>
           <select [(ngModel)]="deliveryMinute" class="timeSelect timeSelect--minute" aria-label="Minute">
@@ -255,7 +255,10 @@
             <option [ngValue]="30">30</option>
             <option [ngValue]="45">45</option>
           </select>
-          <span class="timeMeridiem">AM</span>
+          <select [(ngModel)]="deliveryMeridiem" class="timeSelect timeSelect--meridiem" aria-label="AM or PM">
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
         </div>
         <p class="timezoneNote">{{ timezone }}</p>
       </div>

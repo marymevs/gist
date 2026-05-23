@@ -208,7 +208,10 @@
 }
 
 .timeSelect--hour,
-.timeSelect--minute { min-width: 72px; text-align: center; }
+.timeSelect--minute,
+.timeSelect--meridiem { min-width: 72px; text-align: center; }
+
+.timeSelect--meridiem { margin-left: var(--space-xs); }
 
 .timeColon {
   font-family: var(--font-display);
@@ -216,15 +219,6 @@
   color: var(--muted);
   padding: 0 2px;
   user-select: none;
-}
-
-.timeMeridiem {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-left: var(--space-sm);
 }
 
 .timezoneNote { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: var(--space-xs); }
