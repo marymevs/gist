@@ -179,7 +179,7 @@ export async function generateNewspaperGist(
       const userPrompt = [
         `Generate today's newspaper Gist for ${input.subscriberName}.`,
         serializeContext(input),
-        input.memoryContext ?? '',
+        input.memoryContext ? `<memory>\n${input.memoryContext}\n</memory>` : '',
         feedback ? `\nValidation feedback from prior attempt: ${feedback}` : '',
       ].filter(Boolean).join('\n');
 
