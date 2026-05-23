@@ -192,7 +192,7 @@
 .deliveryInfoPath { font-family: var(--font-mono); font-size: 13px; padding: 1px 4px; background: var(--surface); border-radius: 2px; }
 
 .timeSection { margin-top: var(--space-md); }
-.timeRow { display: flex; gap: var(--space-sm); }
+.timeRow { display: flex; align-items: center; gap: var(--space-xs); }
 
 .timeSelect {
   font-size: 15px;
@@ -205,6 +205,26 @@
   cursor: pointer;
   &:hover { border-color: var(--border-strong); }
   &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+
+.timeSelect--hour,
+.timeSelect--minute { min-width: 72px; text-align: center; }
+
+.timeColon {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--muted);
+  padding: 0 2px;
+  user-select: none;
+}
+
+.timeMeridiem {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-left: var(--space-sm);
 }
 
 .timezoneNote { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: var(--space-xs); }

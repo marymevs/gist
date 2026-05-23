@@ -8,7 +8,10 @@
     </p>
 
     <div class="loadingFallback" *ngIf="generationFailed">
-      <p>Your first Gist will arrive tomorrow morning at {{ formattedDeliveryTime }}.</p>
+      <p>
+        Your first Gist will arrive tomorrow morning at
+        {{ formattedDeliveryTime }}.
+      </p>
       <button class="primary" (click)="goToToday()">Go to Today &rarr;</button>
     </div>
   </div>
@@ -24,19 +27,28 @@
     </div>
 
     <div class="stepIndicator" [attr.aria-label]="'Step ' + step + ' of 4'">
-      <span class="stepDot" *ngFor="let s of [1,2,3,4]" [class.active]="s === step" [class.done]="s < step"></span>
+      <span
+        class="stepDot"
+        *ngFor="let s of [1, 2, 3, 4]"
+        [class.active]="s === step"
+        [class.done]="s < step"
+      ></span>
     </div>
   </aside>
 
   <!-- Right: Form panel -->
   <main class="formPanel">
     <!-- Back button (screens 2-4) -->
-    <button class="backLink" *ngIf="step > 1" (click)="back()">&larr; Back</button>
+    <button class="backLink" *ngIf="step > 1" (click)="back()">
+      &larr; Back
+    </button>
 
     <!-- ── Screen 1: Who You Are ────────────────────────────────────── -->
     <section class="screen" *ngIf="step === 1">
       <h2 class="screenTitle">Who you are</h2>
-      <p class="screenSub">Just enough so your Gist reads like it was written for you.</p>
+      <p class="screenSub">
+        Just enough so your Gist reads like it was written for you.
+      </p>
 
       <div class="formGroup">
         <label class="field">
@@ -64,11 +76,16 @@
     <!-- ── Screen 2: Connect Your Data ──────────────────────────────── -->
     <section class="screen" *ngIf="step === 2">
       <h2 class="screenTitle">Connect your data</h2>
-      <p class="screenSub">We pull from these sources to build your daily briefing.</p>
+      <p class="screenSub">
+        We pull from these sources to build your daily briefing.
+      </p>
 
       <div class="connectorList">
         <!-- Calendar -->
-        <div class="connectorRow" [class.connected]="calendarStatus === 'connected'">
+        <div
+          class="connectorRow"
+          [class.connected]="calendarStatus === 'connected'"
+        >
           <div class="connectorInfo">
             <div class="connectorName">Google Calendar</div>
             <div class="connectorDesc">Events, meetings, and schedule</div>
@@ -77,13 +94,26 @@
             class="connectorBtn"
             *ngIf="calendarStatus === 'idle'"
             (click)="connectCalendar()"
-          >Connect</button>
-          <span class="connectorLoading" *ngIf="calendarStatus === 'connecting'">Connecting&hellip;</span>
-          <span class="connectorDone" *ngIf="calendarStatus === 'connected'" role="status" aria-live="polite">&#10003; Connected</span>
+          >
+            Connect
+          </button>
+          <span class="connectorLoading" *ngIf="calendarStatus === 'connecting'"
+            >Connecting&hellip;</span
+          >
+          <span
+            class="connectorDone"
+            *ngIf="calendarStatus === 'connected'"
+            role="status"
+            aria-live="polite"
+            >&#10003; Connected</span
+          >
         </div>
 
         <!-- Gmail -->
-        <div class="connectorRow" [class.connected]="gmailStatus === 'connected'">
+        <div
+          class="connectorRow"
+          [class.connected]="gmailStatus === 'connected'"
+        >
           <div class="connectorInfo">
             <div class="connectorName">Gmail</div>
             <div class="connectorDesc">Important emails and action items</div>
@@ -92,25 +122,41 @@
             class="connectorBtn"
             *ngIf="gmailStatus === 'idle'"
             (click)="connectGmail()"
-          >Connect</button>
-          <span class="connectorLoading" *ngIf="gmailStatus === 'connecting'">Connecting&hellip;</span>
-          <span class="connectorDone" *ngIf="gmailStatus === 'connected'" role="status" aria-live="polite">&#10003; Connected</span>
+          >
+            Connect
+          </button>
+          <span class="connectorLoading" *ngIf="gmailStatus === 'connecting'"
+            >Connecting&hellip;</span
+          >
+          <span
+            class="connectorDone"
+            *ngIf="gmailStatus === 'connected'"
+            role="status"
+            aria-live="polite"
+            >&#10003; Connected</span
+          >
         </div>
       </div>
 
       <!-- OAuth trust signal -->
       <p class="oauthTrust" *ngIf="showOAuthTrust">
-        We only read your data to build your Gist. Nothing is stored beyond what&rsquo;s shown.
+        We only read your data to build your Gist. Nothing is stored beyond
+        what&rsquo;s shown.
       </p>
 
       <!-- Warning if no connectors -->
-      <p class="connectorWarning" *ngIf="connectorWarning">{{ connectorWarning }}</p>
+      <p class="connectorWarning" *ngIf="connectorWarning">
+        {{ connectorWarning }}
+      </p>
     </section>
 
     <!-- ── Screen 3: People & Preferences ───────────────────────────── -->
     <section class="screen" *ngIf="step === 3">
       <h2 class="screenTitle">Preferences</h2>
-      <p class="screenSub">All optional. We&rsquo;ll start with sensible defaults and learn over time.</p>
+      <p class="screenSub">
+        All optional. We&rsquo;ll start with sensible defaults and learn over
+        time.
+      </p>
 
       <div class="chipSection">
         <h3 class="chipLabel">Tone</h3>
@@ -119,17 +165,23 @@
             class="chip"
             [class.selected]="selectedTone === 'calm'"
             (click)="toggleTone('calm')"
-          >Calm, direct</button>
+          >
+            Calm, direct
+          </button>
           <button
             class="chip"
             [class.selected]="selectedTone === 'detailed'"
             (click)="toggleTone('detailed')"
-          >Detailed, thorough</button>
+          >
+            Detailed, thorough
+          </button>
           <button
             class="chip"
             [class.selected]="selectedTone === 'concise'"
             (click)="toggleTone('concise')"
-          >Concise, bullet-only</button>
+          >
+            Concise, bullet-only
+          </button>
         </div>
       </div>
 
@@ -141,7 +193,9 @@
             class="chip"
             [class.selected]="isTopicSelected(topic)"
             (click)="toggleTopic(topic)"
-          >{{ topic }}</button>
+          >
+            {{ topic }}
+          </button>
         </div>
       </div>
 
@@ -153,12 +207,22 @@
             class="chip"
             [class.selected]="isRhythmSelected(rhythm)"
             (click)="toggleRhythm(rhythm)"
-          >{{ rhythm }}</button>
+          >
+            {{ rhythm }}
+          </button>
         </div>
       </div>
 
-      <p class="defaultsNote" *ngIf="!selectedTone && selectedTopics.length === 0 && selectedRhythms.length === 0">
-        We&rsquo;ll start with a balanced Gist and learn your preferences over time.
+      <p
+        class="defaultsNote"
+        *ngIf="
+          !selectedTone &&
+          selectedTopics.length === 0 &&
+          selectedRhythms.length === 0
+        "
+      >
+        We&rsquo;ll start with a balanced Gist and learn your preferences over
+        time.
       </p>
     </section>
 
@@ -170,27 +234,28 @@
       <div class="deliveryInfo">
         <p class="deliveryInfoLead">
           Each morning at the time you choose, your Gist arrives in your inbox.
-          It&rsquo;s always also viewable on the web at <code class="deliveryInfoPath">/today</code>.
+          It&rsquo;s always also viewable on the web.
         </p>
         <p class="deliveryInfoNote">
-          Print it for a screen-free morning, or read it on your phone &mdash; whatever fits the day.
+          Print it for a screen-free morning, or read it on your phone &mdash;
+          whatever fits the day.
         </p>
       </div>
 
       <div class="timeSection">
         <h3 class="chipLabel">Delivery time</h3>
         <div class="timeRow">
-          <select [(ngModel)]="deliveryHour" class="timeSelect">
-            <option *ngFor="let h of [5,6,7,8,9,10,11]" [ngValue]="h">
-              {{ h > 12 ? h - 12 : h }}:00 {{ h >= 12 ? 'PM' : 'AM' }}
-            </option>
+          <select [(ngModel)]="deliveryHour" class="timeSelect timeSelect--hour" aria-label="Hour">
+            <option *ngFor="let h of [5, 6, 7, 8, 9, 10, 11]" [ngValue]="h">{{ h }}</option>
           </select>
-          <select [(ngModel)]="deliveryMinute" class="timeSelect">
-            <option [ngValue]="0">:00</option>
-            <option [ngValue]="15">:15</option>
-            <option [ngValue]="30">:30</option>
-            <option [ngValue]="45">:45</option>
+          <span class="timeColon" aria-hidden="true">:</span>
+          <select [(ngModel)]="deliveryMinute" class="timeSelect timeSelect--minute" aria-label="Minute">
+            <option [ngValue]="0">00</option>
+            <option [ngValue]="15">15</option>
+            <option [ngValue]="30">30</option>
+            <option [ngValue]="45">45</option>
           </select>
+          <span class="timeMeridiem">AM</span>
         </div>
         <p class="timezoneNote">{{ timezone }}</p>
       </div>
@@ -198,12 +263,8 @@
 
     <!-- ── Navigation footer ────────────────────────────────────────── -->
     <div class="navFooter">
-      <button
-        class="primary"
-        [disabled]="!canAdvance"
-        (click)="next()"
-      >
-        {{ step === 4 ? 'Finish & generate my Gist' : 'Continue' }}
+      <button class="primary" [disabled]="!canAdvance" (click)="next()">
+        {{ step === 4 ? "Finish & generate my Gist" : "Continue" }}
       </button>
 
       <div class="stepLabel">Step {{ step }} of 4</div>
