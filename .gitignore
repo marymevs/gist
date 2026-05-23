@@ -17,3 +17,8 @@ scripts/gist-doc-to-pdf.py
 scripts/gist-design-review-to-pdf.py
 .claude/
 /docs
+
+# Env files — never commit credentials or local config
+.env
+.env.*
+!.env.example
