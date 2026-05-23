@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0.0] - 2026-05-23
+
+Phase 5 (schema + types cleanup). The data model now matches what the app actually uses. `GistPlan`, the `plan` field, Stripe subscription fields, and `faxNumber` are gone from both the functions `UserDoc` and the Angular `GistUser`. The live Firestore user doc was migrated locally to match. The `UserDoc` type now describes what a user actually has: identity, prefs, delivery, integrations, profile, gistIssueCount. Nothing commerce, nothing fax.
+
+### Removed
+- `GistPlan` type — deleted from `functions/src/types.ts` and `src/app/core/models/user.model.ts`.
+- `src/app/core/models/plan.model.ts` — whole file (it only re-declared `GistPlan`).
+- `plan` field from `UserDoc` (functions) and `GistUser` (Angular).
+- `stripeCustomerId` and `stripeSubscriptionStatus` fields from `UserDoc`.
+- `faxNumber` field from `UserDelivery`.
+- `'received'` status from `DeliveryLog.status` union — Phaxio webhook concept, no longer reachable.
+- Residual `buildUserDoc` reads of `data.plan`, `data.stripeCustomerId`, `data.stripeSubscriptionStatus` in `generateMorningGist.ts` and `generateGistOnDemand.ts`.
+- `plan`-field update guard from `firestore.rules` — the field no longer exists, so the rule was vestigial.
+- Plans breakdown admin UI in `admin.component.ts` + `admin.component.html` (`planBreakdown` field, plan-counting loop, `planKeys()` helper, and the corresponding card markup). With `plan` gone from `GistUser`, the entire section was dead.
+- `'received'` from the runtime `status → CSS class` arrays in `delivery.component.ts` and `today.component.ts`.
+
+### Changed
+- `resolveDeliveryMethod` test suite consolidated: seven repetitive cases (varying `plan` to prove plan was ignored) collapsed into three concise cases. The "never returns fax" paranoia test was deleted — `DeliveryMethod` is already narrowed to `'web' | 'email'` at the type level, so the assertion was type-impossible.
+- Live Firestore user doc migrated to match the new schema — `plan`, `stripeCustomerId`, `stripeSubscriptionStatus`, and `delivery.faxNumber` removed via a local one-off script (not committed; lives in untracked `scripts/`).
+
+### Notes
+- `printerEmail` env config (originally planned for Phase 5) deferred to Phase 7 where the actual printer testing happens. Adding plumbing without a real consumer would be dead code.
+- `scripts/.env` was created during the migration setup. The `/scripts` wholesale gitignore covers it; no additional `.env` rules were added (YAGNI — would only matter if `/scripts` is ever narrowed).
+- The migration script stays on disk locally as a personal one-off — not project-shared knowledge worth tracking in git long-term.
+
 ## [0.4.0.0] - 2026-05-22
 
 Phase 4 (newspaper template prune). Fax-back questions are fully removed from the generation pipeline. Page 2's right column is now a pure reflection space — morning intention prompt followed by ruled writing lines, then the personal quote. The two-page editorial weight stays. Newspaper generation no longer has a silent fallback — failures throw.
