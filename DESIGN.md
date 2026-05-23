@@ -1,14 +1,14 @@
 # Design System — Gist
 
 ## Product Context
-- **What this is:** A daily personal operating brief — paper-forward, screen-minimizing. Delivers a morning gist (calendar, weather, news summary) via fax + web, and an evening gist where users mark up a paper sheet and fax it back.
+- **What this is:** A daily personal operating brief — paper-forward, screen-minimizing. Each morning, your Gist (calendar, weather, news, schedule, reflection) arrives by email so it can be printed directly via email-to-print, with the same content also viewable on the web at `/today`.
 - **Who it's for:** Focus-seeking individuals who want less screen time. Early adopters include small business owners (bar owners, shop managers) who need a calm daily briefing.
 - **Space/industry:** Calm tech, analog-digital hybrid, personal productivity
-- **Project type:** Web app (Angular 17 + Firebase) with fax delivery integration
+- **Project type:** Web app (Angular 17 + Firebase) with email-to-print delivery (primary) and an SBC daemon path for printers without email-to-print (future).
 - **Tagline:** "Your day, on paper."
 
 ## Design Thesis
-Gist should feel like a **print artifact with a web mirror** — not a digital product with analog touches. The fax is the product. The paper is the interface. The web app exists to configure and complement the physical experience.
+Gist should feel like a **print artifact with a web mirror** — not a digital product with analog touches. The paper is the interface. The web app exists to configure and complement the physical experience.
 
 The emotional register is **editorial luxury**: the authority of a well-typeset broadsheet, the warmth of ink on good paper. The user should feel *served* — like someone thoughtful composed this for them — not managed.
 
@@ -113,7 +113,7 @@ These marks should feel like subtle print production artifacts, not UI chrome.
 
 ## Output Template Design System
 
-The delivered Gist (fax, email, print, PDF, web `/today` view) uses a separate typographic and color system optimized for print density and editorial warmth. The web app UI retains the Instrument Serif/Sans system above.
+The delivered Gist (email, print, PDF, web `/today` view) uses a separate typographic and color system optimized for print density and editorial warmth. The web app UI retains the Instrument Serif/Sans system above.
 
 ### Typography (Output)
 - **Display/Masthead:** Fraunces 800, 46pt, -0.03em tracking. Optical sizing 9–144.
@@ -161,13 +161,31 @@ The delivered Gist (fax, email, print, PDF, web `/today` view) uses a separate t
 ### Information Architecture (Output)
 **Page 1 — The Briefing:** Masthead → Weather bar → Rhythms bar → Lede (kicker + headline + editorial paragraph) → Two-column body (left: Schedule + Good News | right: Notifications + People + Quote) → Footer.
 
-**Page 2 — The Reflection:** Compact header → Two-column body (left: Body & Mind + Practice Arc + Moon Highlight + Closing thought | right: Morning Intention write lines + Fax Back checkboxes/write lines + Personal closing quote) → Footer.
+**Page 2 — The Reflection:** Compact header → Two-column body (left: Body & Mind + Practice Arc + Moon Highlight + Closing thought | right: Morning Intention write lines + reflection writing space + Personal closing quote) → Footer.
 
 ### Anti-Patterns (Output-Specific)
 - No category-colored left borders on email cards (old template pattern)
-- No cover page (old fax template had a cover page — new template goes straight to content)
-- No table-based layout for print/fax/PDF (use flexbox — tables only for email-safe variant)
+- No table-based layout for print/PDF (use flexbox — tables only for email-safe variant)
 - No Georgia or Arial — always Fraunces / IBM Plex Sans / IBM Plex Mono
+
+---
+
+## Delivery Infrastructure
+
+### Email-to-print (primary)
+Each morning, the Gist is rendered as a newspaper-format HTML email and sent via Resend to the user's inbox. Users with a printer that supports email-to-print (HP ePrint, Brother iPrint, Epson Email Print, etc.) can forward the message to their printer's email address — or set up a filter to forward automatically — and the brief comes out on paper without any screen contact.
+
+For users without email-to-print, the same content is always viewable on the web at `/today` and can be printed manually from the browser.
+
+### SBC Daemon (future)
+Many printers — especially older or budget models — don't support email-to-print. The future direction is a small daemon running on a Raspberry Pi (or similar single-board computer) on the user's network. The daemon:
+
+- Authenticates as a Firebase Admin client tied to the paired user
+- Watches Firestore for new `morningGists/{dateKey}` documents
+- Downloads the generated PDF via `generateGistPdf`
+- Sends the file to the local printer via `lp` (CUPS)
+
+Same rendered artifact, different transport — the PDF generation and template system are transport-agnostic. Out of scope for current execution; tracked as a future path so the print model works for any printer, not just email-to-print-capable ones.
 
 ---
 
@@ -183,7 +201,8 @@ The delivered Gist (fax, email, print, PDF, web `/today` view) uses a separate t
 | 2026-03-31 | Output Template design system added | Fraunces + IBM Plex Sans/Mono for delivered Gist output. Web app keeps Instrument Serif/Sans. Two systems, one product. |
 | 2026-03-31 | Fraunces chosen for output serif | Variable optical size (9–144), warm editorial feel, pairs well with IBM Plex. 46pt masthead creates iconic brand mark. |
 | 2026-03-31 | Warm amber accent (#92400e) | Section labels and highlight borders use amber instead of ink. Creates visual hierarchy without competing with editorial content. |
-| 2026-03-31 | Two-page broadsheet structure | Page 1 = briefing (information). Page 2 = reflection (intention + fax-back). Turns one-way output into two-way communication. |
+| 2026-03-31 | Two-page broadsheet structure | Page 1 = briefing (information). Page 2 = reflection (intention + writing space). Two-page editorial weight makes the artifact feel substantial. |
 | 2026-03-31 | Structured JSON + template render strategy | Claude outputs Zod-validated sections, template renders HTML. Predictable layout, testable, no LLM HTML generation. |
 | 2026-03-31 | Personal countdowns in rhythms bar | User prefs get countdown: { label, targetDate }. Displayed alongside moon, season, daylight in the rhythms bar. |
 | 2026-03-31 | Issue numbers tracked per user | gistIssueCount on user doc, incremented per generation. Masthead shows "Vol. I · No. {count}". |
+| 2026-05-21 | Pruned fax + Stripe; realigned to email-to-print | Removed the fax-back loop, Phaxio integration, and Stripe billing layer. Primary delivery is now email-to-print via Resend; an SBC daemon is the future path for printers without email support. Same paper artifact, different transport. |
