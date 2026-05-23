@@ -2,8 +2,8 @@
  * Claude-powered daily focus generation with Zod validation,
  * quality self-eval, and prompt injection hardening.
  *
- * Replaces openaiGist.ts. Single API call generates oneThing,
- * gistBullets, and quality scores in one shot.
+ * Replaces openaiGist.ts. Single API call generates gistBullets
+ * and quality scores in one shot.
  */
 
 import { logger } from 'firebase-functions';
@@ -43,7 +43,6 @@ export type QualityScore = {
 };
 
 export type DailyFocusSections = {
-  oneThing: string;
   gistBullets: string[];
   qualityScore: QualityScore;
 };
@@ -57,7 +56,6 @@ const qualityScoreSchema = z.object({
 });
 
 const dailyFocusOutputSchema = z.object({
-  oneThing: z.string().min(1),
   gistBullets: z.array(z.string().min(1)).length(3),
   qualityScore: qualityScoreSchema,
 });
@@ -65,9 +63,6 @@ const dailyFocusOutputSchema = z.object({
 export type DailyFocusOutput = z.infer<typeof dailyFocusOutputSchema>;
 
 // ─── Validation ─────────────────────────────────────────────────────────────
-
-const ACTION_VERB_REGEX =
-  /\b(send|ask|decide|schedule|confirm|draft|block|prepare|close|pay|submit|choose|set|turn|mute|write|review|open|create|book|call|share|finalize|start)\b/i;
 
 const BANNED_TERMS = [
   'openai',
@@ -92,18 +87,6 @@ function hasBannedLanguage(text: string): boolean {
 
 function validateOutput(parsed: DailyFocusOutput): string[] {
   const errors: string[] = [];
-
-  // oneThing validation
-  const oneThingWords = wordCount(parsed.oneThing);
-  if (oneThingWords < 10 || oneThingWords > 20) {
-    errors.push(`oneThing must be 10-20 words (got ${oneThingWords}).`);
-  }
-  if (!ACTION_VERB_REGEX.test(parsed.oneThing)) {
-    errors.push('oneThing must include an explicit action verb.');
-  }
-  if (hasBannedLanguage(parsed.oneThing)) {
-    errors.push('oneThing contains banned language.');
-  }
 
   // gistBullets validation
   const uniqueBullets = new Set(parsed.gistBullets.map((b) => b.toLowerCase()));
@@ -184,12 +167,11 @@ PERSONALIZATION:
 
 OUTPUT REQUIREMENTS:
 Return a JSON object with exactly these keys:
-1. "oneThing": A single actionable sentence (10-20 words) with an explicit action verb. Make it doable in <=20 minutes or a single message/decision.
-2. "gistBullets": An array of exactly 3 distinct strings (6-16 words each):
+1. "gistBullets": An array of exactly 3 distinct strings (6-16 words each):
    - Bullet 1: attention rule (narrow focus)
    - Bullet 2: boundary rule (news/notifications/checking)
    - Bullet 3: schedule protection tied to the first event or biggest time block
-3. "qualityScore": Self-evaluate your output on 3 dimensions (1-5 each):
+2. "qualityScore": Self-evaluate your output on 3 dimensions (1-5 each):
    - "editorialVoice": How well does it sound like a calm newspaper editor? (1=robotic, 5=warm editorial)
    - "crossReferenceDepth": How well does it connect across data sources? (1=isolated facts, 5=rich cross-references)
    - "personalizationDepth": How specific is it to THIS person's day? (1=generic advice, 5=deeply personal)
@@ -242,7 +224,6 @@ export async function generateDailyFocusSections(
       });
 
       return {
-        oneThing: parsed.data.oneThing.replace(/\s+/g, ' ').trim(),
         gistBullets: parsed.data.gistBullets.map((b) => b.replace(/\s+/g, ' ').trim()),
         qualityScore: parsed.data.qualityScore,
       };
@@ -256,20 +237,9 @@ export async function generateDailyFocusSections(
   // Fallback: return safe defaults
   logger.warn('All Claude attempts exhausted, using fallback sections.');
   return {
-    oneThing: fallbackOneThing(input),
     gistBullets: fallbackGistBullets(input),
     qualityScore: { editorialVoice: 1, crossReferenceDepth: 1, personalizationDepth: 1 },
   };
-}
-
-function fallbackOneThing(input: DailyFocusGenerationInput): string {
-  if (input.firstEvent) {
-    return 'Send one clarifying message now so your first event starts with fewer open loops.';
-  }
-  if (input.dayItems.length > 0) {
-    return 'Choose one concrete deliverable and block twenty minutes now to finish its first draft.';
-  }
-  return 'Send one message that removes uncertainty today, then stop checking for replies afterward.';
 }
 
 function fallbackGistBullets(input: DailyFocusGenerationInput): string[] {

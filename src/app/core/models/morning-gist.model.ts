@@ -37,8 +37,6 @@ export interface MorningGist {
 
   gistBullets: string[];
 
-  oneThing: string;
-
   delivery: {
     method: 'web' | 'email';
     pages: number;

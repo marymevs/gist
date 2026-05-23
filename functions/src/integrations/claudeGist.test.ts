@@ -16,7 +16,6 @@ const qualityScoreSchema = z.object({
 });
 
 const dailyFocusOutputSchema = z.object({
-  oneThing: z.string().min(1),
   gistBullets: z.array(z.string().min(1)).length(3),
   qualityScore: qualityScoreSchema,
 });
@@ -38,7 +37,6 @@ const emailOutputSchema = z.object({
 describe('dailyFocusOutputSchema', () => {
   it('validates a correct output', () => {
     const valid = {
-      oneThing: 'Block thirty minutes after standup to review the board deck before it gets buried.',
       gistBullets: [
         'Keep attention narrow: finish the deck review before switching to Slack.',
         'Check news and notifications once, then close feeds until lunch.',
@@ -53,17 +51,8 @@ describe('dailyFocusOutputSchema', () => {
     expect(dailyFocusOutputSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('rejects when oneThing is missing', () => {
-    const invalid = {
-      gistBullets: ['a', 'b', 'c'],
-      qualityScore: { editorialVoice: 3, crossReferenceDepth: 3, personalizationDepth: 3 },
-    };
-    expect(dailyFocusOutputSchema.safeParse(invalid).success).toBe(false);
-  });
-
   it('rejects when gistBullets has wrong count', () => {
     const invalid = {
-      oneThing: 'Do something useful today.',
       gistBullets: ['one', 'two'],
       qualityScore: { editorialVoice: 3, crossReferenceDepth: 3, personalizationDepth: 3 },
     };
@@ -72,25 +61,14 @@ describe('dailyFocusOutputSchema', () => {
 
   it('rejects when quality scores are out of range', () => {
     const invalid = {
-      oneThing: 'Do something.',
       gistBullets: ['a', 'b', 'c'],
       qualityScore: { editorialVoice: 0, crossReferenceDepth: 6, personalizationDepth: 3 },
     };
     expect(dailyFocusOutputSchema.safeParse(invalid).success).toBe(false);
   });
 
-  it('rejects empty oneThing', () => {
-    const invalid = {
-      oneThing: '',
-      gistBullets: ['a', 'b', 'c'],
-      qualityScore: { editorialVoice: 3, crossReferenceDepth: 3, personalizationDepth: 3 },
-    };
-    expect(dailyFocusOutputSchema.safeParse(invalid).success).toBe(false);
-  });
-
   it('rejects empty bullet strings', () => {
     const invalid = {
-      oneThing: 'Do something.',
       gistBullets: ['a', '', 'c'],
       qualityScore: { editorialVoice: 3, crossReferenceDepth: 3, personalizationDepth: 3 },
     };

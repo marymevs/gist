@@ -138,10 +138,6 @@ export async function generateMorningGistForUser(
     const calendarUnchanged =
       JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
-    const reusableOneThing =
-      typeof existingData?.oneThing === 'string'
-        ? existingData.oneThing.trim()
-        : '';
     const reusableBullets = Array.isArray(existingData?.gistBullets)
       ? existingData.gistBullets
           .filter((item): item is string => typeof item === 'string')
@@ -152,8 +148,8 @@ export async function generateMorningGistForUser(
     const reusableQualityScore = existingData?.qualityScore ?? undefined;
 
     const reusableSections =
-      reusableOneThing && reusableBullets.length === 3
-        ? { oneThing: reusableOneThing, gistBullets: reusableBullets, qualityScore: reusableQualityScore }
+      reusableBullets.length === 3
+        ? { gistBullets: reusableBullets, qualityScore: reusableQualityScore }
         : null;
 
     const shouldReuseSections = calendarUnchanged && reusableSections !== null;
@@ -258,7 +254,6 @@ export async function generateMorningGistForUser(
       worldItems,
       emailCards: cleanEmailCards,
       gistBullets: sections.gistBullets,
-      oneThing: sections.oneThing,
       qualityScore: sections.qualityScore,
       ...(newspaperData ? { newspaper: newspaperData } : {}),
       delivery: {
