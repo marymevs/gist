@@ -79,6 +79,8 @@ export const generateGistOnDemand = onRequest(
       delivery: data.delivery ?? {},
       calendarIntegration: data.calendarIntegration,
       emailIntegration: data.emailIntegration,
+      profile: data.profile ?? {},
+      gistIssueCount: data.gistIssueCount ?? 0,
     };
 
     logger.info('On-demand gist generation requested.', { userId: uid });
