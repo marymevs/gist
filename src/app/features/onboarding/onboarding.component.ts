@@ -65,9 +65,14 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   selectedTopics: string[] = [];
   selectedRhythms: string[] = [];
 
-  // Screen 4: Delivery
-  deliveryMethod: 'web' | 'email' = 'web';
+  // Screen 4: Delivery time
+  // Delivery method itself is not stored — runtime resolveDeliveryMethod()
+  // returns 'email' if Gmail is connected, 'web' otherwise.
+  // deliveryHour is the displayed 12-hour value (1-12); pair with
+  // deliveryMeridiem to compute the 24-hour value written to Firestore
+  // (the scheduler reads delivery.schedule.hour as 24h).
   deliveryHour = 7;
+  deliveryMeridiem: 'AM' | 'PM' = 'AM';
   deliveryMinute = 30;
   timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -251,12 +256,19 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   // ── Screen 4: Delivery ──────────────────────────────────────────────────────
 
+  /** 24-hour value combining deliveryHour (1-12) + deliveryMeridiem. */
+  get deliveryHour24(): number {
+    const h12 = this.deliveryHour;
+    if (this.deliveryMeridiem === 'PM') {
+      return h12 === 12 ? 12 : h12 + 12;
+    }
+    // AM
+    return h12 === 12 ? 0 : h12;
+  }
+
   get formattedDeliveryTime(): string {
-    const h = this.deliveryHour;
-    const m = this.deliveryMinute;
-    const period = h >= 12 ? 'PM' : 'AM';
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
+    const m = this.deliveryMinute.toString().padStart(2, '0');
+    return `${this.deliveryHour}:${m} ${this.deliveryMeridiem}`;
   }
 
   // ── Finish ──────────────────────────────────────────────────────────────────
@@ -293,9 +305,8 @@ export class OnboardingComponent implements OnInit, OnDestroy {
             timezone: this.timezone,
           },
           delivery: {
-            method: this.deliveryMethod,
             schedule: {
-              hour: this.deliveryHour,
+              hour: this.deliveryHour24,
               minute: this.deliveryMinute,
             },
           },
