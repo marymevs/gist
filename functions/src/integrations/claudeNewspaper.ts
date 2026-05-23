@@ -224,7 +224,7 @@ function fallbackNewspaperGist(input: NewspaperGenerationInput): NewspaperGistOu
   return {
     lede: {
       kicker: `Good Morning, ${input.subscriberName}`,
-      headline: 'A New Day. Take It One Thing at a Time.',
+      headline: 'Your Morning, Composed.',
       paragraph: `Here's your morning briefing. The weather is ${input.weatherSummary.toLowerCase()}. You have ${input.dayItems.length} things on the calendar today. Take them one at a time, stay present, and remember that a good day isn't about getting everything done — it's about being intentional with what matters most.`,
     },
     schedule: input.dayItems.slice(0, 6).map((item) => ({

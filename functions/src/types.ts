@@ -74,7 +74,6 @@ export type MorningGist = {
   worldItems: { headline: string; implication: string }[];
   emailCards: EmailCard[];
   gistBullets: string[];
-  oneThing: string;
   qualityScore?: {
     editorialVoice: number;
     crossReferenceDepth: number;
