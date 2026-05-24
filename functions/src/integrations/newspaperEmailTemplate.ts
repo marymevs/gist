@@ -168,12 +168,114 @@ function quoteEmail(q: { text: string; attribution: string }): string {
     </div>`;
 }
 
+// ─── Page 2: The Reflection ─────────────────────────────────────────────────
+
+function bodyMindEmail(input: NewspaperTemplateInput): string {
+  const paragraphs = input.bodyMind.paragraphs
+    .map((p) => `<p style="font-size:12px;line-height:1.5;margin:0 0 6px;">${esc(p)}</p>`)
+    .join('');
+
+  const coaching = input.bodyMind.coachingNote
+    ? `<p style="font-size:11px;font-style:italic;color:${C.mid};margin:6px 0 0;">${esc(input.bodyMind.coachingNote)}</p>`
+    : '';
+
+  return `${sectionLabel(input.bodyMind.sectionLabel)}
+    <div style="font-family:Georgia,serif;font-weight:bold;font-size:14px;margin-bottom:4px;color:${C.ink};">${esc(input.bodyMind.title)}</div>
+    ${paragraphs}
+    ${coaching}`;
+}
+
+function practiceArcEmail(input: NewspaperTemplateInput): string {
+  const items = input.practiceArc.items
+    .map((item) => `<p style="font-size:12px;line-height:1.5;margin:0 0 4px;"><strong>${esc(item.label)}</strong> ${esc(item.text)}</p>`)
+    .join('');
+
+  const closing = input.practiceArc.closingNote
+    ? `<p style="font-size:11px;color:${C.mid};margin:6px 0 0;">${esc(input.practiceArc.closingNote)}</p>`
+    : '';
+
+  return `${sectionLabel(input.practiceArc.sectionLabel)}
+    <div style="font-family:Georgia,serif;font-weight:bold;font-size:14px;margin-bottom:4px;color:${C.ink};">${esc(input.practiceArc.title)}</div>
+    ${items}
+    ${closing}`;
+}
+
+function moonHighlightEmail(input: NewspaperTemplateInput): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.tint};margin:8px 0;">
+      <tr>
+        <td width="3" style="background:${C.warm};">&nbsp;</td>
+        <td style="padding:8px 10px;">
+          <div style="font-family:Georgia,serif;font-weight:bold;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;color:${C.ink};">${esc(input.moonHighlight.title)}</div>
+          <p style="font-size:12px;line-height:1.4;margin:0;color:${C.ink};">${esc(input.moonHighlight.paragraph)}</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function writingLine(): string {
+  // Email-safe writing line: a row with bottom border + non-breaking space for height.
+  return `<tr><td style="border-bottom:1px solid ${C.rule};height:22px;line-height:22px;">&nbsp;</td></tr>`;
+}
+
+function intentionEmail(input: NewspaperTemplateInput): string {
+  return `${sectionLabel('Morning Intention')}
+    <p style="font-size:11px;font-style:italic;color:${C.mid};margin:0 0 8px;line-height:1.4;">${esc(input.intentionPrompt)}</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      ${writingLine()}${writingLine()}${writingLine()}
+    </table>
+    <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      ${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}
+    </table>`;
+}
+
+function page2Email(input: NewspaperTemplateInput): string {
+  const closingThought = input.closingThought
+    ? `<div style="border-top:1px solid ${C.rule};margin:10px 0;"></div><p style="font-size:12px;line-height:1.5;color:${C.mid};font-style:italic;margin:0;">${esc(input.closingThought)}</p>`
+    : '';
+
+  return `
+  <!-- Page 2 header — page-break-before forces a fresh page when printed -->
+  <tr><td style="padding:18px 0 6px;border-top:2px solid ${C.ink};page-break-before:always;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-family:Georgia,serif;font-weight:bold;font-size:13px;color:${C.ink};">The Gist</td>
+        <td style="text-align:right;font-family:Courier New,monospace;font-size:9px;color:${C.light};letter-spacing:1px;text-transform:uppercase;">${esc(input.dateFormatted)} &middot; Page 2</td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- Page 2: two columns (reflection) -->
+  <tr><td style="padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <!-- Left column: bodyMind + practiceArc + moonHighlight + closingThought -->
+        <td width="55%" valign="top" style="padding:12px 12px 12px 0;border-right:1px solid ${C.rule};">
+          ${bodyMindEmail(input)}
+          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
+          ${practiceArcEmail(input)}
+          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
+          ${moonHighlightEmail(input)}
+          ${closingThought}
+        </td>
+        <!-- Right column: intention + writing space + personal quote -->
+        <td width="45%" valign="top" style="padding:12px 0 12px 12px;">
+          ${intentionEmail(input)}
+          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
+          ${quoteEmail(input.personalQuote)}
+        </td>
+      </tr>
+    </table>
+  </td></tr>`;
+}
+
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 /**
- * Build the email-safe newspaper HTML.
- * Table-based, inline styles, Gmail/Outlook compatible.
- * Only renders Page 1 content (email doesn't include fax-back).
+ * Build the email-safe newspaper HTML — both Page 1 (briefing) and Page 2 (reflection).
+ * Table-based, inline styles, Gmail/Outlook compatible. The page-break-before CSS on
+ * the Page 2 header makes printers (via email-to-print) put the two pages on separate sheets.
  */
 export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
   return `<!DOCTYPE html>
@@ -219,6 +321,8 @@ export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
       </tr>
     </table>
   </td></tr>
+
+  ${page2Email(input)}
 
   <!-- Footer -->
   <tr><td style="padding:10px 0;border-top:1px solid ${C.ink};text-align:center;">
