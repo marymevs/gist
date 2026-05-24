@@ -14,3 +14,8 @@
 /scripts
 .claude/
 /docs
+
+# Local planning artifacts — strategy docs that live on disk, not in git
+PLANS.md
+SHIP_PLAN.md
+SHIP_PLAN.pdf
