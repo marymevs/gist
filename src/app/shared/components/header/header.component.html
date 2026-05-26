@@ -1,26 +1,24 @@
-<header>
-  <div class="brand">
-    <div class="name">Gist</div>
-    <div class="tag">
-      A daily personal operating brief — paper-forward, screen-minimizing.
-    </div>
-  </div>
+<header class="masthead">
+  <a class="brand" routerLink="/" aria-label="Gist — home">Gist</a>
 
-  <nav aria-label="Primary navigation">
-    <a class="tab" routerLink="/today" routerLinkActive="active"> Today </a>
-    <a class="tab" routerLink="/archive" routerLinkActive="active"> Archive </a>
-    <a class="tab" routerLink="/delivery" routerLinkActive="active">Delivery</a>
-    <a class="tab" routerLink="/account" routerLinkActive="active"> Account </a>
-    <button
-      type="button"
-      class="tab themeToggle"
-      (click)="toggleTheme()"
-      [attr.aria-pressed]="theme() === 'dark'"
-      [attr.aria-label]="
-        theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-      "
-    >
-      {{ theme() === "dark" ? "Light mode" : "Dark mode" }}
-    </button>
-  </nav>
+  @if (user$ | async) {
+    <nav class="sections" aria-label="Primary navigation">
+      <a routerLink="/today" routerLinkActive="active">Today</a>
+      <a routerLink="/archive" routerLinkActive="active">Archive</a>
+      <a routerLink="/delivery" routerLinkActive="active">Delivery</a>
+      <a routerLink="/account" routerLinkActive="active">Account</a>
+    </nav>
+  }
+
+  <button
+    type="button"
+    class="theme"
+    (click)="toggleTheme()"
+    [attr.aria-pressed]="theme() === 'dark'"
+    [attr.aria-label]="
+      theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+    "
+  >
+    {{ theme() === "dark" ? "Light" : "Dark" }}
+  </button>
 </header>
