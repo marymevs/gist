@@ -20,19 +20,19 @@ export const routes: Routes = [
   {
     path: '',
     component: LandingComponent,
-    title: 'Gist — mygist.app',
+    title: 'Gist',
   },
 
   {
     path: 'signup',
     component: SignupComponent,
-    title: 'Gist — mygist.app',
+    title: 'Gist',
   },
 
   {
     path: 'login',
     component: LoginComponent,
-    title: 'Gist — mygist.app',
+    title: 'Gist',
   },
 
   {
