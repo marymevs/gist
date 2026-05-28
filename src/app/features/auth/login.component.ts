@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
 import { FormsModule } from '@angular/forms';
 
@@ -11,7 +11,7 @@ import {
 
 @Component({
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./auth.shared.scss'],
 })

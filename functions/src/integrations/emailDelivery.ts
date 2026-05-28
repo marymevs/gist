@@ -9,11 +9,10 @@ export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 // the verified Resend account owner's email. Set GIST_FROM_ADDRESS to a custom
 // domain address (e.g. Gist <morning@mygist.app>) once SPF/DKIM are configured
 // in the Resend dashboard. See TODOS.md "Domain setup for email delivery".
-const FROM_ADDRESS = process.env.GIST_FROM_ADDRESS ?? 'Gist <onboarding@resend.dev>';
+const FROM_ADDRESS =
+  process.env.GIST_FROM_ADDRESS ?? 'Gist <morning@issue.mygist.app>';
 
-export type SendResult =
-  | { success: true }
-  | { success: false; error: string };
+export type SendResult = { success: true } | { success: false; error: string };
 
 export async function sendMorningGistEmail(params: {
   toEmail: string;
