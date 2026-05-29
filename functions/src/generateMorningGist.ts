@@ -359,7 +359,7 @@ export async function generateMorningGistForUser(
  * Compute the next delivery Timestamp for a user based on their schedule prefs.
  * Returns a Timestamp for tomorrow at the specified hour:minute in the user's timezone.
  */
-function computeNextDelivery(
+export function computeNextDelivery(
   now: Date,
   timezone: string,
   schedule?: { hour?: number; minute?: number },

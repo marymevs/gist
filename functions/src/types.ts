@@ -78,6 +78,14 @@ export type UserDoc = {
     name?: string;
     context?: string;
   };
+  /**
+   * Timestamp of the user's next scheduled delivery. The 15-min scheduler
+   * queries `.where('nextDeliveryAt', '<=', now)`, so a user is invisible to
+   * delivery until this is seeded (on-demand generation / scheduler tick).
+   */
+  nextDeliveryAt?: Timestamp;
+  /** ISO date key (user-tz) of the last generated gist. Prevents double-send. */
+  lastGeneratedDate?: string;
 };
 
 export type MorningGist = {

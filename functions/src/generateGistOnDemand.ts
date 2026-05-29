@@ -15,7 +15,8 @@ import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
-import { generateMorningGistForUser } from './generateMorningGist';
+import { generateMorningGistForUser, computeNextDelivery } from './generateMorningGist';
+import { safeTimezone, toDateKeyISO } from './helpers';
 import type { UserDoc, IntegrationStatus } from './types';
 
 const db = getFirestore();
@@ -86,7 +87,20 @@ export const generateGistOnDemand = onRequest(
     logger.info('On-demand gist generation requested.', { userId: uid });
 
     try {
-      await generateMorningGistForUser(user, new Date());
+      const now = new Date();
+      await generateMorningGistForUser(user, now);
+
+      // Seed the delivery schedule so the 15-min scheduler picks this user up
+      // going forward. Without this, the user has no nextDeliveryAt field and
+      // the scheduler's `.where('nextDeliveryAt', '<=', now)` query skips them
+      // forever — they'd only ever get this one on-demand gist.
+      const timezone = safeTimezone(user.prefs?.timezone);
+      const todayKey = toDateKeyISO(now, timezone);
+      await db.collection('users').doc(uid).update({
+        lastGeneratedDate: todayKey,
+        nextDeliveryAt: computeNextDelivery(now, timezone, user.delivery?.schedule),
+      });
+
       res.status(200).json({ ok: true });
     } catch (error) {
       logger.error('On-demand gist generation failed.', {
