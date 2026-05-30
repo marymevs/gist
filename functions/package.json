@@ -8,6 +8,8 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "lint": "npx eslint .",
+    "guard:db": "if grep -rn 'getFirestore()' src --include='*.ts' | grep -v 'firebaseAdmin.ts'; then echo 'ERROR: getFirestore() must only be called in firebaseAdmin.ts — import getDb() from firebaseAdmin instead.' && exit 1; fi",
+    "prebuild": "npm run guard:db",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",

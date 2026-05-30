@@ -14,11 +14,11 @@
 import { logger } from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getDb } from '../firebaseAdmin';
 import { buildNewspaperHtml } from './newspaperTemplate';
 import type { NewspaperTemplateInput } from './newspaperTypes';
 
-const db = getFirestore();
+const db = getDb();
 
 function buildTemplateInput(
   newspaper: Record<string, unknown>,

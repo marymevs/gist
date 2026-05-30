@@ -6,10 +6,11 @@
  * to improve personalization depth over time.
  */
 
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import { getDb } from '../firebaseAdmin';
 import type { MemoryEntry } from './types';
 
-const db = getFirestore();
+const db = getDb();
 
 const MAX_SIGNALS = 15;
 

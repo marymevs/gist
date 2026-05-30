@@ -4,11 +4,12 @@
  * fed back into Claude's prompt to improve personalization.
  */
 
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
+import { getDb } from '../firebaseAdmin';
 import type { MemoryEntry, QualityTrend } from './types';
 
-const db = getFirestore();
+const db = getDb();
 
 function memoryCol(userId: string) {
   return db.collection('users').doc(userId).collection('memory');
