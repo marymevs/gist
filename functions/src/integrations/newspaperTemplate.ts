@@ -342,11 +342,10 @@ function page2(input: NewspaperTemplateInput): string {
     </div>
     <div class="c">
       <div class="label">Morning Intention</div>
-      <p class="xs it mt">${escSmart(input.intentionPrompt)}</p>
+      <p class="xs it mt" style="margin-bottom:6pt;">${escSmart(input.intentionPrompt)}</p>
       <div class="wl"></div>
       <div class="wl"></div>
       <div class="wl"></div>
-      <hr class="hr">
       <div class="wl"></div>
       <div class="wl"></div>
       <div class="wl"></div>
