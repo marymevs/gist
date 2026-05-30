@@ -117,8 +117,8 @@ export const generateGistPdf = onRequest(async (req, res) => {
     return;
   }
 
-  // Get dateKey from query param or default to today
-  const dateKey = (req.query.date as string) || new Date().toISOString().slice(0, 10);
+  // Always render today's gist — historical rendering is intentionally not supported.
+  const dateKey = new Date().toISOString().slice(0, 10);
 
   // Fetch the gist and user doc in parallel
   const [gistDoc, userDoc] = await Promise.all([

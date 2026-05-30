@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Removed
+- **`generateGistPrint` Cloud Function** deleted (and its `generateGistPrint.test.ts`). The endpoint had no callers — the UI "Print" button uses `window.print()` on the rendered page, and nothing linked to the server-rendered print URL. Dropped its `index.ts` export.
+- **Historical-rendering `date` query param** on `generateGistPdf`. The only caller (`today.component.ts`) never passed a date, so the param was dead; `generateGistPdf` now always renders today's gist. This also dissolves the latent `volumeIssue` regression (issue #101 P2) — that bug was only reachable via the unused historical path.
+
+### Notes
+- The hardcoded-moon regression in `generatePdf`'s `buildTemplateInput` (issue #101 P2) is still live and tracked separately — to be fixed in its own change.
+
 ## [0.6.0.0] - 2026-05-23
 
 Phase 6 (onboarding slim-down + docs rewrite). Closes out the prune-and-realign plan. The product story now matches the code — every sentence in DESIGN.md and README describes what's actually running. Onboarding's last commerce remnant is gone; delivery time picker no longer pretends mornings are the only valid choice.
