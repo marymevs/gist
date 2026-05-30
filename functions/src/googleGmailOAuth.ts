@@ -2,9 +2,9 @@ import { logger } from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
 import type { Request } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getDb } from './firebaseAdmin';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
@@ -13,11 +13,7 @@ const GOOGLE_GMAIL_OAUTH_REDIRECT_URI = defineSecret(
   'GOOGLE_GMAIL_OAUTH_REDIRECT_URI',
 );
 
-if (!getApps().length) {
-  initializeApp();
-}
-
-const db = getFirestore();
+const db = getDb();
 
 type GoogleTokenResponse = {
   access_token: string;

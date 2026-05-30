@@ -6,7 +6,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getDb } from './firebaseAdmin';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
 import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
@@ -18,7 +18,7 @@ import {
 import { generateMorningGistForUser } from './generateMorningGist';
 import type { UserDoc, IntegrationStatus } from './types';
 
-const db = getFirestore();
+const db = getDb();
 
 export const generateGistOnDemand = onRequest(
   {

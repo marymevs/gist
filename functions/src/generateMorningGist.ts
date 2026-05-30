@@ -1,7 +1,7 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import { getDb } from './firebaseAdmin';
 import { WEATHERAPI_KEY } from './integrations/weather';
 import { NYT_API_KEY } from './integrations/nytTopStories';
 import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
@@ -13,8 +13,6 @@ import { RESEND_API_KEY } from './integrations/emailDelivery';
 import {
   writeDeliveryLog,
 } from './firestoreUtils';
-
-if (!getApps().length) initializeApp();
 
 import {
   GOOGLE_CLIENT_ID,
@@ -53,7 +51,7 @@ import {
   pruneExpiredMemory,
 } from './personalization/memoryEngine';
 
-const db = getFirestore();
+const db = getDb();
 
 /** === Core generator === */
 export async function generateMorningGistForUser(
