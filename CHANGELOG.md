@@ -68,7 +68,7 @@ Phase 4 (newspaper template prune). Fax-back questions are fully removed from th
 
 ### Notes
 - Ticket 4.6 (snapshot test for Page 2 reflection layout) was closed without implementation — the proposed assertions were paranoid rather than structural and would have aged poorly. A codebase grep is the right tool for the regression fear.
-- The intention-prompt + writing-lines layout has visual unevenness in the rendered output. Tracked in #122.
+- The intention-prompt + writing-lines layout had visual unevenness in the rendered output (#122). Fixed: the internal `<hr>` that broke the 18pt line grid was removed, the two line groups consolidated into a single continuous block of 9 evenly spaced ruled lines, and the intention prompt given a controlled 6pt gap above the lines.
 
 ## [0.3.0.0] - 2026-05-22
 
