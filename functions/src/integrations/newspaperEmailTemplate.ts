@@ -55,12 +55,14 @@ function mastheadEmail(input: NewspaperTemplateInput): string {
 
 function weatherEmail(input: NewspaperTemplateInput): string {
   const forecastCells = input.weather.forecast
-    .map((d) => `
+    .map(
+      (d) => `
       <td style="text-align:center;padding:0 6px;">
         <div style="font-family:Courier New,monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:${C.light};">${esc(d.day)}</div>
         <div style="font-family:Georgia,serif;font-size:13px;">${esc(d.high)}</div>
         ${d.condition ? `<div style="font-size:10px;color:${C.warm};">${esc(d.condition)}</div>` : ''}
-      </td>`)
+      </td>`,
+    )
     .join('');
 
   return `
@@ -85,7 +87,9 @@ function rhythmsEmail(input: NewspaperTemplateInput): string {
   ];
   if (input.rhythms.countdown) {
     const parts = input.rhythms.countdown.split(' ');
-    items.push(`<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(parts[0])}</b> ${esc(parts.slice(1).join(' '))}`);
+    items.push(
+      `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(parts[0])}</b> ${esc(parts.slice(1).join(' '))}`,
+    );
   }
   return `
     <tr><td style="padding:4px 0;border-bottom:1px solid ${C.rule};font-size:11px;color:${C.mid};line-height:1.6;">
@@ -154,7 +158,10 @@ function notificationsEmail(input: NewspaperTemplateInput): string {
 
 function peopleEmail(input: NewspaperTemplateInput): string {
   const items = input.people
-    .map((p) => `<div style="font-size:11px;line-height:1.4;margin-bottom:4px;"><strong>${esc(p.name)}</strong> ${esc(p.nudge)}</div>`)
+    .map(
+      (p) =>
+        `<div style="font-size:11px;line-height:1.4;margin-bottom:4px;"><strong>${esc(p.name)}</strong> ${esc(p.nudge)}</div>`,
+    )
     .join('');
 
   return `${sectionLabel('People')}${items}`;
@@ -162,7 +169,7 @@ function peopleEmail(input: NewspaperTemplateInput): string {
 
 function quoteEmail(q: { text: string; attribution: string }): string {
   return `
-    <div style="text-align:center;padding:8px 14px;">
+    <div style="margin-top: 1rem;text-align:center;padding:8px 14px;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:15px;line-height:1.35;margin-bottom:4px;color:${C.ink};">&ldquo;${esc(q.text)}&rdquo;</div>
       <div style="font-family:Courier New,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(q.attribution)}</div>
     </div>`;
@@ -172,7 +179,10 @@ function quoteEmail(q: { text: string; attribution: string }): string {
 
 function bodyMindEmail(input: NewspaperTemplateInput): string {
   const paragraphs = input.bodyMind.paragraphs
-    .map((p) => `<p style="font-size:12px;line-height:1.5;margin:0 0 6px;">${esc(p)}</p>`)
+    .map(
+      (p) =>
+        `<p style="font-size:12px;line-height:1.5;margin:0 0 6px;">${esc(p)}</p>`,
+    )
     .join('');
 
   const coaching = input.bodyMind.coachingNote
@@ -187,7 +197,10 @@ function bodyMindEmail(input: NewspaperTemplateInput): string {
 
 function practiceArcEmail(input: NewspaperTemplateInput): string {
   const items = input.practiceArc.items
-    .map((item) => `<p style="font-size:12px;line-height:1.5;margin:0 0 4px;"><strong>${esc(item.label)}</strong> ${esc(item.text)}</p>`)
+    .map(
+      (item) =>
+        `<p style="font-size:12px;line-height:1.5;margin:0 0 4px;"><strong>${esc(item.label)}</strong> ${esc(item.text)}</p>`,
+    )
     .join('');
 
   const closing = input.practiceArc.closingNote
@@ -224,7 +237,6 @@ function intentionEmail(input: NewspaperTemplateInput): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       ${writingLine()}${writingLine()}${writingLine()}
     </table>
-    <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       ${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}
     </table>`;
@@ -262,7 +274,6 @@ function page2Email(input: NewspaperTemplateInput): string {
         <!-- Right column: intention + writing space + personal quote -->
         <td width="45%" valign="top" style="padding:12px 0 12px 12px;">
           ${intentionEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
           ${quoteEmail(input.personalQuote)}
         </td>
       </tr>
@@ -346,6 +357,8 @@ export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
 </html>`;
 }
 
-export function buildNewspaperEmailSubject(input: NewspaperTemplateInput): string {
+export function buildNewspaperEmailSubject(
+  input: NewspaperTemplateInput,
+): string {
   return `The Gist \u2014 ${input.dateFormatted}`;
 }
