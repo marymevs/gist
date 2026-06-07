@@ -6,6 +6,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getDb } from './firebaseAdmin';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { encryptTokenRecord, FIELD_ENCRYPTION_KEY } from './crypto/fieldCrypto';
 
 const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
 const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
@@ -192,11 +193,13 @@ async function persistTokensForUser(
     .doc('gmail')
     .set(
       {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token ?? null,
+        ...encryptTokenRecord({
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token ?? null,
+          idToken: tokens.id_token ?? null,
+        }),
         tokenType: tokens.token_type ?? null,
         scope: tokens.scope ?? null,
-        idToken: tokens.id_token ?? null,
         expiryDate,
         expiresAt,
         updatedAt: FieldValue.serverTimestamp(),
@@ -289,6 +292,7 @@ export const exchangeGoogleGmailCode = onRequest(
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
       GOOGLE_GMAIL_OAUTH_REDIRECT_URI,
+      FIELD_ENCRYPTION_KEY,
     ],
   },
   async (req, res) => {

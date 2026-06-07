@@ -10,6 +10,11 @@
 .runtimeconfig.json
 .gstack/
 
+# Secrets / local env (never commit) — keep .env.example tracked
+.env
+.env.*
+!.env.example
+
 # Misc
 /scripts
 .claude/

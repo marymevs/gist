@@ -11,6 +11,15 @@ import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrati
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
+import {
+  FIELD_ENCRYPTION_KEY,
+  encryptJson,
+  encryptString,
+  decryptJson,
+} from './crypto/fieldCrypto';
+
+/** Retention window for stored gists. Drives the `expireAt` TTL field. */
+const GIST_RETENTION_DAYS = 7;
 
 import {
   GOOGLE_CLIENT_ID,
@@ -127,7 +136,11 @@ export async function generateMorningGistForUser(
       ? (existingSnap.data() as Partial<MorningGist>)
       : undefined;
 
-    const existingDayItems = normalizeDayItems(existingData?.dayItems ?? []);
+    // Stored dayItems are encrypted at rest (issue #177); decrypt before use.
+    // decryptJson passes legacy plaintext arrays through unchanged.
+    const existingDayItems = normalizeDayItems(
+      decryptJson<MorningGist['dayItems']>(existingData?.dayItems) ?? [],
+    );
     const calendarUnchanged =
       JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
@@ -243,9 +256,30 @@ export async function generateMorningGistForUser(
         status: 'queued',
       },
       createdAt: Timestamp.now(),
+      // Data minimization (issue #177): gists hold personal data and only need
+      // to live as long as the user reads today's brief. A Firestore TTL policy
+      // on `expireAt` auto-deletes them after the retention window.
+      expireAt: Timestamp.fromMillis(Date.now() + GIST_RETENTION_DAYS * 86_400_000),
     };
 
-    await gistRef.set({ ...gist, dayItems: cleanDayItems }, { merge: true });
+    // Encrypt the personal-data fields at rest (issue #177): the Claude-generated
+    // brief (`newspaper`) is the richest PII; `dayItems` (calendar), `emailCards`
+    // (inbox), and `firstEvent` (a calendar title) round it out. All are
+    // server-only — the browser renders from `renderedHtml` and only reads two
+    // cosmetic `newspaper` fields (location/deliveryTime) as fallbacks, which it
+    // already prefers from user prefs/schedule. The in-memory copies stay
+    // plaintext for email delivery + rendering below. News (worldItems) and
+    // weather are public; left as-is.
+    await gistRef.set(
+      {
+        ...gist,
+        dayItems: encryptJson(cleanDayItems),
+        emailCards: encryptJson(cleanEmailCards),
+        ...(firstEvent !== undefined ? { firstEvent: encryptString(firstEvent) } : {}),
+        ...(newspaperData ? { newspaper: encryptJson(newspaperData) } : {}),
+      },
+      { merge: true },
+    );
 
     const dateLabel = toDateLabel(now, timezone);
 
@@ -425,6 +459,7 @@ export const generateMorningGist = onSchedule(
       GOOGLE_CLIENT_SECRET,
       ANTHROPIC_API_KEY,
       RESEND_API_KEY,
+      FIELD_ENCRYPTION_KEY,
     ],
   },
   async () => {

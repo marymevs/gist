@@ -9,6 +9,7 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 import { generateMorningGistForUser, type UserDoc } from './generateMorningGist';
+import { FIELD_ENCRYPTION_KEY } from './crypto/fieldCrypto';
 
 /**
  * Callable Cloud Function that regenerates and re-delivers
@@ -26,6 +27,7 @@ export const resendMorningGist = onCall(
       GOOGLE_CLIENT_ID,
       GOOGLE_CLIENT_SECRET,
       RESEND_API_KEY,
+      FIELD_ENCRYPTION_KEY,
     ],
   },
   async (request) => {
