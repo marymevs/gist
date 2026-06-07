@@ -1,45 +1,62 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Auth, user } from '@angular/fire/auth';
-import {
-  Firestore,
-  collection,
-  collectionData,
-  collectionGroup,
-  query,
-  orderBy,
-  limit,
-  where,
-} from '@angular/fire/firestore';
-import { Observable, of, switchMap, map, Subscription } from 'rxjs';
+import { Functions, httpsCallable } from '@angular/fire/functions';
+import { Subscription } from 'rxjs';
 
-/** Hardcoded founder UID — only this user can access /admin */
-const ADMIN_UID = ''; // Set to your Firebase UID before deploying
+/** Mirror of the AdminStats payload returned by the getAdminStats callable. */
+type DeliveryBucket = { total: number; delivered: number; failed: number; queued: number };
 
-type UserRow = {
+interface AdminUserRow {
   uid: string;
   email: string | null;
-  plan: string;
-  onboardingComplete?: boolean;
-  lastGeneratedDate?: string;
-  createdAt?: any;
-};
+  onboardingComplete: boolean;
+  deliveryMethod: string | null;
+  calendarConnected: boolean;
+  gmailConnected: boolean;
+  lastGeneratedDate: string | null;
+  gistIssueCount: number;
+  createdAt: number | null;
+  daysSinceActive: number | null;
+}
 
-type GistRow = {
+interface AdminGistRow {
   userId: string;
+  email: string | null;
   date: string;
-  qualityScore?: {
+  method: string | null;
+  status: string | null;
+  createdAt: number | null;
+  editorialVoice: number | null;
+  crossReferenceDepth: number | null;
+  personalizationDepth: number | null;
+}
+
+interface AdminStats {
+  generatedAt: string;
+  totals: {
+    users: number;
+    onboarded: number;
+    active7d: number;
+    active30d: number;
+    gistsAllTime: number;
+  };
+  delivery: {
+    windowSize: number;
+    successRate: number | null;
+    byMethod: Record<string, DeliveryBucket>;
+    failed: number;
+  };
+  quality: {
+    sampleCount: number;
     editorialVoice: number;
     crossReferenceDepth: number;
     personalizationDepth: number;
   };
-  delivery: {
-    method: string;
-    status: string;
-  };
-  createdAt?: any;
-};
+  users: AdminUserRow[];
+  recentGists: AdminGistRow[];
+}
 
 @Component({
   standalone: true,
@@ -48,33 +65,15 @@ type GistRow = {
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent implements OnInit, OnDestroy {
-  isAuthorized = false;
+  private auth = inject(Auth);
+  private functions = inject(Functions);
+  private router = inject(Router);
+
   loading = true;
-
-  // Metrics
-  totalUsers = 0;
-  activeUsers = 0; // generated in last 7 days
-  onboardedUsers = 0;
-
-  // Quality
-  avgEditorialVoice = 0;
-  avgCrossRef = 0;
-  avgPersonalization = 0;
-  qualitySampleCount = 0;
-
-  // Recent gists
-  recentGists: GistRow[] = [];
-
-  // Delivery stats
-  deliveryStats: Record<string, { total: number; delivered: number; failed: number }> = {};
+  errorMessage: string | null = null;
+  stats: AdminStats | null = null;
 
   private sub?: Subscription;
-
-  constructor(
-    private auth: Auth,
-    private firestore: Firestore,
-    private router: Router,
-  ) {}
 
   ngOnInit(): void {
     this.sub = user(this.auth).subscribe((u) => {
@@ -82,16 +81,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         this.router.navigate(['/login']);
         return;
       }
-
-      // Allow any authenticated user in demo mode (ADMIN_UID empty)
-      // In production, set ADMIN_UID to restrict access
-      if (ADMIN_UID && u.uid !== ADMIN_UID) {
-        this.router.navigate(['/today']);
-        return;
-      }
-
-      this.isAuthorized = true;
-      this.loadMetrics();
+      this.loadStats();
     });
   }
 
@@ -99,96 +89,35 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
-  private async loadMetrics(): Promise<void> {
+  async loadStats(): Promise<void> {
+    this.loading = true;
+    this.errorMessage = null;
     try {
-      await Promise.all([
-        this.loadUserMetrics(),
-        this.loadRecentGists(),
-      ]);
+      const fn = httpsCallable<unknown, AdminStats>(this.functions, 'getAdminStats');
+      const result = await fn({});
+      this.stats = result.data;
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code ?? '';
+      // Server is the real gate — non-owners are bounced back to their brief.
+      if (code.includes('permission-denied') || code.includes('unauthenticated')) {
+        this.router.navigate(['/today']);
+        return;
+      }
+      this.errorMessage =
+        error instanceof Error ? error.message : 'Unable to load admin stats.';
     } finally {
       this.loading = false;
     }
   }
 
-  private async loadUserMetrics(): Promise<void> {
-    const usersCol = collection(this.firestore, 'users');
-    const usersSnap = await collectionData(query(usersCol), { idField: 'uid' })
-      .pipe(
-        map((docs) => docs as UserRow[]),
-      )
-      .toPromise();
-
-    if (!usersSnap) return;
-
-    this.totalUsers = usersSnap.length;
-
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-
-    let onboarded = 0;
-    let active = 0;
-
-    for (const u of usersSnap) {
-      // Onboarding
-      if (u.onboardingComplete) onboarded++;
-
-      // Active (generated in last 7 days)
-      if (u.lastGeneratedDate && u.lastGeneratedDate >= sevenDaysAgoStr) {
-        active++;
-      }
-    }
-
-    this.onboardedUsers = onboarded;
-    this.activeUsers = active;
-  }
-
-  private async loadRecentGists(): Promise<void> {
-    // Query recent gists across all users via collection group
-    const gistsGroup = collectionGroup(this.firestore, 'morningGists');
-    const recentQuery = query(gistsGroup, orderBy('createdAt', 'desc'), limit(20));
-
-    const gists = await collectionData(recentQuery)
-      .pipe(
-        map((docs) => docs as GistRow[]),
-      )
-      .toPromise();
-
-    if (!gists) return;
-
-    this.recentGists = gists;
-
-    // Compute quality averages
-    let totalVoice = 0, totalCrossRef = 0, totalPersonal = 0, count = 0;
-    const delivery: Record<string, { total: number; delivered: number; failed: number }> = {};
-
-    for (const g of gists) {
-      if (g.qualityScore) {
-        totalVoice += g.qualityScore.editorialVoice;
-        totalCrossRef += g.qualityScore.crossReferenceDepth;
-        totalPersonal += g.qualityScore.personalizationDepth;
-        count++;
-      }
-
-      // Delivery stats
-      const method = g.delivery?.method || 'web';
-      if (!delivery[method]) delivery[method] = { total: 0, delivered: 0, failed: 0 };
-      delivery[method].total++;
-      if (g.delivery?.status === 'delivered') delivery[method].delivered++;
-      if (g.delivery?.status === 'failed') delivery[method].failed++;
-    }
-
-    if (count > 0) {
-      this.avgEditorialVoice = Math.round((totalVoice / count) * 10) / 10;
-      this.avgCrossRef = Math.round((totalCrossRef / count) * 10) / 10;
-      this.avgPersonalization = Math.round((totalPersonal / count) * 10) / 10;
-      this.qualitySampleCount = count;
-    }
-
-    this.deliveryStats = delivery;
-  }
-
+  /** Ordered delivery methods for the breakdown table. */
   deliveryKeys(): string[] {
-    return Object.keys(this.deliveryStats);
+    return this.stats ? Object.keys(this.stats.delivery.byMethod) : [];
+  }
+
+  onboardedPct(): number {
+    const t = this.stats?.totals;
+    if (!t || t.users === 0) return 0;
+    return Math.round((t.onboarded / t.users) * 100);
   }
 }

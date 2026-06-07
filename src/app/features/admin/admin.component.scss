@@ -5,6 +5,10 @@
 }
 
 .adminHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
   margin-bottom: var(--space-xl);
 
   h1 {
@@ -23,6 +27,16 @@
   color: var(--muted);
 }
 
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: var(--space-sm);
+}
+
 .loadingState {
   font-size: 15px;
   color: var(--muted);
@@ -30,10 +44,49 @@
   padding: var(--space-xl) 0;
 }
 
+.errorState {
+  padding: var(--space-lg) 0;
+
+  p {
+    font-size: 14px;
+    color: var(--bad);
+    margin: 0 0 var(--space-sm);
+  }
+
+  button {
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: var(--space-xs) var(--space-md);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+
+    &:hover { background: var(--surface-alt); }
+  }
+}
+
+// Shared card
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 var(--space-md);
+  }
+}
+
 // Metrics row
 .metricsRow {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-sm);
   margin-bottom: var(--space-lg);
 }
@@ -62,47 +115,50 @@
   color: var(--ink);
 }
 
-// Breakdown
-.breakdownRow {
+.metricSub {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.metricFoot {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: var(--space-2xs);
+}
+
+// Health grid
+.healthGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 
-.breakdownCard {
-  padding: var(--space-md);
-
-  h2 {
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 400;
-    margin: 0 0 var(--space-sm);
-  }
+.healthItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
 }
 
-.kvGrid {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-xs) var(--space-md);
+.kvLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
-.kvLabel { font-size: 14px; color: var(--muted); }
-.kvValue { font-family: var(--font-mono); font-size: 14px; text-align: right; }
+.kvValue {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--ink);
+}
 
 // Quality
-.qualityCard {
-  padding: var(--space-md);
-  margin-bottom: var(--space-lg);
-
-  h2 {
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 400;
-    margin: 0 0 var(--space-md);
-  }
-}
-
 .qualityGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -128,50 +184,94 @@
 }
 
 .qualityMax { font-size: 14px; color: var(--muted); }
-.sampleNote { font-size: 12px; color: var(--muted); margin-top: var(--space-sm); }
+.sampleNote { font-size: 12px; color: var(--muted); margin: var(--space-sm) 0 0; }
 
 // Tables
-.deliveryCard, .recentCard {
-  padding: var(--space-md);
-  margin-bottom: var(--space-lg);
-
-  h2 {
-    font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 400;
-    margin: 0 0 var(--space-md);
-  }
-}
-
-table {
+.dataTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-}
 
-th {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  text-align: left;
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--border);
-}
+  th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-align: left;
+    padding: var(--space-xs) var(--space-sm);
+    border-bottom: 1px solid var(--border);
+  }
 
-td {
-  padding: var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--border);
-  color: var(--ink);
+  td {
+    padding: var(--space-xs) var(--space-sm);
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 .mono { font-family: var(--font-mono); font-size: 12px; }
-.emptyNote { font-size: 13px; color: var(--muted); font-style: italic; }
+.email { font-size: 13px; }
+.muted { color: var(--muted); }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+
+.ago { color: var(--muted); }
+
+// Roster
+.rosterTable tr.inactive td.email { color: var(--muted); }
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+}
+
+.badgeOk {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.badgeOff {
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+.integrations {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.dot {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--muted);
+
+  &.on {
+    background: transparent;
+    color: var(--ok);
+    border: 1px solid var(--ok);
+  }
+}
+
+.emptyNote { font-size: 13px; color: var(--muted); font-style: italic; margin: 0; }
 
 @media (max-width: 768px) {
-  .metricsRow { grid-template-columns: 1fr; }
-  .breakdownRow { grid-template-columns: 1fr; }
+  .metricsRow { grid-template-columns: repeat(2, 1fr); }
+  .healthGrid { grid-template-columns: repeat(2, 1fr); }
   .qualityGrid { grid-template-columns: 1fr; }
-  .recentTable { font-size: 11px; }
+  .dataTable { font-size: 11px; }
 }

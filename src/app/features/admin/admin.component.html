@@ -1,103 +1,178 @@
-<section class="admin" *ngIf="isAuthorized">
+<section class="admin">
   <header class="adminHeader">
-    <h1>Gist Admin</h1>
-    <span class="kicker">Founder Dashboard</span>
+    <div>
+      <h1>Gist Admin</h1>
+      <span class="kicker">Founder Dashboard</span>
+    </div>
+    <span class="stamp" *ngIf="stats">PREPARED {{ stats.generatedAt | date: 'HH:mm' }}</span>
   </header>
 
   <div class="loadingState" *ngIf="loading">Loading metrics&hellip;</div>
 
-  <div class="dashboard" *ngIf="!loading">
+  <div class="errorState" *ngIf="!loading && errorMessage">
+    <p>{{ errorMessage }}</p>
+    <button type="button" (click)="loadStats()">Retry</button>
+  </div>
 
-    <!-- Row 1: Key metrics -->
+  <div class="dashboard" *ngIf="!loading && stats as s">
+
+    <!-- Aggregate metrics -->
     <div class="metricsRow">
       <div class="metricCard">
         <span class="metricLabel">Total Users</span>
-        <span class="metricValue">{{ totalUsers }}</span>
+        <span class="metricValue">{{ s.totals.users }}</span>
       </div>
       <div class="metricCard">
         <span class="metricLabel">Active (7d)</span>
-        <span class="metricValue">{{ activeUsers }}</span>
+        <span class="metricValue">{{ s.totals.active7d }}</span>
       </div>
       <div class="metricCard">
         <span class="metricLabel">Onboarded</span>
-        <span class="metricValue">{{ onboardedUsers }}</span>
+        <span class="metricValue">{{ s.totals.onboarded }}<span class="metricSub">/ {{ s.totals.users }}</span></span>
+        <span class="metricFoot">{{ onboardedPct() }}%</span>
+      </div>
+      <div class="metricCard">
+        <span class="metricLabel">Gists All-Time</span>
+        <span class="metricValue">{{ s.totals.gistsAllTime }}</span>
       </div>
     </div>
 
-    <!-- Row 3: Quality self-eval -->
-    <div class="card qualityCard">
-      <h2>Quality Self-Eval (last 20 gists)</h2>
-      <div class="qualityGrid" *ngIf="qualitySampleCount > 0">
-        <div class="qualityItem">
-          <span class="qualityLabel">Editorial Voice</span>
-          <span class="qualityScore">{{ avgEditorialVoice }}<span class="qualityMax">/5</span></span>
+    <!-- Generation & delivery health -->
+    <div class="card healthCard">
+      <h2>Generation &amp; Delivery</h2>
+      <div class="healthGrid">
+        <div class="healthItem">
+          <span class="kvLabel">Last gist</span>
+          <span class="kvValue" *ngIf="s.recentGists.length">{{ s.recentGists[0].createdAt | date: 'MMM d, HH:mm' }}</span>
+          <span class="kvValue muted" *ngIf="!s.recentGists.length">—</span>
         </div>
-        <div class="qualityItem">
-          <span class="qualityLabel">Cross-reference</span>
-          <span class="qualityScore">{{ avgCrossRef }}<span class="qualityMax">/5</span></span>
+        <div class="healthItem">
+          <span class="kvLabel">Success rate</span>
+          <span class="kvValue" *ngIf="s.delivery.successRate !== null">{{ s.delivery.successRate }}%</span>
+          <span class="kvValue muted" *ngIf="s.delivery.successRate === null">—</span>
         </div>
-        <div class="qualityItem">
-          <span class="qualityLabel">Personalization</span>
-          <span class="qualityScore">{{ avgPersonalization }}<span class="qualityMax">/5</span></span>
+        <div class="healthItem">
+          <span class="kvLabel">Failures</span>
+          <span class="kvValue" [class.bad]="s.delivery.failed > 0">{{ s.delivery.failed }}</span>
+        </div>
+        <div class="healthItem">
+          <span class="kvLabel">Window</span>
+          <span class="kvValue">last {{ s.delivery.windowSize }}</span>
         </div>
       </div>
-      <p class="emptyNote" *ngIf="qualitySampleCount === 0">No quality data yet.</p>
-      <p class="sampleNote" *ngIf="qualitySampleCount > 0">Based on {{ qualitySampleCount }} scored gists.</p>
-    </div>
 
-    <!-- Row 4: Delivery stats -->
-    <div class="card deliveryCard" *ngIf="deliveryKeys().length > 0">
-      <h2>Delivery (last 20 gists)</h2>
-      <table class="deliveryTable">
+      <table class="dataTable" *ngIf="deliveryKeys().length > 0">
         <thead>
           <tr>
             <th>Method</th>
-            <th>Total</th>
-            <th>Delivered</th>
-            <th>Failed</th>
+            <th class="num">Total</th>
+            <th class="num">Delivered</th>
+            <th class="num">Failed</th>
+            <th class="num">Queued</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let method of deliveryKeys()">
-            <td>{{ method }}</td>
-            <td>{{ deliveryStats[method].total }}</td>
-            <td class="ok">{{ deliveryStats[method].delivered }}</td>
-            <td [class.bad]="deliveryStats[method].failed > 0">{{ deliveryStats[method].failed }}</td>
+          <tr *ngFor="let m of deliveryKeys()">
+            <td>{{ m }}</td>
+            <td class="num">{{ s.delivery.byMethod[m].total }}</td>
+            <td class="num ok">{{ s.delivery.byMethod[m].delivered }}</td>
+            <td class="num" [class.bad]="s.delivery.byMethod[m].failed > 0">{{ s.delivery.byMethod[m].failed }}</td>
+            <td class="num muted">{{ s.delivery.byMethod[m].queued }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Row 5: Recent gists -->
+    <!-- Quality self-eval -->
+    <div class="card qualityCard">
+      <h2>Quality Self-Eval</h2>
+      <div class="qualityGrid" *ngIf="s.quality.sampleCount > 0">
+        <div class="qualityItem">
+          <span class="qualityLabel">Editorial Voice</span>
+          <span class="qualityScore">{{ s.quality.editorialVoice }}<span class="qualityMax">/5</span></span>
+        </div>
+        <div class="qualityItem">
+          <span class="qualityLabel">Cross-reference</span>
+          <span class="qualityScore">{{ s.quality.crossReferenceDepth }}<span class="qualityMax">/5</span></span>
+        </div>
+        <div class="qualityItem">
+          <span class="qualityLabel">Personalization</span>
+          <span class="qualityScore">{{ s.quality.personalizationDepth }}<span class="qualityMax">/5</span></span>
+        </div>
+      </div>
+      <p class="sampleNote" *ngIf="s.quality.sampleCount > 0">Across {{ s.quality.sampleCount }} scored gists (last {{ s.delivery.windowSize }}).</p>
+      <p class="emptyNote" *ngIf="s.quality.sampleCount === 0">No quality data yet.</p>
+    </div>
+
+    <!-- User roster -->
+    <div class="card rosterCard">
+      <h2>Users</h2>
+      <table class="dataTable rosterTable" *ngIf="s.users.length > 0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Onboarded</th>
+            <th>Method</th>
+            <th>Integrations</th>
+            <th>Last active</th>
+            <th class="num">Gists</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of s.users" [class.inactive]="u.daysSinceActive === null || u.daysSinceActive > 7">
+            <td class="email">{{ u.email || '—' }}</td>
+            <td>
+              <span class="badge" [class.badgeOk]="u.onboardingComplete" [class.badgeOff]="!u.onboardingComplete">
+                {{ u.onboardingComplete ? 'Yes' : 'No' }}
+              </span>
+            </td>
+            <td>{{ u.deliveryMethod || '—' }}</td>
+            <td class="integrations">
+              <span class="dot" [class.on]="u.calendarConnected" title="Calendar">Cal</span>
+              <span class="dot" [class.on]="u.gmailConnected" title="Gmail">Gml</span>
+            </td>
+            <td class="mono">
+              <ng-container *ngIf="u.lastGeneratedDate; else neverActive">
+                {{ u.lastGeneratedDate }}
+                <span class="ago" *ngIf="u.daysSinceActive !== null">· {{ u.daysSinceActive === 0 ? 'today' : u.daysSinceActive + 'd ago' }}</span>
+              </ng-container>
+              <ng-template #neverActive><span class="muted">never</span></ng-template>
+            </td>
+            <td class="num mono">{{ u.gistIssueCount }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="emptyNote" *ngIf="s.users.length === 0">No users yet.</p>
+    </div>
+
+    <!-- Recent gists -->
     <div class="card recentCard">
       <h2>Recent Gists</h2>
-      <table class="recentTable" *ngIf="recentGists.length > 0">
+      <table class="dataTable" *ngIf="s.recentGists.length > 0">
         <thead>
           <tr>
             <th>User</th>
             <th>Date</th>
-            <th>Delivery</th>
+            <th>Method</th>
             <th>Status</th>
-            <th>Voice</th>
-            <th>X-ref</th>
-            <th>Personal</th>
+            <th class="num">Voice</th>
+            <th class="num">X-ref</th>
+            <th class="num">Personal</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let g of recentGists">
-            <td class="mono">{{ g.userId | slice:0:8 }}&hellip;</td>
+          <tr *ngFor="let g of s.recentGists">
+            <td class="email">{{ g.email || g.userId.slice(0, 8) + '…' }}</td>
             <td class="mono">{{ g.date }}</td>
-            <td>{{ g.delivery?.method || '—' }}</td>
-            <td [class.ok]="g.delivery?.status === 'delivered'" [class.bad]="g.delivery?.status === 'failed'">
-              {{ g.delivery?.status || '—' }}
-            </td>
-            <td class="mono">{{ g.qualityScore?.editorialVoice || '—' }}</td>
-            <td class="mono">{{ g.qualityScore?.crossReferenceDepth || '—' }}</td>
-            <td class="mono">{{ g.qualityScore?.personalizationDepth || '—' }}</td>
+            <td>{{ g.method || '—' }}</td>
+            <td [class.ok]="g.status === 'delivered'" [class.bad]="g.status === 'failed'">{{ g.status || '—' }}</td>
+            <td class="num mono">{{ g.editorialVoice ?? '—' }}</td>
+            <td class="num mono">{{ g.crossReferenceDepth ?? '—' }}</td>
+            <td class="num mono">{{ g.personalizationDepth ?? '—' }}</td>
           </tr>
         </tbody>
       </table>
-      <p class="emptyNote" *ngIf="recentGists.length === 0">No gists generated yet.</p>
+      <p class="emptyNote" *ngIf="s.recentGists.length === 0">No gists generated yet.</p>
     </div>
 
   </div>
