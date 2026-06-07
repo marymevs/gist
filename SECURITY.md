@@ -24,7 +24,7 @@ PII access is documented and minimized.
 | Class | Data | At-rest protection |
 |-------|------|--------------------|
 | **RESTRICTED** | OAuth access/refresh/id tokens (`users/{uid}/integrations/*`) | **AES-256-GCM encrypted** (issue #177). Never client-readable (rules `if false`). |
-| **RESTRICTED** | Gist personal-data fields — `dayItems` (calendar) and `emailCards` (inbox) in `users/{uid}/morningGists/*` | **AES-256-GCM encrypted** (issue #177). Server-only fields; the browser never reads them (it renders `renderedHtml`), so encryption is invisible to the UI. |
+| **RESTRICTED** | Gist personal-data fields in `users/{uid}/morningGists/*` — `newspaper` (the full Claude-generated brief: lede, schedule, email summaries, people), `dayItems` (calendar), `emailCards` (inbox), `firstEvent` (a calendar title) | **AES-256-GCM encrypted** (issue #177). Server-only; the browser renders `renderedHtml` and reads only two cosmetic `newspaper` fields (location/deliveryTime) as fallbacks it already prefers from prefs/schedule — so encryption is invisible to the UI. `newspaper` is the richest PII payload. |
 | **CONFIDENTIAL** | `profile.context`, `prefs.importantPeople`, `executiveFunctionStatus`, `renderedHtml`, `worldItems` (news) | Plaintext at rest. `worldItems` is public news (not PII). The others are **read back by the browser**, so encrypting would require a decrypting-function read proxy (deferred — see below). Note: `renderedHtml` still contains the calendar/email content as rendered HTML; it's an opaque blob (not an accidental-read vector in the console), so it was left plaintext. Protected by per-uid Firestore rules. |
 | **CONFIDENTIAL** | API keys (Anthropic, Resend, Google, WeatherAPI, field-encryption key, feedback-link key) | Firebase **Secret Manager**; never in code or git. |
 | **INTERNAL** | Cloud Functions logs | Avoid logging token values or raw PII (current code logs uids/dates only). |
@@ -62,9 +62,12 @@ pattern).
     `enc:v1:<iv>:<tag>:<ciphertext>`, all base64).
   - Key: `FIELD_ENCRYPTION_KEY` secret (32-byte base64). Decryption passes
     legacy plaintext through unchanged, so rollout is non-breaking.
-- **Gist personal-data fields** (`dayItems`, `emailCards`) are encrypted with the
-  same key via `encryptJson()` before the gist doc is written. The in-memory copy
-  used for email delivery stays plaintext, so encryption only affects data at rest.
+- **Gist personal-data fields** (`newspaper`, `dayItems`, `emailCards`,
+  `firstEvent`) are encrypted with the same key before the gist doc is written —
+  `newspaper` holds the richest PII (the full generated brief). The in-memory
+  copies used for email delivery + rendering stay plaintext, so encryption only
+  affects data at rest. (`renderedHtml` — the HTML render — is left plaintext as
+  an opaque, non-glanceable blob; see the rationale above.)
 - **Gist retention (data minimization)**: every gist is stamped with `expireAt`
   (generation + 7 days). A Firestore TTL policy on the `morningGists` collection
   group auto-deletes expired docs, so personal data at rest is bounded to the last

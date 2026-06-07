@@ -11,7 +11,12 @@ import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrati
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
-import { FIELD_ENCRYPTION_KEY, encryptJson } from './crypto/fieldCrypto';
+import {
+  FIELD_ENCRYPTION_KEY,
+  encryptJson,
+  encryptString,
+  decryptJson,
+} from './crypto/fieldCrypto';
 
 /** Retention window for stored gists. Drives the `expireAt` TTL field. */
 const GIST_RETENTION_DAYS = 7;
@@ -131,7 +136,11 @@ export async function generateMorningGistForUser(
       ? (existingSnap.data() as Partial<MorningGist>)
       : undefined;
 
-    const existingDayItems = normalizeDayItems(existingData?.dayItems ?? []);
+    // Stored dayItems are encrypted at rest (issue #177); decrypt before use.
+    // decryptJson passes legacy plaintext arrays through unchanged.
+    const existingDayItems = normalizeDayItems(
+      decryptJson<MorningGist['dayItems']>(existingData?.dayItems) ?? [],
+    );
     const calendarUnchanged =
       JSON.stringify(cleanDayItems) === JSON.stringify(existingDayItems);
 
@@ -253,17 +262,21 @@ export async function generateMorningGistForUser(
       expireAt: Timestamp.fromMillis(Date.now() + GIST_RETENTION_DAYS * 86_400_000),
     };
 
-    // Encrypt the personal-data fields at rest (issue #177): dayItems (calendar)
-    // and emailCards (inbox). These are server-only — the browser renders the
-    // gist from renderedHtml, never these — so encrypting them is invisible to
-    // the UI. The in-memory `gist`/cleanDayItems/cleanEmailCards stay plaintext
-    // for email delivery below. News (worldItems) and weather are public; left
-    // as-is.
+    // Encrypt the personal-data fields at rest (issue #177): the Claude-generated
+    // brief (`newspaper`) is the richest PII; `dayItems` (calendar), `emailCards`
+    // (inbox), and `firstEvent` (a calendar title) round it out. All are
+    // server-only — the browser renders from `renderedHtml` and only reads two
+    // cosmetic `newspaper` fields (location/deliveryTime) as fallbacks, which it
+    // already prefers from user prefs/schedule. The in-memory copies stay
+    // plaintext for email delivery + rendering below. News (worldItems) and
+    // weather are public; left as-is.
     await gistRef.set(
       {
         ...gist,
         dayItems: encryptJson(cleanDayItems),
         emailCards: encryptJson(cleanEmailCards),
+        ...(firstEvent !== undefined ? { firstEvent: encryptString(firstEvent) } : {}),
+        ...(newspaperData ? { newspaper: encryptJson(newspaperData) } : {}),
       },
       { merge: true },
     );
