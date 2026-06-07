@@ -283,13 +283,23 @@ export async function generateMorningGistForUser(
           : timezone.replace(/.*\//, '');
         const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
 
-        // Season estimate from month
+        // Season estimate from month (meteorological seasons)
         const month = now.getMonth(); // 0-indexed
         const season = month <= 1 || month === 11 ? 'Winter'
           : month <= 4 ? 'Spring'
           : month <= 7 ? 'Summer'
           : 'Autumn';
-        const dayOfSeason = ((month % 3) * 30) + now.getDate();
+        // Days since the season began — day 1 on the first of Dec/Mar/Jun/Sep.
+        let seasonStartMonth = 8; // Autumn (Sep)
+        let seasonStartYear = now.getFullYear();
+        if (month === 11) seasonStartMonth = 11;          // Dec → Winter began Dec 1
+        else if (month <= 1) { seasonStartMonth = 11; seasonStartYear -= 1; } // Jan/Feb → Dec 1 last year
+        else if (month <= 4) seasonStartMonth = 2;        // Spring → Mar 1
+        else if (month <= 7) seasonStartMonth = 5;        // Summer → Jun 1
+        const seasonStart = new Date(seasonStartYear, seasonStartMonth, 1);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dayOfSeason =
+          Math.floor((today.getTime() - seasonStart.getTime()) / 86_400_000) + 1;
 
         newspaperTemplateInput = {
           ...(newspaperData as unknown as import('./integrations/newspaperTypes').NewspaperGistOutput),
