@@ -86,9 +86,11 @@ function tzOffsetMs(timeZone: string, at: Date): number {
  * UTC instant. e.g. (2026, 6, 6, 7, 0, 'America/Los_Angeles') → the UTC
  * Date for 7:00 AM Pacific on that day.
  *
- * Treats the components as if UTC, then corrects by the zone's offset at
- * that instant. A single correction pass is accurate except within the
- * ~1h DST overlap, which is acceptable for delivery scheduling.
+ * Treats the components as if UTC, corrects by the zone's offset, then
+ * re-corrects using the offset at the *resolved* instant. The second pass
+ * matters on DST-transition days: the offset at the initial guess can be the
+ * pre-transition one (e.g. PST) while the real delivery time is post-transition
+ * (PDT), which would otherwise put `nextDeliveryAt` an hour off.
  */
 export function zonedWallTimeToUtc(
   year: number,
@@ -99,8 +101,14 @@ export function zonedWallTimeToUtc(
   timeZone: string,
 ): Date {
   const guessUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
-  const offset = tzOffsetMs(timeZone, new Date(guessUTC));
-  return new Date(guessUTC - offset);
+  const offset1 = tzOffsetMs(timeZone, new Date(guessUTC));
+  const utc1 = guessUTC - offset1;
+
+  // Re-evaluate the offset at the resolved instant; if it changed, we crossed a
+  // DST boundary, so recompute with the correct (post-transition) offset.
+  const offset2 = tzOffsetMs(timeZone, new Date(utc1));
+  if (offset2 === offset1) return new Date(utc1);
+  return new Date(guessUTC - offset2);
 }
 
 /**

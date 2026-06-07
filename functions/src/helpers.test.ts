@@ -262,6 +262,20 @@ describe('zonedWallTimeToUtc', () => {
     const utc = zonedWallTimeToUtc(2026, 6, 6, 7, 30, 'America/New_York');
     expect(utc.toISOString()).toBe('2026-06-06T11:30:00.000Z');
   });
+
+  // DST transition days — the offset at the naive UTC guess differs from the
+  // offset at the resolved instant, so the second correction pass is required.
+  it('handles the spring-forward day (PST→PDT) correctly', () => {
+    // 2026-03-08 is the US spring-forward day. 7:00 AM is already PDT (UTC-7).
+    const utc = zonedWallTimeToUtc(2026, 3, 8, 7, 0, 'America/Los_Angeles');
+    expect(utc.toISOString()).toBe('2026-03-08T14:00:00.000Z');
+  });
+
+  it('handles the fall-back day (PDT→PST) correctly', () => {
+    // 2026-11-01 is the US fall-back day. 7:00 AM is already PST (UTC-8).
+    const utc = zonedWallTimeToUtc(2026, 11, 1, 7, 0, 'America/Los_Angeles');
+    expect(utc.toISOString()).toBe('2026-11-01T15:00:00.000Z');
+  });
 });
 
 // ── computeNextDeliveryDate ─────────────────────────────────────────────────
