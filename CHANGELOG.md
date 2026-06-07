@@ -11,6 +11,33 @@ All notable changes to this project will be documented in this file.
 ### Notes
 - The hardcoded-moon regression in `generatePdf`'s `buildTemplateInput` (issue #101 P2) is still live and tracked separately — to be fixed in its own change.
 
+## [0.7.0.0] - 2026-06-07
+
+Phase 1 of the ship plan — generation-quality compression + Danny's ship via email-to-print. The first external user receives a personalized morning newspaper on paper. The system is doing the work, not the founder.
+
+### Added
+- **Email delivery from `mygist.app`** — SPF/DKIM verified in Resend, so Gist sends from the real domain rather than the Resend onboarding sender (1.2).
+- **`importantPeople` field on `UserPrefs`** — structured people-who-matter context (name, relationship, optional email). `vipSenders` was collapsed into it at the prompt level, and it reads as context rather than a sender filter (1.6).
+- **Expanded questionnaire baked into onboarding** — the free-text self-description inputs are captured at signup (1.10, #156).
+- **Profile-context derivation (`profile.contextDerived`)** — a Firestore trigger parses each user's free-text self-description into a light `{ work, freeTime, creative, misc }` structure via Claude, fed into the generation prompt to scaffold personalization. The untrusted description is sandboxed in `<self_description>` tags with prompt-injection guards; a `parserVersion` lets stale derivations be re-run later (#156).
+- **First external user (Danny)** onboarded and receiving Gist daily via email-to-print (1.11).
+
+### Changed
+- Rewrote the Claude system prompt for visible personalization + a helper voice (1.7).
+- Wired existing onboarding inputs (`topics`, `rhythms`, `city`, `importantPeople`) through to the prompt context, fixing several years-old data-flow bugs — these inputs were collected at signup but never reached generation (1.6).
+- Wired `tone` into the system prompt — previously dead data (1.5).
+
+### Fixed
+- `memoryContext` now properly wrapped in `<memory>` tags per the system-prompt contract (1.4).
+- Page 2 (reflection) now renders in the email template — was missing entirely (Issue #119).
+
+### Removed
+- `oneThing` field removed from types, schema, prompt, and UI everywhere (Issue #148).
+
+### Notes
+- Danny is the first user not named Mary to use Gist daily.
+- Print is the experience from Day 1 — Gmail filter → printer's email-to-print address. The SBC daemon, for users without an email-to-print printer, is future work (Phase 8 of `SHIP_PLAN.md`).
+
 ## [0.6.0.0] - 2026-05-23
 
 Phase 6 (onboarding slim-down + docs rewrite). Closes out the prune-and-realign plan. The product story now matches the code — every sentence in DESIGN.md and README describes what's actually running. Onboarding's last commerce remnant is gone; delivery time picker no longer pretends mornings are the only valid choice.
