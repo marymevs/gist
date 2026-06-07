@@ -151,4 +151,6 @@ export type MorningGist = {
   };
 
   createdAt: Timestamp;
+  /** TTL field (issue #177). Firestore auto-deletes the doc after this instant. */
+  expireAt?: Timestamp;
 };

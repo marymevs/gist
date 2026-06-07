@@ -13,6 +13,9 @@ import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
 import { FIELD_ENCRYPTION_KEY, encryptJson } from './crypto/fieldCrypto';
 
+/** Retention window for stored gists. Drives the `expireAt` TTL field. */
+const GIST_RETENTION_DAYS = 7;
+
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
@@ -244,6 +247,10 @@ export async function generateMorningGistForUser(
         status: 'queued',
       },
       createdAt: Timestamp.now(),
+      // Data minimization (issue #177): gists hold personal data and only need
+      // to live as long as the user reads today's brief. A Firestore TTL policy
+      // on `expireAt` auto-deletes them after the retention window.
+      expireAt: Timestamp.fromMillis(Date.now() + GIST_RETENTION_DAYS * 86_400_000),
     };
 
     // Encrypt the personal-data fields at rest (issue #177): dayItems (calendar)

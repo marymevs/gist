@@ -65,6 +65,10 @@ pattern).
 - **Gist personal-data fields** (`dayItems`, `emailCards`) are encrypted with the
   same key via `encryptJson()` before the gist doc is written. The in-memory copy
   used for email delivery stays plaintext, so encryption only affects data at rest.
+- **Gist retention (data minimization)**: every gist is stamped with `expireAt`
+  (generation + 7 days). A Firestore TTL policy on the `morningGists` collection
+  group auto-deletes expired docs, so personal data at rest is bounded to the last
+  ~7 days instead of accumulating forever. Encrypted while alive, gone after.
 - **Email-feedback links** are HMAC-SHA256 signed (`FEEDBACK_LINK_SECRET`); the
   unauthenticated `/emailFeedback` endpoint rejects unsigned/forged links so
   feedback can't be forged for an arbitrary uid (memory-poisoning).
@@ -113,11 +117,20 @@ npx tsx scripts/migrate-encrypt-tokens.ts --apply    # write
 # Existing gists (dayItems / emailCards):
 npx tsx scripts/migrate-encrypt-gists.ts             # dry run
 npx tsx scripts/migrate-encrypt-gists.ts --apply     # write
+# Enforce 7-day retention on the backlog (DELETES gists older than 7 days,
+# stamps recent ones with expireAt). ⚠️ destructive — dry-run first.
+npx tsx scripts/enforce-gist-retention.ts            # dry run
+npx tsx scripts/enforce-gist-retention.ts --apply    # delete + stamp
 gcloud scheduler jobs resume firebase-schedule-generateMorningGist-us-central1 \
   --location us-central1
 
-# 5. Verify in the console: integration docs show enc:v1:… for token fields,
-#    and morningGists show enc:v1:… for dayItems / emailCards.
+# 5. Enable the Firestore TTL policy so future gists auto-delete at expireAt:
+gcloud firestore fields ttls update expireAt \
+  --collection-group=morningGists --enable-ttl --project=gist-ab4e8
+
+# 6. Verify in the console: integration docs show enc:v1:… for token fields,
+#    morningGists show enc:v1:… for dayItems / emailCards, carry an expireAt,
+#    and nothing older than 7 days remains.
 ```
 
 ## Audit trail
