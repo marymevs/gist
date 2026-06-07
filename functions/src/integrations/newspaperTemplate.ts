@@ -2,10 +2,8 @@
  * Newspaper-style HTML template for the morning Gist.
  *
  * 2-page broadsheet layout: Fraunces + IBM Plex Sans/Mono.
- * This is the canonical web/print artifact: rendered at generation time, stored
- * on the gist doc as `renderedHtml`, shown on /today in an <iframe>, and printed
- * via the browser (the @media print rules produce the paginated broadsheet).
- * For email delivery, see newspaperEmailTemplate.ts (responsive, email-safe).
+ * Used for print, PDF, and web preview.
+ * For email delivery, see newspaperEmailTemplate.ts (table-based).
  *
  * Design reference: gist-sample-riley.html, gist-sample-jordan.html
  */
@@ -137,41 +135,8 @@ const CSS = `
   p { margin-bottom: 4pt; }
   p:last-child { margin-bottom: 0; }
 
-  /* PRINT — authoritative broadsheet. The base rules above already encode the
-     2-column @page Letter layout + page-break-before between .page blocks, so a
-     browser "Print" of this document yields the properly paginated newspaper. */
   @media print { body { background: white; } }
-
-  /* SCREEN — the in-app /today preview (rendered inside an <iframe srcdoc>).
-     .page is fluid here; printing still uses the fixed broadsheet geometry. */
-  @media screen {
-    body { padding: 24px; background: #e7e5e4; }
-    .page {
-      width: 100%;
-      max-width: 7in;
-      background: var(--paper);
-      padding: 0.55in 0.65in;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
-      margin: 0 auto 24px;
-    }
-  }
-
-  /* NARROW SCREENS (phones reading /today): collapse to a single column, trim
-     the desk-surround chrome, and nudge type up for comfortable on-screen reading.
-     None of this affects print — @media print is untouched. */
-  @media screen and (max-width: 680px) {
-    body { padding: 0; background: var(--paper); font-size: 10pt; }
-    .page { padding: 22px 18px; box-shadow: none; margin-bottom: 0; }
-    .cols { display: block; }
-    .c + .c {
-      border-left: none; margin-left: 0; padding-left: 0;
-      border-top: 0.5pt solid var(--rule); margin-top: 12pt; padding-top: 12pt;
-    }
-    .lede h2 { font-size: 18pt; }
-    .lede p { font-size: 10.5pt; }
-    .sm, .nt-body, .nw p, .ev-note { font-size: 9pt; }
-    .ev-name { font-size: 9.5pt; }
-  }
+  @media screen { body { padding: 24px; background: #e7e5e4; } .page { background: var(--paper); padding: 0.55in 0.65in; box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04); margin-bottom: 24px; } }
 `;
 
 // ─── Page 1: The Briefing ───────────────────────────────────────────────────
@@ -403,7 +368,8 @@ function page2(input: NewspaperTemplateInput): string {
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 /**
- * Build the complete 2-page newspaper HTML — the web/print artifact.
+ * Build the complete 2-page newspaper HTML.
+ * Used for print, PDF, and web preview.
  */
 export function buildNewspaperHtml(input: NewspaperTemplateInput): string {
   return `<!DOCTYPE html>

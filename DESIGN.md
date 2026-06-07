@@ -118,7 +118,9 @@ The delivered Gist uses a separate typographic and color system optimized for pr
 There are two rendered surfaces, both generated server-side from the **same** structured input (`NewspaperTemplateInput`) so they never drift in content:
 
 - **Web/print artifact** (`newspaperTemplate.ts`): the full Fraunces/IBM Plex broadsheet. Rendered at generation time, stored on the gist doc as `renderedHtml`, shown on `/today` inside an `<iframe>`, and printed via the browser — its `@media print` + `@page` rules produce the paginated 2-page newspaper. This is the canonical artifact (it replaced the old print-to-PDF endpoint).
-- **Email body** (`newspaperEmailTemplate.ts`): a responsive, single-column, email-safe rendering for inbox reading on any device. Same content, lighter presentation; no page-break logic.
+- **Email body** (`newspaperEmailTemplate.ts`): an email-safe, table-based rendering for inbox reading. Same content, lighter presentation.
+
+> A "feels-like-paper" layout pass — making both surfaces read as a bounded sheet (not an infinite scroll) across mobile/desktop/email — is tracked as separate work.
 
 ### Typography (Output)
 - **Display/Masthead:** Fraunces 800, 46pt, -0.03em tracking. Optical sizing 9–144.
@@ -211,4 +213,4 @@ Same rendered artifact, different transport — the template system is transport
 | 2026-03-31 | Personal countdowns in rhythms bar | User prefs get countdown: { label, targetDate }. Displayed alongside moon, season, daylight in the rhythms bar. |
 | 2026-03-31 | Issue numbers tracked per user | gistIssueCount on user doc, incremented per generation. Masthead shows "Vol. I · No. {count}". |
 | 2026-05-21 | Pruned fax + Stripe; realigned to email-to-print | Removed the fax-back loop, Phaxio integration, and Stripe billing layer. Primary delivery is now email-to-print via Resend; an SBC daemon is the future path for printers without email support. Same paper artifact, different transport. |
-| 2026-06-07 | Removed PDF generation; unified rendering on two surfaces (#174) | Ripped out the `generateGistPdf` endpoint (it only emitted print-CSS HTML, never a real PDF, and there's no email-to-print path yet). Collapsed three drifting renderers to two server-rendered surfaces from one input: the Fraunces/IBM Plex broadsheet (`newspaperTemplate.ts`) is the canonical web/print artifact, stored as `renderedHtml` and shown on `/today` in an `<iframe>` (Print prints the iframe → paginated broadsheet); the email body (`newspaperEmailTemplate.ts`) became responsive single-column. Deleted the Angular `np()` re-derivation that was the worst drift source. |
+| 2026-06-07 | Removed PDF generation; `/today` renders the canonical artifact (#174) | Ripped out the `generateGistPdf` endpoint (it only emitted print-CSS HTML, never a real PDF, and there's no email-to-print path yet). `/today` now renders the server-generated broadsheet (`newspaperTemplate.ts`), stored on the gist doc as `renderedHtml`, inside an `<iframe>` instead of re-deriving the sections in Angular (deleted the `np()` re-derivation, the worst drift source). Print prints the iframe → paginated broadsheet. The responsive "feels-like-paper" layout for web + email is deferred to a follow-up. |
