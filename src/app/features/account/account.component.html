@@ -42,27 +42,106 @@
 
         <div>
           <label class="sub" style="display: block; margin-bottom: 6px">
-            VIP senders
+            Important people
           </label>
-          <input
-            #vipInput
-            class="textInput"
-            type="text"
-            placeholder="ceo@company.com, partner@email.com"
-            [value]="(user.prefs?.email?.vipSenders || []).join(', ')"
-          />
-          <div class="sub" style="margin-top: 6px">
-            Comma-separated emails. VIPs get a hard boost in the signal score.
-          </div>
-          <button
-            class="secondary"
-            type="button"
-            style="margin-top: 8px"
-            (click)="onSaveVipSenders(user, vipInput.value)"
-            [disabled]="isSavingVipSenders"
-          >
-            {{ isSavingVipSenders ? "Saving…" : "Save VIPs" }}
-          </button>
+
+          <!-- Display mode -->
+          <ng-container *ngIf="!isEditingImportantPeople">
+            <div class="kv" style="grid-template-columns: 1fr">
+              <b>{{ importantPeopleLabel(user) }}</b>
+            </div>
+            <div class="sub" style="margin-top: 6px">
+              Who matters in your life. People with an email get a hard boost in
+              the signal score.
+            </div>
+            <button
+              class="secondary"
+              type="button"
+              style="margin-top: 8px"
+              (click)="onEditImportantPeople(user)"
+            >
+              Edit important people
+            </button>
+          </ng-container>
+
+          <!-- Edit mode -->
+          <ng-container *ngIf="isEditingImportantPeople">
+            <div
+              *ngFor="let person of editImportantPeople; let i = index"
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr auto;
+                gap: 6px;
+                margin-bottom: 6px;
+                align-items: center;
+              "
+            >
+              <input
+                class="textInput"
+                type="text"
+                placeholder="Name"
+                [(ngModel)]="person.name"
+                aria-label="Name"
+              />
+              <input
+                class="textInput"
+                type="text"
+                placeholder="Relationship"
+                [(ngModel)]="person.relationship"
+                aria-label="Relationship"
+              />
+              <input
+                class="textInput"
+                type="email"
+                placeholder="email (optional)"
+                [(ngModel)]="person.email"
+                aria-label="Email"
+              />
+              <button
+                class="secondary"
+                type="button"
+                (click)="removeImportantPerson(i)"
+                aria-label="Remove person"
+                title="Remove"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              class="secondary"
+              type="button"
+              style="margin-top: 4px"
+              (click)="addImportantPerson()"
+              [disabled]="editImportantPeople.length >= 30"
+            >
+              + Add person
+            </button>
+
+            <div class="sub" style="margin-top: 6px">
+              Name required; relationship and email optional. People with an
+              email get a hard boost in the signal score.
+            </div>
+
+            <div style="margin-top: 8px; display: flex; gap: 8px">
+              <button
+                class="secondary"
+                type="button"
+                (click)="onSaveImportantPeople(user)"
+                [disabled]="isSavingImportantPeople"
+              >
+                {{ isSavingImportantPeople ? "Saving…" : "Save" }}
+              </button>
+              <button
+                class="secondary"
+                type="button"
+                (click)="onCancelImportantPeople()"
+                [disabled]="isSavingImportantPeople"
+              >
+                Cancel
+              </button>
+            </div>
+          </ng-container>
         </div>
       </div>
 

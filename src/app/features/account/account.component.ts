@@ -58,8 +58,13 @@ export class AccountComponent {
   authUser$ = user(this.auth);
   isConnectingCalendar = false;
   isConnectingGmail = false;
-  isSavingVipSenders = false;
+  isSavingImportantPeople = false;
   isSavingPreferences = false;
+
+  // Important people edit mode
+  isEditingImportantPeople = false;
+  editImportantPeople: { name: string; relationship: string; email: string }[] =
+    [];
 
   // Preferences edit mode
   isEditingPreferences = false;
@@ -204,34 +209,73 @@ export class AccountComponent {
     }
   }
 
-  async onSaveVipSenders(user: GistUser, raw: string): Promise<void> {
-    if (this.isSavingVipSenders) return;
+  // --- Important people ---
+
+  /** Comma-joined names for the read-only summary. */
+  importantPeopleLabel(user: GistUser): string {
+    const people = user.prefs?.importantPeople ?? [];
+    if (people.length === 0) return 'None yet';
+    return people.map((p) => p.name).join(', ');
+  }
+
+  onEditImportantPeople(user: GistUser): void {
+    this.editImportantPeople = (user.prefs?.importantPeople ?? []).map((p) => ({
+      name: p.name ?? '',
+      relationship: p.relationship ?? '',
+      email: p.email ?? '',
+    }));
+    if (this.editImportantPeople.length === 0) this.addImportantPerson();
+    this.isEditingImportantPeople = true;
+  }
+
+  addImportantPerson(): void {
+    if (this.editImportantPeople.length >= 30) return;
+    this.editImportantPeople.push({ name: '', relationship: '', email: '' });
+  }
+
+  removeImportantPerson(index: number): void {
+    this.editImportantPeople.splice(index, 1);
+  }
+
+  onCancelImportantPeople(): void {
+    this.isEditingImportantPeople = false;
+  }
+
+  async onSaveImportantPeople(user: GistUser): Promise<void> {
+    if (this.isSavingImportantPeople) return;
     if (!user?.uid) {
-      this.toast.show('Sign in to save VIP senders.', 'error');
+      this.toast.show('Sign in to save important people.', 'error');
       return;
     }
 
-    const vipSenders = Array.from(
-      new Set(
-        raw
-          .split(/[,;\n]+/)
-          .map((entry) => entry.trim().toLowerCase())
-          .filter((entry) => entry && entry.includes('@')),
-      ),
-    ).slice(0, 30);
+    // Name is required; relationship and email are optional. An email only
+    // counts (and becomes a VIP sender) if it looks like an address.
+    const people = this.editImportantPeople
+      .map((p) => {
+        const email = p.email.trim().toLowerCase();
+        const entry: { name: string; relationship: string; email?: string } = {
+          name: p.name.trim(),
+          relationship: p.relationship.trim(),
+        };
+        if (email.includes('@')) entry.email = email;
+        return entry;
+      })
+      .filter((p) => p.name)
+      .slice(0, 30);
 
-    this.isSavingVipSenders = true;
+    this.isSavingImportantPeople = true;
     try {
-      await this.accountData.updateEmailVipSenders(user.uid, vipSenders);
-      this.toast.show('VIP senders saved.', 'success');
+      await this.accountData.updateImportantPeople(user.uid, people);
+      this.isEditingImportantPeople = false;
+      this.toast.show('Important people saved.', 'success');
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Unable to save VIP senders right now.';
+          : 'Unable to save important people right now.';
       this.toast.show(message, 'error');
     } finally {
-      this.isSavingVipSenders = false;
+      this.isSavingImportantPeople = false;
     }
   }
 

@@ -12,6 +12,7 @@ export const gmailConnector: Connector<EmailCard[]> = {
         userId: ctx.userId,
         userEmail: ctx.userEmail,
         prefs: ctx.prefs?.email,
+        importantPeople: ctx.prefs?.importantPeople,
         now: ctx.now,
       });
       return { data: cards, status: 'ok' };

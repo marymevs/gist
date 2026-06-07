@@ -74,15 +74,21 @@ export class AccountDataService {
     await setDoc(ref, patch, { merge: true });
   }
 
-  async updateEmailVipSenders(uid: string, vipSenders: string[]): Promise<void> {
+  /**
+   * Single source of truth for important people. Entries with an email double
+   * as VIP senders for the Gmail fetch layer. The array is replaced wholesale
+   * (Firestore merges maps, not arrays), so callers pass the full list.
+   */
+  async updateImportantPeople(
+    uid: string,
+    importantPeople: { name: string; relationship: string; email?: string }[],
+  ): Promise<void> {
     const ref = doc(this.firestore, 'users', uid);
     await setDoc(
       ref,
       {
         prefs: {
-          email: {
-            vipSenders,
-          },
+          importantPeople,
         },
         updatedAt: serverTimestamp(),
       },
