@@ -136,6 +136,13 @@ export type MorningGist = {
   /** Newspaper-format output (structured JSON from Claude). Stored for template rendering. */
   newspaper?: Record<string, unknown>;
 
+  /**
+   * Server-rendered broadsheet artifact HTML (the web/print view). Rendered from
+   * the same NewspaperTemplateInput as the email, so the surfaces never drift.
+   * /today renders this in an <iframe srcdoc>; Print prints the iframe.
+   */
+  renderedHtml?: string;
+
   delivery: {
     method: DeliveryMethod;
     pages: number;

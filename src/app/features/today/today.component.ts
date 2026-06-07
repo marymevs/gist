@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { doc, docData } from '@angular/fire/firestore';
 
@@ -30,57 +31,6 @@ type EmailCard = {
   suggestedNextStep?: string;
 };
 
-type NewspaperData = {
-  lede?: { kicker?: string; headline?: string; paragraph?: string };
-  schedule?: Array<{
-    time?: string;
-    emoji?: string;
-    name?: string;
-    note?: string;
-  }>;
-  notifications?: Array<{ emoji?: string; source?: string; body?: string }>;
-  goodNews?: Array<{ headline?: string; summary?: string }>;
-  people?: Array<{ name?: string; nudge?: string }>;
-  quote?: { text?: string; attribution?: string };
-  bodyMind?: {
-    sectionLabel?: string;
-    title?: string;
-    paragraphs?: string[];
-    coachingNote?: string;
-  };
-  practiceArc?: {
-    sectionLabel?: string;
-    title?: string;
-    items?: Array<{ label?: string; text?: string }>;
-    closingNote?: string;
-  };
-  moonHighlight?: { title?: string; paragraph?: string };
-  closingThought?: string;
-  personalQuote?: { text?: string; attribution?: string };
-};
-
-type NewspaperMeta = {
-  subscriberName?: string;
-  location?: string;
-  dateFormatted?: string;
-  deliveryTime?: string;
-  volumeIssue?: string;
-  weather?: {
-    tempNow?: string;
-    conditions?: string;
-    forecast?: Array<{ day?: string; high?: string; condition?: string }>;
-  };
-  rhythms?: {
-    moon?: string;
-    season?: string;
-    light?: string;
-    countdown?: string;
-  };
-  moonFooter?: string;
-  seasonFooter?: string;
-  intentionPrompt?: string;
-};
-
 type MorningGist = {
   id: string;
   userId: string;
@@ -95,7 +45,15 @@ type MorningGist = {
   worldItems: WorldItem[];
   emailCards: EmailCard[];
 
-  newspaper?: NewspaperData & NewspaperMeta;
+  /**
+   * Server-rendered broadsheet artifact (the web/print view). Rendered from the
+   * same input as the email so the surfaces never drift. Shown in an <iframe>
+   * and printed via the browser.
+   */
+  renderedHtml?: string;
+
+  /** Minimal meta still read for the toolbar/sidebar header text. */
+  newspaper?: { location?: string; deliveryTime?: string };
 
   delivery?: {
     method: 'web' | 'email';
@@ -170,12 +128,19 @@ export class TodayComponent {
   private datePipe = inject(DatePipe);
   private functions = inject(Functions);
   private toast = inject(ToastService);
+  private sanitizer = inject(DomSanitizer);
+
+  /** The <iframe> that renders the broadsheet artifact (for print + auto-height). */
+  @ViewChild('artifact') private artifactRef?: ElementRef<HTMLIFrameElement>;
 
   // UI state
-  hasGistToday = false;
-  pdfLoading = false;
   isGenerating = false;
   isResending = false;
+
+  // Memoize the trusted srcdoc so change detection doesn't re-sanitize (and
+  // reload the iframe) on every tick.
+  private lastHtml: string | null = null;
+  private lastSafeDoc: SafeHtml | null = null;
 
   // Toolbar / sidebar text — derived from gist$ in constructor
   metaText = '—';
@@ -232,42 +197,49 @@ export class TodayComponent {
         this.metaText = metaText;
         this.statusText = statusText;
       });
+  }
 
-    // Track whether a gist exists for today (controls PDF button state)
-    this.gist$.subscribe((gist) => {
-      this.hasGistToday = !!gist;
-    });
+  // === Artifact rendering (web/print) ===
+
+  /**
+   * Trust the server-rendered artifact HTML for the iframe srcdoc. The template
+   * escapes every interpolated field server-side, so this is safe; we only call
+   * it on our own generated output. Memoized so re-renders don't reload the iframe.
+   */
+  safeDoc(html: string): SafeHtml {
+    if (html !== this.lastHtml) {
+      this.lastHtml = html;
+      this.lastSafeDoc = this.sanitizer.bypassSecurityTrustHtml(html);
+    }
+    return this.lastSafeDoc as SafeHtml;
+  }
+
+  /** Size the iframe to its content so the brief has no inner scrollbar. */
+  onArtifactLoad(): void {
+    const frame = this.artifactRef?.nativeElement;
+    const doc = frame?.contentWindow?.document;
+    if (!frame || !doc?.body) return;
+    const resize = () => {
+      frame.style.height = `${doc.body.scrollHeight}px`;
+    };
+    resize();
+    try {
+      new ResizeObserver(resize).observe(doc.body);
+    } catch {
+      // ResizeObserver unsupported — the initial sizing still applies.
+    }
   }
 
   // === UI actions ===
   onPrint(): void {
-    window.print();
-  }
-
-  async onDownloadPdf(): Promise<void> {
-    if (!this.hasGistToday || this.pdfLoading) return;
-    this.pdfLoading = true;
-    try {
-      const token = await this.auth.currentUser?.getIdToken();
-      if (!token) return;
-      const response = await fetch('/api/generateGistPdf', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        alert("PDF couldn't be generated.");
-        return;
-      }
-      const html = await response.text();
-      // Open in new tab for print-to-PDF
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-      }
-    } catch {
-      alert("PDF couldn't be generated.");
-    } finally {
-      this.pdfLoading = false;
+    // Print the artifact iframe so the broadsheet @media print / @page rules
+    // produce the paginated newspaper — not the surrounding app shell.
+    const win = this.artifactRef?.nativeElement?.contentWindow;
+    if (win) {
+      win.focus();
+      win.print();
+    } else {
+      window.print();
     }
   }
 
@@ -330,117 +302,6 @@ export class TodayComponent {
     });
   }
 
-  // === Newspaper view model ===
-  /** Normalize gist data into the broadsheet view model.
-   *  If newspaper data exists, use it. Otherwise build from legacy fields. */
-  np(gist: MorningGist) {
-    const n = gist.newspaper;
-    if (n?.lede) {
-      // Full newspaper data — use as-is with defaults
-      return {
-        subscriberName: n.subscriberName || 'You',
-        location: n.location || 'Your City',
-        dateFormatted: n.dateFormatted || this.prettyDateFromDateKey(gist.date),
-        deliveryTime: n.deliveryTime || '',
-        volumeIssue: n.volumeIssue || '',
-        weather: {
-          tempNow: n.weather?.tempNow || '—',
-          conditions: n.weather?.conditions || gist.weatherSummary || '',
-          forecast: n.weather?.forecast || [],
-        },
-        rhythms: n.rhythms || { moon: '', season: '', light: '' },
-        lede: n.lede,
-        schedule: n.schedule || [],
-        goodNews: n.goodNews || [],
-        notifications: n.notifications || [],
-        people: n.people || [],
-        quote: n.quote,
-        bodyMind: n.bodyMind,
-        practiceArc: n.practiceArc,
-        moonHighlight: n.moonHighlight,
-        closingThought: n.closingThought || '',
-        personalQuote: n.personalQuote,
-        moonFooter: n.moonFooter || '',
-        seasonFooter: n.seasonFooter || '',
-        intentionPrompt:
-          n.intentionPrompt ||
-          'What would make today feel complete — not just productive, but good?',
-        hasPage2: !!(n.bodyMind || n.practiceArc),
-      };
-    }
-
-    // Legacy fallback — build newspaper-shaped data from old fields
-    return {
-      subscriberName: 'You',
-      location: 'Your City',
-      dateFormatted: this.prettyDateFromDateKey(gist.date),
-      deliveryTime: '',
-      volumeIssue: '',
-      weather: {
-        tempNow: gist.weatherSummary?.match(/\d+°/)?.[0] || '—',
-        conditions: gist.weatherSummary || '',
-        forecast: [] as Array<{
-          day?: string;
-          high?: string;
-          condition?: string;
-        }>,
-      },
-      rhythms: { moon: gist.moonPhase || '', season: '', light: '' } as {
-        moon: string;
-        season: string;
-        light: string;
-        countdown?: string;
-      },
-      lede: {
-        kicker: 'Good Morning',
-        headline: gist.newspaper?.lede?.headline || 'Your Daily Briefing',
-        paragraph: gist.newspaper?.lede?.paragraph || '',
-      },
-      schedule: (gist.dayItems || []).map((d) => ({
-        time: d.time || '',
-        emoji: '',
-        name: d.title,
-        note: d.note || '',
-      })),
-      goodNews: (gist.worldItems || []).map((w) => ({
-        headline: w.headline,
-        summary: w.implication,
-      })),
-      notifications: (gist.emailCards || []).map((e) => ({
-        emoji:
-          e.category === 'Action'
-            ? '📧'
-            : e.category === 'WaitingOn'
-              ? '⏳'
-              : '📋',
-        source: e.fromName || e.fromEmail || e.subject,
-        body:
-          e.snippet + (e.suggestedNextStep ? ` → ${e.suggestedNextStep}` : ''),
-      })),
-      people: [] as Array<{ name: string; nudge: string }>,
-      quote: null as { text: string; attribution: string } | null,
-      bodyMind: null as {
-        sectionLabel: string;
-        title: string;
-        paragraphs: string[];
-        coachingNote?: string;
-      } | null,
-      practiceArc: null as {
-        sectionLabel: string;
-        title: string;
-        items: Array<{ label: string; text: string }>;
-        closingNote?: string;
-      } | null,
-      moonHighlight: null as { title: string; paragraph: string } | null,
-      closingThought: '',
-      personalQuote: null as { text: string; attribution: string } | null,
-      moonFooter: gist.moonPhase || '',
-      seasonFooter: '',
-      intentionPrompt:
-        'What would make today feel complete — not just productive, but good?',
-      hasPage2: false,
-    };
-  }
 
   // === Helpers ===
   private computeHeaderText(

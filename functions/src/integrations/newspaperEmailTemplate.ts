@@ -1,13 +1,15 @@
 /**
- * Email-safe newspaper template for the morning Gist.
+ * Email body for the morning Gist — responsive, single-column, email-safe.
  *
- * Table-based layout with inline styles for Gmail/Outlook/Apple Mail.
- * No CSS variables, no flexbox, no grid, no @import.
- * Fonts: web-safe fallbacks (Georgia, Arial, Courier New) since
- * Gmail strips @import and <link> in <head>.
+ * Table-based with inline styles for Gmail/Outlook/Apple Mail. One fluid column
+ * (max-width 600, width 100%) that reads cleanly on phones — no fixed-width
+ * multi-column grid, so there's no "random whitespace" and no horizontal scroll.
+ * No @page / page-break logic: the inbox copy is for reading. The paginated,
+ * printable broadsheet is the web/print artifact (see newspaperTemplate.ts),
+ * shown on /today and printed from there.
  *
- * Design: preserves the editorial feel of the newspaper template
- * within email-client constraints.
+ * Fonts: web-safe fallbacks (Georgia, Arial, Courier New) since Gmail strips
+ * @import and <link> in <head>.
  */
 
 import type { NewspaperTemplateInput } from './newspaperTypes';
@@ -33,6 +35,25 @@ function esc(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** A full-width row holding one stacked section. */
+function row(inner: string): string {
+  return `<tr><td style="padding:0;">${inner}</td></tr>`;
+}
+
+/** Thin divider row between sections. */
+function divider(): string {
+  return `<tr><td style="padding:0;"><div style="border-top:1px solid ${C.rule};margin:14px 0;"></div></td></tr>`;
+}
+
+/** Heavy section break (mirrors the broadsheet's 2pt ink rules). */
+function heavyBreak(): string {
+  return `<tr><td style="padding:0;"><div style="border-top:2px solid ${C.ink};margin:16px 0 12px;"></div></td></tr>`;
+}
+
+function sectionLabel(text: string): string {
+  return `<div style="font-family:Courier New,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.warm};margin-bottom:6px;">${esc(text)}</div>`;
 }
 
 // ─── sections ────────────────────────────────────────────────────────────────
@@ -65,34 +86,36 @@ function weatherEmail(input: NewspaperTemplateInput): string {
     )
     .join('');
 
+  const forecast = forecastCells
+    ? `<td style="text-align:right;vertical-align:baseline;"><table cellpadding="0" cellspacing="0" border="0"><tr>${forecastCells}</tr></table></td>`
+    : '';
+
   return `
     <tr><td style="padding:8px 0 6px;border-bottom:1px solid ${C.rule};">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="font-family:Georgia,serif;font-size:24px;color:${C.ink};vertical-align:baseline;">${esc(input.weather.tempNow)}</td>
-          <td style="font-size:12px;color:${C.mid};vertical-align:baseline;padding-left:10px;">${esc(input.weather.conditions)}</td>
-          <td style="text-align:right;vertical-align:baseline;">
-            <table cellpadding="0" cellspacing="0" border="0"><tr>${forecastCells}</tr></table>
-          </td>
+          <td style="font-family:Georgia,serif;font-size:24px;color:${C.ink};vertical-align:baseline;white-space:nowrap;">${esc(input.weather.tempNow)}</td>
+          <td style="font-size:12px;color:${C.mid};vertical-align:baseline;padding-left:10px;width:100%;">${esc(input.weather.conditions)}</td>
+          ${forecast}
         </tr>
       </table>
     </td></tr>`;
 }
 
 function rhythmsEmail(input: NewspaperTemplateInput): string {
+  const label = (t: string) =>
+    `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(t)}</b>`;
   const items = [
-    `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">Moon</b> ${esc(input.rhythms.moon)}`,
-    `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">Season</b> ${esc(input.rhythms.season)}`,
-    `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">Light</b> ${esc(input.rhythms.light)}`,
+    `${label('Moon')} ${esc(input.rhythms.moon)}`,
+    `${label('Season')} ${esc(input.rhythms.season)}`,
+    `${label('Light')} ${esc(input.rhythms.light)}`,
   ];
   if (input.rhythms.countdown) {
     const parts = input.rhythms.countdown.split(' ');
-    items.push(
-      `<b style="font-family:Courier New,monospace;font-size:9px;font-weight:normal;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(parts[0])}</b> ${esc(parts.slice(1).join(' '))}`,
-    );
+    items.push(`${label(parts[0])} ${esc(parts.slice(1).join(' '))}`);
   }
   return `
-    <tr><td style="padding:4px 0;border-bottom:1px solid ${C.rule};font-size:11px;color:${C.mid};line-height:1.6;">
+    <tr><td style="padding:6px 0;border-bottom:1px solid ${C.rule};font-size:11px;color:${C.mid};line-height:1.8;">
       ${items.join(' &nbsp;&nbsp;&middot;&nbsp;&nbsp; ')}
     </td></tr>`;
 }
@@ -101,13 +124,9 @@ function ledeEmail(input: NewspaperTemplateInput): string {
   return `
     <tr><td style="padding:14px 0;">
       <div style="font-family:Courier New,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.warm};">${esc(input.lede.kicker)}</div>
-      <div style="font-family:Georgia,serif;font-weight:bold;font-size:20px;line-height:1.2;margin:4px 0 6px;color:${C.ink};">${esc(input.lede.headline)}</div>
-      <div style="font-size:13px;line-height:1.6;color:${C.ink};">${esc(input.lede.paragraph)}</div>
+      <div style="font-family:Georgia,serif;font-weight:bold;font-size:22px;line-height:1.2;margin:4px 0 6px;color:${C.ink};">${esc(input.lede.headline)}</div>
+      <div style="font-size:14px;line-height:1.65;color:${C.ink};">${esc(input.lede.paragraph)}</div>
     </td></tr>`;
-}
-
-function sectionLabel(text: string): string {
-  return `<div style="font-family:Courier New,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.warm};margin-bottom:6px;">${esc(text)}</div>`;
 }
 
 function scheduleEmail(input: NewspaperTemplateInput): string {
@@ -116,10 +135,10 @@ function scheduleEmail(input: NewspaperTemplateInput): string {
       const border = i > 0 ? `border-top:1px dotted ${C.rule};` : '';
       return `
       <tr>
-        <td style="font-family:Courier New,monospace;font-size:10px;color:${C.light};vertical-align:top;padding:4px 8px 4px 0;white-space:nowrap;${border}">${esc(ev.time)}</td>
-        <td style="vertical-align:top;padding:4px 0;${border}">
-          <div style="font-weight:500;font-size:12px;color:${C.ink};">${ev.emoji ? esc(ev.emoji) + ' ' : ''}${esc(ev.name)}</div>
-          <div style="font-size:11px;color:${C.mid};">${esc(ev.note)}</div>
+        <td style="font-family:Courier New,monospace;font-size:11px;color:${C.light};vertical-align:top;padding:5px 10px 5px 0;white-space:nowrap;${border}">${esc(ev.time)}</td>
+        <td style="vertical-align:top;padding:5px 0;${border}">
+          <div style="font-weight:500;font-size:13px;color:${C.ink};">${ev.emoji ? esc(ev.emoji) + ' ' : ''}${esc(ev.name)}</div>
+          <div style="font-size:12px;color:${C.mid};line-height:1.4;">${esc(ev.note)}</div>
         </td>
       </tr>`;
     })
@@ -132,9 +151,9 @@ function goodNewsEmail(input: NewspaperTemplateInput): string {
   const items = input.goodNews
     .map((item, i) => {
       const border = i > 0 ? `border-top:1px dotted ${C.rule};` : '';
-      return `<div style="padding:4px 0;${border}">
-        <div style="font-family:Georgia,serif;font-size:13px;line-height:1.2;margin-bottom:2px;">${esc(item.headline)}</div>
-        <div style="font-size:11px;color:${C.mid};line-height:1.35;">${esc(item.summary)}</div>
+      return `<div style="padding:6px 0;${border}">
+        <div style="font-family:Georgia,serif;font-size:15px;line-height:1.25;margin-bottom:2px;">${esc(item.headline)}</div>
+        <div style="font-size:12px;color:${C.mid};line-height:1.45;">${esc(item.summary)}</div>
       </div>`;
     })
     .join('');
@@ -146,9 +165,9 @@ function notificationsEmail(input: NewspaperTemplateInput): string {
   const items = input.notifications
     .map((nt, i) => {
       const border = i > 0 ? `border-top:1px dotted ${C.rule};` : '';
-      return `<div style="padding:4px 0;${border}">
+      return `<div style="padding:6px 0;${border}">
         <span style="font-family:Courier New,monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:${C.light};">${esc(nt.source)}</span><br>
-        <span style="font-size:11px;line-height:1.4;">${esc(nt.body)}</span>
+        <span style="font-size:12px;line-height:1.45;">${esc(nt.body)}</span>
       </div>`;
     })
     .join('');
@@ -160,7 +179,7 @@ function peopleEmail(input: NewspaperTemplateInput): string {
   const items = input.people
     .map(
       (p) =>
-        `<div style="font-size:11px;line-height:1.4;margin-bottom:4px;"><strong>${esc(p.name)}</strong> ${esc(p.nudge)}</div>`,
+        `<div style="font-size:12px;line-height:1.45;margin-bottom:5px;"><strong>${esc(p.name)}</strong> ${esc(p.nudge)}</div>`,
     )
     .join('');
 
@@ -169,28 +188,28 @@ function peopleEmail(input: NewspaperTemplateInput): string {
 
 function quoteEmail(q: { text: string; attribution: string }): string {
   return `
-    <div style="margin-top: 1rem;text-align:center;padding:8px 14px;">
-      <div style="font-family:Georgia,serif;font-style:italic;font-size:15px;line-height:1.35;margin-bottom:4px;color:${C.ink};">&ldquo;${esc(q.text)}&rdquo;</div>
+    <div style="text-align:center;padding:8px 14px;">
+      <div style="font-family:Georgia,serif;font-style:italic;font-size:16px;line-height:1.4;margin-bottom:4px;color:${C.ink};">&ldquo;${esc(q.text)}&rdquo;</div>
       <div style="font-family:Courier New,monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:${C.light};">${esc(q.attribution)}</div>
     </div>`;
 }
 
-// ─── Page 2: The Reflection ─────────────────────────────────────────────────
+// ─── Reflection sections ──────────────────────────────────────────────────────
 
 function bodyMindEmail(input: NewspaperTemplateInput): string {
   const paragraphs = input.bodyMind.paragraphs
     .map(
       (p) =>
-        `<p style="font-size:12px;line-height:1.5;margin:0 0 6px;">${esc(p)}</p>`,
+        `<p style="font-size:13px;line-height:1.55;margin:0 0 6px;">${esc(p)}</p>`,
     )
     .join('');
 
   const coaching = input.bodyMind.coachingNote
-    ? `<p style="font-size:11px;font-style:italic;color:${C.mid};margin:6px 0 0;">${esc(input.bodyMind.coachingNote)}</p>`
+    ? `<p style="font-size:12px;font-style:italic;color:${C.mid};margin:6px 0 0;">${esc(input.bodyMind.coachingNote)}</p>`
     : '';
 
   return `${sectionLabel(input.bodyMind.sectionLabel)}
-    <div style="font-family:Georgia,serif;font-weight:bold;font-size:14px;margin-bottom:4px;color:${C.ink};">${esc(input.bodyMind.title)}</div>
+    <div style="font-family:Georgia,serif;font-weight:bold;font-size:16px;margin-bottom:5px;color:${C.ink};">${esc(input.bodyMind.title)}</div>
     ${paragraphs}
     ${coaching}`;
 }
@@ -199,16 +218,16 @@ function practiceArcEmail(input: NewspaperTemplateInput): string {
   const items = input.practiceArc.items
     .map(
       (item) =>
-        `<p style="font-size:12px;line-height:1.5;margin:0 0 4px;"><strong>${esc(item.label)}</strong> ${esc(item.text)}</p>`,
+        `<p style="font-size:13px;line-height:1.55;margin:0 0 5px;"><strong>${esc(item.label)}</strong> ${esc(item.text)}</p>`,
     )
     .join('');
 
   const closing = input.practiceArc.closingNote
-    ? `<p style="font-size:11px;color:${C.mid};margin:6px 0 0;">${esc(input.practiceArc.closingNote)}</p>`
+    ? `<p style="font-size:12px;color:${C.mid};margin:6px 0 0;">${esc(input.practiceArc.closingNote)}</p>`
     : '';
 
   return `${sectionLabel(input.practiceArc.sectionLabel)}
-    <div style="font-family:Georgia,serif;font-weight:bold;font-size:14px;margin-bottom:4px;color:${C.ink};">${esc(input.practiceArc.title)}</div>
+    <div style="font-family:Georgia,serif;font-weight:bold;font-size:16px;margin-bottom:5px;color:${C.ink};">${esc(input.practiceArc.title)}</div>
     ${items}
     ${closing}`;
 }
@@ -218,9 +237,9 @@ function moonHighlightEmail(input: NewspaperTemplateInput): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.tint};margin:8px 0;">
       <tr>
         <td width="3" style="background:${C.warm};">&nbsp;</td>
-        <td style="padding:8px 10px;">
-          <div style="font-family:Georgia,serif;font-weight:bold;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;color:${C.ink};">${esc(input.moonHighlight.title)}</div>
-          <p style="font-size:12px;line-height:1.4;margin:0;color:${C.ink};">${esc(input.moonHighlight.paragraph)}</p>
+        <td style="padding:10px 12px;">
+          <div style="font-family:Georgia,serif;font-weight:bold;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;color:${C.ink};">${esc(input.moonHighlight.title)}</div>
+          <p style="font-size:13px;line-height:1.5;margin:0;color:${C.ink};">${esc(input.moonHighlight.paragraph)}</p>
         </td>
       </tr>
     </table>`;
@@ -228,67 +247,32 @@ function moonHighlightEmail(input: NewspaperTemplateInput): string {
 
 function writingLine(): string {
   // Email-safe writing line: a row with bottom border + non-breaking space for height.
-  return `<tr><td style="border-bottom:1px solid ${C.rule};height:22px;line-height:22px;">&nbsp;</td></tr>`;
+  return `<tr><td style="border-bottom:1px solid ${C.rule};height:26px;line-height:26px;">&nbsp;</td></tr>`;
 }
 
 function intentionEmail(input: NewspaperTemplateInput): string {
   return `${sectionLabel('Morning Intention')}
-    <p style="font-size:11px;font-style:italic;color:${C.mid};margin:0 0 8px;line-height:1.4;">${esc(input.intentionPrompt)}</p>
+    <p style="font-size:12px;font-style:italic;color:${C.mid};margin:0 0 8px;line-height:1.45;">${esc(input.intentionPrompt)}</p>
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       ${writingLine()}${writingLine()}${writingLine()}
-    </table>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      ${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}${writingLine()}
     </table>`;
-}
-
-function page2Email(input: NewspaperTemplateInput): string {
-  const closingThought = input.closingThought
-    ? `<div style="border-top:1px solid ${C.rule};margin:10px 0;"></div><p style="font-size:12px;line-height:1.5;color:${C.mid};font-style:italic;margin:0;">${esc(input.closingThought)}</p>`
-    : '';
-
-  return `
-  <!-- Page 2 header — page-break-before forces a fresh page when printed -->
-  <tr><td style="padding:18px 0 6px;border-top:2px solid ${C.ink};page-break-before:always;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-family:Georgia,serif;font-weight:bold;font-size:13px;color:${C.ink};">The Gist</td>
-        <td style="text-align:right;font-family:Courier New,monospace;font-size:9px;color:${C.light};letter-spacing:1px;text-transform:uppercase;">${esc(input.dateFormatted)} &middot; Page 2</td>
-      </tr>
-    </table>
-  </td></tr>
-
-  <!-- Page 2: two columns (reflection) -->
-  <tr><td style="padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <!-- Left column: bodyMind + practiceArc + moonHighlight + closingThought -->
-        <td width="55%" valign="top" style="padding:12px 12px 12px 0;border-right:1px solid ${C.rule};">
-          ${bodyMindEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
-          ${practiceArcEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
-          ${moonHighlightEmail(input)}
-          ${closingThought}
-        </td>
-        <!-- Right column: intention + writing space + personal quote -->
-        <td width="45%" valign="top" style="padding:12px 0 12px 12px;">
-          ${intentionEmail(input)}
-          ${quoteEmail(input.personalQuote)}
-        </td>
-      </tr>
-    </table>
-  </td></tr>`;
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 /**
- * Build the email-safe newspaper HTML — both Page 1 (briefing) and Page 2 (reflection).
- * Table-based, inline styles, Gmail/Outlook compatible. The page-break-before CSS on
- * the Page 2 header makes printers (via email-to-print) put the two pages on separate sheets.
+ * Build the email body — a single fluid column, all sections stacked, no page
+ * breaks. Same NewspaperTemplateInput as the web/print artifact, so the inbox
+ * and /today never drift in content.
  */
 export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
+  const closingThought = input.closingThought
+    ? divider() +
+      row(
+        `<p style="font-size:13px;line-height:1.55;color:${C.mid};font-style:italic;margin:0;">${esc(input.closingThought)}</p>`,
+      )
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -296,51 +280,58 @@ export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>The Gist &mdash; ${esc(input.dateFormatted)}</title>
+  <style>
+    /* Progressive enhancement for clients that keep <style> (Apple Mail, web
+       iframes). Gmail/Outlook strip this and fall back to the inline single
+       column, which is the intended baseline. */
+    body { margin:0; padding:0; }
+    @media (min-width:600px) {
+      .gist-card { padding-left:8px; padding-right:8px; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${C.ink};">
+<body style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:${C.ink};">
 
 <!-- wrapper -->
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.paper};padding:20px 0;">
-<tr><td align="center">
+<tr><td align="center" style="padding:0 14px;">
 
-<!-- card -->
-<table width="600" cellpadding="0" cellspacing="0" border="0" style="background:${C.white};max-width:600px;width:100%;">
+<!-- card (single fluid column) -->
+<table class="gist-card" width="600" cellpadding="0" cellspacing="0" border="0" style="background:${C.white};max-width:600px;width:100%;">
 
   ${mastheadEmail(input)}
   ${weatherEmail(input)}
   ${rhythmsEmail(input)}
   ${ledeEmail(input)}
 
-  <!-- Two columns -->
-  <tr><td style="padding:0;border-top:2px solid ${C.ink};">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <!-- Left column -->
-        <td width="55%" valign="top" style="padding:12px 12px 12px 0;border-right:1px solid ${C.rule};">
-          ${scheduleEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
-          ${goodNewsEmail(input)}
-        </td>
-        <!-- Right column -->
-        <td width="45%" valign="top" style="padding:12px 0 12px 12px;">
-          ${notificationsEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
-          ${peopleEmail(input)}
-          <div style="border-top:1px solid ${C.rule};margin:10px 0;"></div>
-          ${quoteEmail(input.quote)}
-        </td>
-      </tr>
-    </table>
-  </td></tr>
+  ${heavyBreak()}
+  ${row(scheduleEmail(input))}
+  ${divider()}
+  ${row(goodNewsEmail(input))}
+  ${divider()}
+  ${row(notificationsEmail(input))}
+  ${divider()}
+  ${row(peopleEmail(input))}
+  ${divider()}
+  ${row(quoteEmail(input.quote))}
 
-  ${page2Email(input)}
+  ${heavyBreak()}
+  ${row(bodyMindEmail(input))}
+  ${divider()}
+  ${row(practiceArcEmail(input))}
+  ${divider()}
+  ${row(moonHighlightEmail(input))}
+  ${closingThought}
+  ${divider()}
+  ${row(intentionEmail(input))}
+  ${divider()}
+  ${row(quoteEmail(input.personalQuote))}
 
   <!-- Footer -->
-  <tr><td style="padding:10px 0;border-top:1px solid ${C.ink};text-align:center;">
+  <tr><td style="padding:14px 0 0;border-top:1px solid ${C.ink};text-align:center;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-family:Courier New,monospace;font-size:9px;color:${C.light};letter-spacing:1px;text-transform:uppercase;text-align:left;">The Gist &middot; ${esc(input.dateFormatted)}</td>
-        <td style="font-family:Courier New,monospace;font-size:9px;color:${C.light};letter-spacing:1px;text-transform:uppercase;text-align:center;">mygist.app</td>
         <td style="font-family:Courier New,monospace;font-size:9px;color:${C.light};letter-spacing:1px;text-transform:uppercase;text-align:right;">&#9789; ${esc(input.moonFooter)}</td>
       </tr>
     </table>
@@ -360,5 +351,5 @@ export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
 export function buildNewspaperEmailSubject(
   input: NewspaperTemplateInput,
 ): string {
-  return `The Gist \u2014 ${input.dateFormatted}`;
+  return `The Gist — ${input.dateFormatted}`;
 }

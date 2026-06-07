@@ -5,15 +5,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **Unified web + email rendering; web `/today` now shows the canonical artifact (#174).** The morning gist is rendered to the Fraunces/IBM Plex broadsheet HTML at generation time and stored on the gist doc as `renderedHtml`. `/today` renders that exact artifact in an `<iframe>` (auto-sized, no inner scrollbar) instead of re-deriving the sections in Angular — so the web view can no longer drift from what was generated, and the missing-on-web sections (masthead, issue number, rhythms) are always present. **Print** prints the iframe, so the browser uses the broadsheet's `@media print` + `@page` rules and produces the properly paginated 2-page newspaper.
+- **Email body is now responsive single-column (#174).** `newspaperEmailTemplate.ts` was rewritten from a fixed-width two-column table grid to one fluid stacked column — no horizontal scroll on phones, no "random whitespace" from collapsing columns. Dropped the `page-break-before` (the email-to-print blank-page culprit); printing is via the web artifact now.
 - **`buildUserDoc` consolidated into a single shared helper** in `firestoreUtils.ts`. UserDoc construction previously lived in two places — the canonical helper in `generateMorningGist.ts` and an inline copy in `generateGistOnDemand.ts` — which is how #167/#168 silently dropped `profile` and `gistIssueCount` from the on-demand path. Both code paths now call the same `buildUserDoc(uid, data)`, so adding a future UserDoc field can no longer drift between them (#171).
 
 ### Removed
+- **`generateGistPdf` Cloud Function and `generatePdf.ts` deleted (#174).** The endpoint never produced a PDF — it returned print-CSS HTML for the browser to print — and there is no email-to-print path wired up yet, so the PDF artifact was solving a problem we don't have. The web/print path now uses the stored `renderedHtml`. This also removes the hardcoded-moon regression (issue #101 P2), which lived only in `generatePdf`'s `buildTemplateInput`. Dropped its `index.ts` export.
+- **The Angular `np()` newspaper re-derivation on `/today`** (and its `NewspaperData`/`NewspaperMeta` types, the native broadsheet markup, and ~440 lines of dead component SCSS). This client-side reconstruction with its own hardcoded defaults was the worst drift source; `/today` now renders the server artifact directly.
 - **`observeTopicAffinities` memory function** deleted (and its call site in `generateMorningGist.ts`). It only echoed `prefs.topics` into the memory layer as "Interested in X." signals — the same information the `<interests>` prompt block already carries from the same source field, so the model saw stated interests twice. The memory layer is now reserved for genuinely observed behavioral patterns (the calendar/people observations); real topic-affinity tracking from engagement signals is deferred to the Phase 4 scan-back loop (#169).
 - **`generateGistPrint` Cloud Function** deleted (and its `generateGistPrint.test.ts`). The endpoint had no callers — the UI "Print" button uses `window.print()` on the rendered page, and nothing linked to the server-rendered print URL. Dropped its `index.ts` export.
-- **Historical-rendering `date` query param** on `generateGistPdf`. The only caller (`today.component.ts`) never passed a date, so the param was dead; `generateGistPdf` now always renders today's gist. This also dissolves the latent `volumeIssue` regression (issue #101 P2) — that bug was only reachable via the unused historical path.
-
-### Notes
-- The hardcoded-moon regression in `generatePdf`'s `buildTemplateInput` (issue #101 P2) is still live and tracked separately — to be fixed in its own change.
 
 ## [0.7.0.0] - 2026-06-07
 

@@ -321,6 +321,21 @@ export async function generateMorningGistForUser(
       }
     }
 
+    // ── Render + persist the broadsheet artifact (web/print view) ───────────
+    // Same input drives the email body, so /today and the inbox never drift.
+    // /today renders this string in an <iframe srcdoc>; Print prints the iframe.
+    if (newspaperTemplateInput) {
+      try {
+        const renderedHtml = buildNewspaperHtml(newspaperTemplateInput);
+        await gistRef.set({ renderedHtml }, { merge: true });
+      } catch (err) {
+        logger.warn('Failed to render/persist gist artifact HTML.', {
+          userId: user.uid,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
+
     // ── Delivery routing ───────────────────────────────────────────────────
     if (method === 'email') {
       const result = await deliverByEmail({

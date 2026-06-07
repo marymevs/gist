@@ -1,16 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Today — Newspaper Broadsheet Layout
-   Fraunces + IBM Plex Sans / Mono · Warm amber accents
+   Today — app chrome around the broadsheet artifact
+   The brief itself renders inside an <iframe> (see newspaperTemplate.ts);
+   this stylesheet only covers the toolbar, sidebar, and artifact frame.
    ═══════════════════════════════════════════════════════════════════════ */
-
-// ── Output template tokens (scoped to this component) ──────────────────
-$ink: #1c1917;
-$mid: #57534e;
-$light: #a8a29e;
-$rule: #d6d3d1;
-$tint: #f5f0eb;
-$paper: #fffdf9;
-$warm: #92400e;
 
 // ── Page shell ─────────────────────────────────────────────────────────
 .newspaper-card {
@@ -47,410 +39,39 @@ $warm: #92400e;
   gap: var(--space-xl);
 }
 
-// ── Broadsheet wrapper ─────────────────────────────────────────────────
-.broadsheet-wrap {
+// ── Artifact frame (the rendered broadsheet) ───────────────────────────
+.artifact-wrap {
   width: 100%;
   max-width: 7in;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
-.bs-page {
-  background: $paper;
-  padding: 0.55in 0.65in;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 8.5pt;
-  line-height: 1.5;
-  color: $ink;
-  font-weight: 300;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
+.artifact-frame {
+  display: block;
+  width: 100%;
+  min-height: 60vh;
+  border: 0;
+  background: #fffdf9;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
 
-// ── Masthead ───────────────────────────────────────────────────────────
-.mast {
+.artifact-empty {
+  background: #fffdf9;
+  padding: var(--space-3xl) var(--space-lg);
   text-align: center;
-  border-bottom: 2pt solid $ink;
-  padding-bottom: 8pt;
-}
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
 
-.mast-pre {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 6pt;
-  font-weight: 300;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: $light;
-  margin-bottom: 1pt;
-}
-
-.mast h1 {
-  font-family: 'Fraunces', serif;
-  font-weight: 800;
-  font-size: 46pt;
-  line-height: 0.9;
-  letter-spacing: -0.03em;
-  color: $ink;
-  margin: 0;
-}
-
-.mast-post {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 9.5pt;
-  color: $mid;
-  margin-top: 2pt;
-}
-
-.mast-sub {
-  display: flex;
-  justify-content: space-between;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5.5pt;
-  font-weight: 300;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: $light;
-  border-top: 0.5pt solid $rule;
-  margin-top: 6pt;
-  padding-top: 3pt;
-}
-
-// ── Weather bar ────────────────────────────────────────────────────────
-.wx {
-  display: flex;
-  align-items: baseline;
-  gap: 10pt;
-  padding: 6pt 0 5pt;
-  border-bottom: 0.5pt solid $rule;
-}
-
-.wx-temp {
-  font-family: 'Fraunces', serif;
-  font-weight: 500;
-  font-size: 20pt;
-  line-height: 1;
-}
-
-.wx-cond {
-  font-size: 8pt;
-  color: $mid;
-}
-
-.wx-week {
-  margin-left: auto;
-  display: flex;
-  gap: 10pt;
-}
-
-.wx-day { text-align: center; }
-
-.wx-day-name {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5pt;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: $light;
-}
-
-.wx-day-hi {
-  font-family: 'Fraunces', serif;
-  font-weight: 500;
-  font-size: 9pt;
-}
-
-.wx-day-rain {
-  font-size: 6pt;
-  color: $warm;
-}
-
-// ── Rhythms bar ────────────────────────────────────────────────────────
-.rhythms {
-  display: flex;
-  gap: 14pt;
-  padding: 3pt 0 4pt;
-  border-bottom: 0.5pt solid $rule;
-  font-size: 7pt;
-  color: $mid;
-
-  b {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 5.5pt;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: $light;
-  }
-}
-
-// ── Lede ───────────────────────────────────────────────────────────────
-.lede {
-  padding: 10pt 0;
-}
-
-.lede-kicker {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5.5pt;
-  font-weight: 400;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: $warm;
-}
-
-.lede h2 {
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  font-size: 16pt;
-  line-height: 1.2;
-  margin: 3pt 0 5pt;
-  letter-spacing: -0.01em;
-  color: $ink;
-}
-
-.lede p {
-  font-size: 9pt;
-  font-weight: 300;
-  line-height: 1.6;
-}
-
-// ── Two-column layout ──────────────────────────────────────────────────
-.cols {
-  display: flex;
-  border-top: 1.5pt solid $ink;
-  padding-top: 8pt;
-}
-
-.c {
-  flex: 1;
-  min-width: 0;
-
-  & + & {
-    border-left: 0.5pt solid $rule;
-    margin-left: 10pt;
-    padding-left: 10pt;
-  }
-}
-
-// ── Section labels ─────────────────────────────────────────────────────
-.label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5.5pt;
-  font-weight: 400;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: $warm;
-  margin-bottom: 4pt;
-}
-
-// ── Events ─────────────────────────────────────────────────────────────
-.ev {
-  display: flex;
-  gap: 6pt;
-  padding: 2.5pt 0;
-
-  & + & { border-top: 0.5pt dotted $rule; }
-}
-
-.ev-t {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 6pt;
-  font-weight: 300;
-  color: $light;
-  min-width: 36pt;
-  padding-top: 1.5pt;
-}
-
-.ev-name {
-  font-weight: 500;
-  font-size: 8pt;
-}
-
-.ev-note {
-  font-size: 7pt;
-  color: $mid;
-  font-weight: 300;
-}
-
-// ── Notifications ──────────────────────────────────────────────────────
-.nt {
-  display: flex;
-  gap: 5pt;
-  padding: 3pt 0;
-  align-items: flex-start;
-
-  & + & { border-top: 0.5pt dotted $rule; }
-}
-
-.nt-ico {
-  font-size: 7pt;
-  min-width: 12pt;
-  text-align: center;
-  padding-top: 1pt;
-}
-
-.nt-body {
-  font-size: 7.5pt;
-  line-height: 1.4;
-  font-weight: 300;
-}
-
-.nt-src {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5pt;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: $light;
-}
-
-// ── News items ─────────────────────────────────────────────────────────
-.nw {
-  padding: 3pt 0;
-
-  & + & { border-top: 0.5pt dotted $rule; }
-
-  h4 {
-    font-family: 'Fraunces', serif;
-    font-weight: 500;
-    font-size: 8.5pt;
-    line-height: 1.2;
-    margin-bottom: 1pt;
+  h2 {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-serif, 'Fraunces', serif);
+    font-size: 18px;
+    color: var(--ink, #1a1a2e);
   }
 
   p {
-    font-size: 7pt;
-    color: $mid;
-    font-weight: 300;
-    line-height: 1.35;
     margin: 0;
+    font-size: 14px;
+    color: var(--muted, #6b6560);
   }
-}
-
-// ── Dividers and utilities ─────────────────────────────────────────────
-.hr {
-  border: none;
-  border-top: 0.5pt solid $rule;
-  margin: 6pt 0;
-}
-
-.sm { font-size: 7.5pt; line-height: 1.4; font-weight: 300; }
-.xs { font-size: 6.5pt; font-weight: 300; }
-.it { font-style: italic; }
-.mt { color: $mid; }
-.bd { font-weight: 500; }
-
-h3 {
-  font-family: 'Fraunces', serif;
-  font-weight: 500;
-  font-size: 10pt;
-  line-height: 1.2;
-  margin-bottom: 3pt;
-  color: $ink;
-}
-
-p {
-  margin-bottom: 4pt;
-  &:last-child { margin-bottom: 0; }
-}
-
-// ── Highlight box ──────────────────────────────────────────────────────
-.hi {
-  background: $tint;
-  padding: 7pt 9pt;
-  border-left: 1.5pt solid $warm;
-  margin: 5pt 0;
-}
-
-.hi-title {
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  font-size: 8pt;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 2pt;
-}
-
-// ── Quote block ────────────────────────────────────────────────────────
-.qt {
-  text-align: center;
-  padding: 6pt 12pt;
-
-  blockquote {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-weight: 300;
-    font-size: 11pt;
-    line-height: 1.35;
-    margin-bottom: 3pt;
-    color: $ink;
-  }
-
-  cite {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 5.5pt;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: $light;
-    font-style: normal;
-  }
-}
-
-// ── Write lines (fax-back) ─────────────────────────────────────────────
-.wl {
-  border-bottom: 0.5pt solid $rule;
-  height: 18pt;
-}
-
-// ── Fax-back options ───────────────────────────────────────────────────
-.fax-opts {
-  display: flex;
-  gap: 12pt;
-  margin: 2pt 0 5pt;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 7pt;
-  font-weight: 300;
-}
-
-// ── Footer ─────────────────────────────────────────────────────────────
-.ft {
-  padding-top: 5pt;
-  border-top: 1pt solid $ink;
-  display: flex;
-  justify-content: space-between;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5pt;
-  color: $light;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-top: 8pt;
-}
-
-// ── Page 2 compact header ──────────────────────────────────────────────
-.p2-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1.5pt solid $ink;
-  padding-bottom: 4pt;
-  margin-bottom: 10pt;
-}
-
-.p2-title {
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  font-size: 13pt;
-  color: $ink;
-}
-
-.p2-date {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 5.5pt;
-  color: $light;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 // ── Delivery sidebar ───────────────────────────────────────────────────
@@ -484,56 +105,22 @@ p {
   text-overflow: ellipsis;
 }
 
-// ── Responsive ─────────────────────────────────────────────────────────
-@media (max-width: 680px) {
-  .bs-page {
-    padding: var(--space-xl) var(--space-lg) var(--space-2xl);
-  }
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-xs) var(--space-sm);
+  font-size: 13px;
 
-  .mast h1 { font-size: 32pt; }
-  .mast-pre { font-size: 5pt; }
-
-  .cols {
-    flex-direction: column;
-  }
-
-  .c + .c {
-    border-left: none;
-    margin-left: 0;
-    padding-left: 0;
-    border-top: 0.5pt solid $rule;
-    margin-top: 8pt;
-    padding-top: 8pt;
-  }
-
-  .wx-week { display: none; }
-  .rhythms { flex-wrap: wrap; gap: 8pt; }
+  span { color: var(--muted); }
+  b { color: var(--ink); font-weight: 600; }
 }
 
-// ── Print ──────────────────────────────────────────────────────────────
+// ── Print fallback ─────────────────────────────────────────────────────
+// Printing goes through the iframe (onPrint → iframe.contentWindow.print()),
+// but if a page-level print fires, hide the app chrome.
 @media print {
-  @page { size: letter; margin: 0.55in 0.65in; }
-
   .noPrint { display: none !important; }
-
   .newspaper-card { background: white; border: none; }
-  .today { padding: 0; }
   .grid { display: block; padding: 0; }
-
-  .broadsheet-wrap {
-    max-width: none;
-    gap: 0;
-  }
-
-  .bs-page {
-    max-width: none;
-    width: 100%;
-    padding: 0;
-    background: white;
-    box-shadow: none;
-
-    & + .bs-page {
-      page-break-before: always;
-    }
-  }
+  .artifact-frame { box-shadow: none; }
 }
