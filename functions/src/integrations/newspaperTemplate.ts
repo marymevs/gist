@@ -136,7 +136,14 @@ const CSS = `
   p:last-child { margin-bottom: 0; }
 
   @media print { body { background: white; } }
-  @media screen { body { padding: 24px; background: #e7e5e4; } .page { background: var(--paper); padding: 0.55in 0.65in; box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04); margin-bottom: 24px; } }
+  /* SCREEN — rendered inside the /today <iframe>, which already frames the sheet
+     as a card. So no grey "desk" surround here: just the bare paper sheet with
+     its normal page margins, and a hairline between the two pages. */
+  @media screen {
+    body { background: var(--paper); }
+    .page { padding: 0.55in 0.65in; }
+    .page + .page { border-top: 0.5pt solid var(--rule); }
+  }
 `;
 
 // ─── Page 1: The Briefing ───────────────────────────────────────────────────
