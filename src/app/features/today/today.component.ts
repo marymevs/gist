@@ -15,7 +15,7 @@ import {
 } from '@angular/fire/firestore';
 
 import { Observable, of, combineLatest, tap } from 'rxjs';
-import { map, switchMap, startWith } from 'rxjs/operators';
+import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
 
 type DayItem = { time?: string; title: string; note?: string };
 type WorldItem = { headline: string; implication: string };
@@ -126,9 +126,25 @@ type DeliveryLogRow = DeliveryLog & {
   statusClass: 'ok' | 'warn' | 'bad';
 };
 
-function todayDateKeyNY(): string {
+/**
+ * Validate an IANA timezone, falling back to America/New_York — mirrors the
+ * server's safeTimezone() so the client computes the SAME date key the server
+ * stored the gist under.
+ */
+function safeTimezone(tz?: string): string {
+  if (!tz) return 'America/New_York';
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
+    return tz;
+  } catch {
+    return 'America/New_York';
+  }
+}
+
+/** Today's date key (YYYY-MM-DD) in the given timezone. */
+function todayDateKey(timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -139,6 +155,25 @@ function todayDateKeyNY(): string {
   const d = parts.find((p) => p.type === 'day')?.value ?? '01';
   return `${y}-${m}-${d}`;
 }
+
+/** Short timezone abbreviation for a zone right now, e.g. "PDT", "EST". */
+function tzAbbr(timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      timeZoneName: 'short',
+    }).formatToParts(new Date());
+    return parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/** Minimal slice of the user doc the /today view needs for tz-aware display. */
+type TodayUserDoc = {
+  prefs?: { timezone?: string; city?: string };
+  delivery?: { schedule?: { hour?: number; minute?: number } };
+};
 
 @Component({
   standalone: true,
@@ -163,12 +198,32 @@ export class TodayComponent {
   statusText = '—';
 
   // === Firestore-backed streams for template ===
-  gist$: Observable<MorningGist | null> = authState(this.auth).pipe(
-    tap((u) => console.log('authState emitted:', u?.uid ?? null)),
+
+  // The signed-in user's doc — drives the timezone used to pick "today" and
+  // the meta header (city + delivery schedule). Shared so we open one listener.
+  userDoc$: Observable<TodayUserDoc | null> = authState(this.auth).pipe(
     switchMap((user) => {
       if (!user) return of(null);
+      const ref = doc(this.db, `users/${user.uid}`);
+      return docData(ref) as Observable<TodayUserDoc>;
+    }),
+    startWith(null),
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
-      const dateKey = todayDateKeyNY(); // 'YYYY-MM-DD'
+  gist$: Observable<MorningGist | null> = combineLatest([
+    authState(this.auth),
+    this.userDoc$,
+  ]).pipe(
+    tap(([u]) => console.log('authState emitted:', u?.uid ?? null)),
+    switchMap(([user, udoc]) => {
+      if (!user) return of(null);
+
+      // Use the user's own timezone so we fetch the same date key the server
+      // stored the gist under. Falls back to America/New_York (matching the
+      // server's safeTimezone) when the pref is missing or invalid.
+      const tz = safeTimezone(udoc?.prefs?.timezone);
+      const dateKey = todayDateKey(tz); // 'YYYY-MM-DD'
       const gistDocRef = doc(
         this.db,
         `users/${user.uid}/morningGists/${dateKey}`,
@@ -178,6 +233,7 @@ export class TodayComponent {
         map((data) => (data as MorningGist) ?? null),
       );
     }),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
 
   deliveryLogs$: Observable<DeliveryLogRow[]> = authState(this.auth).pipe(
@@ -199,8 +255,9 @@ export class TodayComponent {
     combineLatest([
       this.gist$.pipe(startWith(null)),
       this.deliveryLogs$.pipe(startWith([] as DeliveryLogRow[])),
+      this.userDoc$,
     ])
-      .pipe(map(([gist, logs]) => this.computeHeaderText(gist, logs)))
+      .pipe(map(([gist, logs, udoc]) => this.computeHeaderText(gist, logs, udoc)))
       .subscribe(({ metaText, statusText }) => {
         this.metaText = metaText;
         this.statusText = statusText;
@@ -432,18 +489,19 @@ export class TodayComponent {
   private computeHeaderText(
     gist: MorningGist | null,
     logs: DeliveryLogRow[],
+    udoc: TodayUserDoc | null,
   ): { metaText: string; statusText: string } {
-    // Meta line: "Saturday, Jan 10 • New York, NY • Scheduled 7:30 AM ET"
-    // MVP: use gist.date, gist.timezone, and a default schedule string.
+    // Meta line: "Saturday, Jan 10 • Los Angeles, CA • Scheduled 7:00 AM PDT"
+    // Built from the user's own prefs/delivery + timezone.
     const dateStr = gist?.date
       ? // gist.date is YYYY-MM-DD; parse into a Date in local env then format nicely
         this.prettyDateFromDateKey(gist.date)
-      : '—';
+      : '';
 
-    // Later we'll pull city + schedule from user prefs/delivery. For now:
-    const city = 'New York, NY';
-    const schedule = 'Scheduled 7:30 AM ET';
-    const metaText = `${dateStr} • ${city} • ${schedule}`;
+    const city = udoc?.prefs?.city?.trim() || gist?.newspaper?.location || '';
+    const schedule = this.scheduleLabel(udoc, gist);
+    const metaText =
+      [dateStr, city, schedule].filter((p) => p && p.length).join(' • ') || '—';
 
     // Status pill: prefer gist.delivery if present, otherwise latest delivery log
     const method = gist?.delivery?.method ?? logs[0]?.method ?? '—';
@@ -480,6 +538,30 @@ export class TodayComponent {
         : `${this.capitalize(baseStatus)} • ${methodLabel} • ${pagesLabel}`;
 
     return { metaText, statusText };
+  }
+
+  /**
+   * "Scheduled 7:00 AM PDT" from the user's delivery schedule + timezone.
+   * Computed client-side (proper Intl tz abbreviation); falls back to the
+   * server-rendered deliveryTime only when no schedule pref is available.
+   */
+  private scheduleLabel(
+    udoc: TodayUserDoc | null,
+    gist: MorningGist | null,
+  ): string {
+    const sched = udoc?.delivery?.schedule;
+    if (sched?.hour != null) {
+      const hour24 = sched.hour;
+      const minute = sched.minute ?? 0;
+      const ampm = hour24 >= 12 ? 'PM' : 'AM';
+      const displayHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+      const abbr = tzAbbr(safeTimezone(udoc?.prefs?.timezone));
+      const time = `${displayHour}:${String(minute).padStart(2, '0')} ${ampm}`;
+      return `Scheduled ${time}${abbr ? ` ${abbr}` : ''}`;
+    }
+
+    const fromGist = gist?.newspaper?.deliveryTime?.trim();
+    return fromGist ? `Scheduled ${fromGist}` : '';
   }
 
   prettyDateFromDateKey(dateKey: string): string {

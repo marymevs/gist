@@ -23,6 +23,30 @@ const TONE_OPTIONS = [
   { value: 'concise', label: 'Concise, bullet-only' },
 ] as const;
 
+// Curated IANA timezones for the picker. The user's saved zone is prepended at
+// edit time if it isn't already here, so any value remains selectable.
+const TIMEZONE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'America/New_York', label: 'Eastern — New York' },
+  { value: 'America/Chicago', label: 'Central — Chicago' },
+  { value: 'America/Denver', label: 'Mountain — Denver' },
+  { value: 'America/Phoenix', label: 'Mountain (no DST) — Phoenix' },
+  { value: 'America/Los_Angeles', label: 'Pacific — Los Angeles' },
+  { value: 'America/Anchorage', label: 'Alaska — Anchorage' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii — Honolulu' },
+  { value: 'America/Toronto', label: 'Eastern (Canada) — Toronto' },
+  { value: 'America/Sao_Paulo', label: 'Brazil — São Paulo' },
+  { value: 'Europe/London', label: 'UK — London' },
+  { value: 'Europe/Paris', label: 'Central Europe — Paris' },
+  { value: 'Europe/Athens', label: 'Eastern Europe — Athens' },
+  { value: 'Asia/Kolkata', label: 'India — Kolkata' },
+  { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Asia/Tokyo', label: 'Japan — Tokyo' },
+  { value: 'Australia/Sydney', label: 'Australia — Sydney' },
+];
+
+const HOUR_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+const MINUTE_OPTIONS = [0, 15, 30, 45] as const;
+
 @Component({
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
@@ -42,6 +66,18 @@ export class AccountComponent {
   editLength = 'standard';
   editTone = 'calm';
   editQuietDays: boolean[] = [true, false, false, false, false, false, true]; // Sun=on, Sat=on
+  editTimezone = 'America/New_York';
+  editDeliveryHour = 7; // 1–12 (display value)
+  editDeliveryMinute = 0; // 0/15/30/45
+  editDeliveryMeridiem: 'AM' | 'PM' = 'AM';
+  // Snapshot of the delivery time when the editor opened — used to detect whether
+  // the user actually changed it, so we never overwrite the schedule (or its
+  // backend default) just because they edited tone/length/timezone.
+  private hadStoredSchedule = false;
+  private initialDeliveryHour24 = 7;
+  private initialDeliveryMinute = 0;
+  // Timezone list for the picker — may gain the user's saved zone at edit time.
+  timezoneOptions = [...TIMEZONE_OPTIONS];
 
   // Security expanded
   isSecurityExpanded = false;
@@ -50,6 +86,8 @@ export class AccountComponent {
   readonly dayLabels = DAY_LABELS;
   readonly lengthOptions = LENGTH_OPTIONS;
   readonly toneOptions = TONE_OPTIONS;
+  readonly hourOptions = HOUR_OPTIONS;
+  readonly minuteOptions = MINUTE_OPTIONS;
 
   constructor(
     private auth: Auth,
@@ -206,7 +244,37 @@ export class AccountComponent {
     this.editTone = user.prefs?.tone ?? 'calm';
     const quietDays = user.prefs?.quietDays ?? [0, 6]; // default Sun, Sat
     this.editQuietDays = DAY_LABELS.map((_, i) => quietDays.includes(i));
+
+    // Timezone — default to the browser's zone if the user has none saved.
+    this.editTimezone =
+      user.prefs?.timezone ??
+      Intl.DateTimeFormat().resolvedOptions().timeZone ??
+      'America/New_York';
+    // Ensure the saved zone is selectable even if it's not in the curated list.
+    this.timezoneOptions = TIMEZONE_OPTIONS.some(
+      (o) => o.value === this.editTimezone,
+    )
+      ? [...TIMEZONE_OPTIONS]
+      : [{ value: this.editTimezone, label: this.editTimezone }, ...TIMEZONE_OPTIONS];
+
+    // Delivery time — stored as 24h; present as 12h + meridiem. When the user
+    // has no stored schedule, show 7:00 AM as a hint but remember it was unset
+    // so we don't persist it unless they actually pick a time.
+    this.hadStoredSchedule = user.delivery?.schedule?.hour != null;
+    const hour24 = user.delivery?.schedule?.hour ?? 7;
+    this.editDeliveryMinute = user.delivery?.schedule?.minute ?? 0;
+    this.editDeliveryMeridiem = hour24 >= 12 ? 'PM' : 'AM';
+    this.editDeliveryHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    this.initialDeliveryHour24 = this.editDeliveryHour24;
+    this.initialDeliveryMinute = this.editDeliveryMinute;
+
     this.isEditingPreferences = true;
+  }
+
+  /** Combine the 12h editor fields back into a 0–23 hour. */
+  private get editDeliveryHour24(): number {
+    const h = this.editDeliveryHour % 12;
+    return this.editDeliveryMeridiem === 'PM' ? h + 12 : h;
   }
 
   onCancelPreferences(): void {
@@ -220,13 +288,34 @@ export class AccountComponent {
       .map((checked, i) => (checked ? i : -1))
       .filter((i) => i >= 0);
 
+    // Only persist the delivery schedule if the user already had one or actually
+    // changed the time here — otherwise editing tone/timezone would silently
+    // overwrite an unset schedule (and its backend default).
+    const scheduleChanged =
+      this.editDeliveryHour24 !== this.initialDeliveryHour24 ||
+      this.editDeliveryMinute !== this.initialDeliveryMinute;
+    const delivery =
+      this.hadStoredSchedule || scheduleChanged
+        ? {
+            schedule: {
+              hour: this.editDeliveryHour24,
+              minute: this.editDeliveryMinute,
+            },
+          }
+        : undefined;
+
     this.isSavingPreferences = true;
     try {
-      await this.accountData.updatePreferences(user.uid, {
-        length: this.editLength,
-        tone: this.editTone,
-        quietDays,
-      });
+      await this.accountData.updatePreferences(
+        user.uid,
+        {
+          length: this.editLength,
+          tone: this.editTone,
+          quietDays,
+          timezone: this.editTimezone,
+        },
+        delivery,
+      );
       this.isEditingPreferences = false;
       this.toast.show('Preferences saved.', 'success');
     } catch (error) {
@@ -256,6 +345,21 @@ export class AccountComponent {
     const days = user.prefs?.quietDays ?? [0, 6];
     if (days.length === 0) return 'None';
     return days.map((d) => DAY_LABELS[d]).join(', ');
+  }
+
+  timezoneLabel(user: GistUser): string {
+    const tz = user.prefs?.timezone;
+    if (!tz) return 'Not set';
+    return TIMEZONE_OPTIONS.find((o) => o.value === tz)?.label ?? tz;
+  }
+
+  deliveryTimeLabel(user: GistUser): string {
+    const sched = user.delivery?.schedule;
+    if (sched?.hour == null) return '7:00 AM';
+    const minute = sched.minute ?? 0;
+    const ampm = sched.hour >= 12 ? 'PM' : 'AM';
+    const displayHour = sched.hour % 12 === 0 ? 12 : sched.hour % 12;
+    return `${displayHour}:${String(minute).padStart(2, '0')} ${ampm}`;
   }
 
   // --- Security ---
