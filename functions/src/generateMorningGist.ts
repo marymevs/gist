@@ -339,6 +339,12 @@ export async function generateMorningGistForUser(
     } else {
       logger.error('Failed to build/save gist.', { error, userId: user.uid });
     }
+
+    // Best-effort: if the gist doc was already written before the throw (e.g. a
+    // delivery exception), mark it failed so /today and admin stats don't report
+    // it as still queued. No-ops (NOT_FOUND) when the failure happened before the
+    // gist was created — we avoid creating a stub doc that would break rendering.
+    await updateGistDeliveryStatus(user.uid, dateKey, 'failed').catch(() => {});
   }
 
   logger.info('generateMorningGistForUser complete.', {
