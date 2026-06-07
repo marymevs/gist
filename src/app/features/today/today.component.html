@@ -20,8 +20,13 @@
         >
           Download PDF
         </button>
-        <button class="secondary" type="button" (click)="onResend()">
-          Resend
+        <button
+          class="secondary"
+          type="button"
+          (click)="onResend()"
+          [disabled]="isResending"
+        >
+          {{ isResending ? "Resending…" : "Resend" }}
         </button>
         <button class="secondary" type="button" (click)="onEditTomorrow()">
           Edit tomorrow
@@ -306,30 +311,8 @@
           ><b>Standard · 2 pages max</b>
         </div>
 
-        <div class="log" aria-label="Delivery log">
-          <ng-container *ngIf="deliveryLogs$ | async as logs; else logsLoading">
-            <div *ngIf="logs.length === 0" style="color: var(--muted)">
-              No delivery events yet.
-            </div>
-            <div class="row" *ngFor="let entry of logs">
-              <span>{{ entry.createdAtLabel }}</span>
-              <span
-                [ngClass]="{
-                  ok: entry.statusClass === 'ok',
-                  warn: entry.statusClass === 'warn',
-                  bad: entry.statusClass === 'bad',
-                }"
-                >{{ entry.status }}</span
-              >
-            </div>
-          </ng-container>
-          <ng-template #logsLoading>
-            <div style="color: var(--muted)">Loading…</div>
-          </ng-template>
-        </div>
-
         <div class="actions" style="margin-top: 12px">
-          <button class="secondary" type="button" (click)="goToDelivery()">
+          <button class="secondary" type="button" (click)="goToSchedule()">
             Change schedule
           </button>
         </div>

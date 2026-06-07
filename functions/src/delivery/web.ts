@@ -1,9 +1,8 @@
 /**
  * Web delivery for morning gists.
- * Gist is already in Firestore — just update status.
+ * The gist is already in Firestore; there's nothing to send. The caller
+ * (generateMorningGistForUser) syncs delivery.status from the returned result.
  */
-
-import { updateGistDeliveryStatus } from '../firestoreUtils';
 
 export type WebDeliveryInput = {
   userId: string;
@@ -14,7 +13,6 @@ export type WebDeliveryResult = {
   status: 'delivered';
 };
 
-export async function deliverByWeb(input: WebDeliveryInput): Promise<WebDeliveryResult> {
-  await updateGistDeliveryStatus(input.userId, input.dateKey, 'delivered');
+export async function deliverByWeb(_input: WebDeliveryInput): Promise<WebDeliveryResult> {
   return { status: 'delivered' };
 }

@@ -4,18 +4,13 @@ import { Router } from '@angular/router';
 import { doc, docData } from '@angular/fire/firestore';
 
 import { Auth, authState } from '@angular/fire/auth';
-import {
-  Firestore,
-  collection,
-  query,
-  orderBy,
-  limit,
-  collectionData,
-  Timestamp,
-} from '@angular/fire/firestore';
+import { Firestore, Timestamp } from '@angular/fire/firestore';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 
 import { Observable, of, combineLatest, tap } from 'rxjs';
 import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
+
+import { ToastService } from '../../shared/services/toast.service';
 
 type DayItem = { time?: string; title: string; note?: string };
 type WorldItem = { headline: string; implication: string };
@@ -112,20 +107,6 @@ type MorningGist = {
   createdAt?: Timestamp;
 };
 
-type DeliveryLog = {
-  id: string;
-  type: string; // 'morning'
-  method: string; // 'web'|'email'
-  status: string; // queued|delivered|failed|received...
-  pages?: number | null;
-  createdAt?: Timestamp;
-};
-
-type DeliveryLogRow = DeliveryLog & {
-  createdAtLabel: string;
-  statusClass: 'ok' | 'warn' | 'bad';
-};
-
 /**
  * Validate an IANA timezone, falling back to America/New_York — mirrors the
  * server's safeTimezone() so the client computes the SAME date key the server
@@ -187,13 +168,16 @@ export class TodayComponent {
   private db = inject(Firestore);
   private router = inject(Router);
   private datePipe = inject(DatePipe);
+  private functions = inject(Functions);
+  private toast = inject(ToastService);
 
   // UI state
   hasGistToday = false;
   pdfLoading = false;
   isGenerating = false;
+  isResending = false;
 
-  // Toolbar / sidebar text — derived from gist$ + deliveryLogs$ in constructor
+  // Toolbar / sidebar text — derived from gist$ in constructor
   metaText = '—';
   statusText = '—';
 
@@ -236,28 +220,14 @@ export class TodayComponent {
     shareReplay({ bufferSize: 1, refCount: true }),
   );
 
-  deliveryLogs$: Observable<DeliveryLogRow[]> = authState(this.auth).pipe(
-    switchMap((user) => {
-      if (!user) return of([] as DeliveryLogRow[]);
-
-      const logsCol = collection(this.db, `users/${user.uid}/deliveryLogs`);
-      const q = query(logsCol, orderBy('createdAt', 'desc'), limit(4));
-
-      return collectionData(q, { idField: 'id' }).pipe(
-        map((rows) => (rows as DeliveryLog[]).map((r) => this.toLogRow(r))),
-      );
-    }),
-  );
-
   constructor() {
-    // Keep your existing template bindings (metaText/statusText as strings)
-    // by deriving them from gist$ + deliveryLogs$.
+    // Derive the toolbar/sidebar text bindings (metaText/statusText) from the
+    // gist doc — delivery.status now lives on the gist itself.
     combineLatest([
       this.gist$.pipe(startWith(null)),
-      this.deliveryLogs$.pipe(startWith([] as DeliveryLogRow[])),
       this.userDoc$,
     ])
-      .pipe(map(([gist, logs, udoc]) => this.computeHeaderText(gist, logs, udoc)))
+      .pipe(map(([gist, udoc]) => this.computeHeaderText(gist, udoc)))
       .subscribe(({ metaText, statusText }) => {
         this.metaText = metaText;
         this.statusText = statusText;
@@ -301,12 +271,22 @@ export class TodayComponent {
     }
   }
 
-  onResend(): void {
-    // For now keep demo behavior. Later we'll call a Cloud Function.
-    this.statusText = 'Queued…';
-    window.setTimeout(() => {
-      this.statusText = 'Delivered';
-    }, 900);
+  async onResend(): Promise<void> {
+    if (this.isResending) return;
+    this.isResending = true;
+    try {
+      const fn = httpsCallable(this.functions, 'resendMorningGist');
+      await fn({});
+      this.toast.show('Gist resend queued.', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to resend — try again later.';
+      this.toast.show(message, 'error');
+    } finally {
+      this.isResending = false;
+    }
   }
 
   async onGenerateOnDemand(): Promise<void> {
@@ -344,8 +324,10 @@ export class TodayComponent {
     });
   }
 
-  goToDelivery(): void {
-    this.router.navigate(['/delivery']);
+  goToSchedule(): void {
+    this.router.navigate(['/account'], {
+      queryParams: { section: 'preferences' },
+    });
   }
 
   // === Newspaper view model ===
@@ -461,34 +443,8 @@ export class TodayComponent {
   }
 
   // === Helpers ===
-  private toLogRow(log: DeliveryLog): DeliveryLogRow {
-    const createdAtDate = log.createdAt?.toDate?.() ?? null;
-
-    const createdAtLabel = createdAtDate
-      ? // ex: "Jan 12 • 7:32 AM"
-        (this.datePipe.transform(createdAtDate, 'MMM d • h:mm a') ?? '—')
-      : '—';
-
-    const statusClass = this.statusToClass(log.status);
-
-    return {
-      ...log,
-      createdAtLabel,
-      statusClass,
-    };
-  }
-
-  private statusToClass(status?: string): 'ok' | 'warn' | 'bad' {
-    const s = (status ?? '').toLowerCase();
-    if (['delivered', 'complete', 'completed', 'done'].includes(s))
-      return 'ok';
-    if (['failed', 'error'].includes(s)) return 'bad';
-    return 'warn';
-  }
-
   private computeHeaderText(
     gist: MorningGist | null,
-    logs: DeliveryLogRow[],
     udoc: TodayUserDoc | null,
   ): { metaText: string; statusText: string } {
     // Meta line: "Saturday, Jan 10 • Los Angeles, CA • Scheduled 7:00 AM PDT"
@@ -503,25 +459,17 @@ export class TodayComponent {
     const metaText =
       [dateStr, city, schedule].filter((p) => p && p.length).join(' • ') || '—';
 
-    // Status pill: prefer gist.delivery if present, otherwise latest delivery log
-    const method = gist?.delivery?.method ?? logs[0]?.method ?? '—';
-    const pages = gist?.delivery?.pages ?? logs[0]?.pages ?? null;
+    // Status pill — all sourced from the gist doc's delivery field.
+    const method = gist?.delivery?.method ?? '—';
+    const pages = gist?.delivery?.pages ?? null;
 
-    // If you store deliveredAt, show it; else show most recent log time.
-    const deliveredAt =
-      gist?.delivery?.deliveredAt?.toDate?.() ??
-      logs[0]?.createdAt?.toDate?.() ??
-      null;
+    const deliveredAt = gist?.delivery?.deliveredAt?.toDate?.() ?? null;
 
     const timeLabel = deliveredAt
       ? (this.datePipe.transform(deliveredAt, 'h:mm a') ?? '')
       : '';
 
-    const baseStatus = (
-      gist?.delivery?.status ??
-      logs[0]?.status ??
-      '—'
-    ).toString();
+    const baseStatus = (gist?.delivery?.status ?? '—').toString();
     const methodLower = (method ?? '').toLowerCase();
     const methodLabel =
       methodLower === 'email'
