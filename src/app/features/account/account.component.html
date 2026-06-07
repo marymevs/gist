@@ -213,9 +213,12 @@
           ><b>Managed by Firebase Auth</b>
         </div>
 
-        <div style="margin-top: 12px">
+        <div class="actions" style="margin-top: 12px">
           <button class="secondary" type="button" (click)="toggleSecurity()">
             {{ isSecurityExpanded ? "Hide details" : "Security details" }}
+          </button>
+          <button class="danger" type="button" (click)="logout()">
+            Log out
           </button>
         </div>
 

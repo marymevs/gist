@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Auth, user } from '@angular/fire/auth';
 import { AccountDataService } from '../../core/services/account-data.service';
 import { ToastService } from '../../shared/services/toast.service';
@@ -94,6 +94,7 @@ export class AccountComponent {
     private accountData: AccountDataService,
     private toast: ToastService,
     private route: ActivatedRoute,
+    private router: Router,
   ) {
     // Auto-expand preferences if navigated with ?section=preferences
     this.route.queryParams.subscribe((params) => {
@@ -369,7 +370,15 @@ export class AccountComponent {
   }
 
   async logout(): Promise<void> {
-    await signOut(this.auth);
+    try {
+      await signOut(this.auth);
+      // Firebase clears the auth session; Firestore observables re-emit null and
+      // the component is destroyed on navigation, so no manual state cleanup is
+      // needed. Send the user back to the public landing page.
+      await this.router.navigate(['/']);
+    } catch {
+      this.toast.show('Could not log out. Please try again.', 'error');
+    }
   }
 
   async ensureDoc(uid: string, email: string | null): Promise<void> {
