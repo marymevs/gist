@@ -11,12 +11,6 @@ import { User, signOut } from 'firebase/auth';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
-const LENGTH_OPTIONS = [
-  { value: 'brief', label: 'Brief (1 page)' },
-  { value: 'standard', label: 'Standard (2 pages)' },
-  { value: 'detailed', label: 'Detailed (3 pages)' },
-] as const;
-
 const TONE_OPTIONS = [
   { value: 'calm', label: 'Calm, direct' },
   { value: 'detailed', label: 'Detailed, thorough' },
@@ -68,7 +62,6 @@ export class AccountComponent {
 
   // Preferences edit mode
   isEditingPreferences = false;
-  editLength = 'standard';
   editTone = 'calm';
   editQuietDays: boolean[] = [true, false, false, false, false, false, true]; // Sun=on, Sat=on
   editTimezone = 'America/New_York';
@@ -89,7 +82,6 @@ export class AccountComponent {
 
   // Constants for template
   readonly dayLabels = DAY_LABELS;
-  readonly lengthOptions = LENGTH_OPTIONS;
   readonly toneOptions = TONE_OPTIONS;
   readonly hourOptions = HOUR_OPTIONS;
   readonly minuteOptions = MINUTE_OPTIONS;
@@ -282,7 +274,6 @@ export class AccountComponent {
   // --- Preferences edit ---
 
   onEditPreferences(user: GistUser): void {
-    this.editLength = user.prefs?.length ?? 'standard';
     this.editTone = user.prefs?.tone ?? 'calm';
     const quietDays = user.prefs?.quietDays ?? [0, 6]; // default Sun, Sat
     this.editQuietDays = DAY_LABELS.map((_, i) => quietDays.includes(i));
@@ -351,7 +342,6 @@ export class AccountComponent {
       await this.accountData.updatePreferences(
         user.uid,
         {
-          length: this.editLength,
           tone: this.editTone,
           quietDays,
           timezone: this.editTimezone,
@@ -369,13 +359,6 @@ export class AccountComponent {
     } finally {
       this.isSavingPreferences = false;
     }
-  }
-
-  lengthLabel(user: GistUser): string {
-    const val = user.prefs?.length ?? 'standard';
-    return (
-      LENGTH_OPTIONS.find((o) => o.value === val)?.label ?? 'Standard (2 pages)'
-    );
   }
 
   toneLabel(user: GistUser): string {

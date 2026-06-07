@@ -47,7 +47,6 @@ export class AccountDataService {
   async updatePreferences(
     uid: string,
     prefs: {
-      length?: string;
       tone?: string;
       quietDays?: number[];
       timezone?: string;
@@ -57,7 +56,6 @@ export class AccountDataService {
     const ref = doc(this.firestore, 'users', uid);
 
     const prefsPatch: Record<string, unknown> = {
-      length: prefs.length,
       tone: prefs.tone,
       quietDays: prefs.quietDays,
     };
