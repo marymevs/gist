@@ -44,7 +44,6 @@ export interface GistUser {
   };
 
   prefs?: {
-    length?: 'brief' | 'standard' | 'detailed';
     tone?: 'calm' | 'detailed' | 'concise';
     topics?: string[]; // chip selections from onboarding
     rhythms?: string[]; // chip selections from onboarding

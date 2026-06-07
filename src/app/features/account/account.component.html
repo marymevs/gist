@@ -153,7 +153,7 @@
         <!-- Display mode -->
         <ng-container *ngIf="!isEditingPreferences">
           <div class="kv" style="grid-template-columns: 140px 1fr">
-            <span>Length</span><b>{{ lengthLabel(user) }}</b> <span>Tone</span
+            <span>Tone</span
             ><b>{{ toneLabel(user) }}</b> <span>Quiet days</span
             ><b>{{ quietDaysLabel(user) }}</b> <span>Timezone</span
             ><b>{{ timezoneLabel(user) }}</b> <span>Delivery time</span
@@ -175,17 +175,6 @@
         <ng-container *ngIf="isEditingPreferences">
           <div class="prefsForm">
             <div>
-              <label class="sub" style="display: block; margin-bottom: 4px"
-                >Length</label
-              >
-              <select class="textInput" [(ngModel)]="editLength">
-                <option *ngFor="let opt of lengthOptions" [value]="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <div style="margin-top: 10px">
               <label class="sub" style="display: block; margin-bottom: 4px"
                 >Tone</label
               >
