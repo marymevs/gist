@@ -155,6 +155,8 @@
             <th>Date</th>
             <th>Method</th>
             <th>Status</th>
+            <th class="num">Pages</th>
+            <th>Delivered</th>
             <th class="num">Voice</th>
             <th class="num">X-ref</th>
             <th class="num">Personal</th>
@@ -166,6 +168,8 @@
             <td class="mono">{{ g.date }}</td>
             <td>{{ g.method || '—' }}</td>
             <td [class.ok]="g.status === 'delivered'" [class.bad]="g.status === 'failed'">{{ g.status || '—' }}</td>
+            <td class="num mono">{{ g.pages ?? '—' }}</td>
+            <td class="mono">{{ g.deliveredAt ? (g.deliveredAt | date: 'HH:mm') : '—' }}</td>
             <td class="num mono">{{ g.editorialVoice ?? '—' }}</td>
             <td class="num mono">{{ g.crossReferenceDepth ?? '—' }}</td>
             <td class="num mono">{{ g.personalizationDepth ?? '—' }}</td>

@@ -69,7 +69,9 @@ type AdminGistRow = {
   date: string;
   method: string | null;
   status: string | null;
+  pages: number | null;
   createdAt: number | null; // epoch ms
+  deliveredAt: number | null; // epoch ms, null until delivered
   editorialVoice: number | null;
   crossReferenceDepth: number | null;
   personalizationDepth: number | null;
@@ -216,7 +218,9 @@ export const getAdminStats = onCall(
           date: g.date,
           method,
           status,
+          pages: g.delivery?.pages ?? null,
           createdAt: toMillis(g.createdAt),
+          deliveredAt: toMillis(g.delivery?.deliveredAt),
           editorialVoice: g.qualityScore?.editorialVoice ?? null,
           crossReferenceDepth: g.qualityScore?.crossReferenceDepth ?? null,
           personalizationDepth: g.qualityScore?.personalizationDepth ?? null,

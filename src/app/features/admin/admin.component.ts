@@ -27,7 +27,9 @@ interface AdminGistRow {
   date: string;
   method: string | null;
   status: string | null;
+  pages: number | null;
   createdAt: number | null;
+  deliveredAt: number | null;
   editorialVoice: number | null;
   crossReferenceDepth: number | null;
   personalizationDepth: number | null;
