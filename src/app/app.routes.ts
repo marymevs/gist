@@ -1,7 +1,5 @@
 import { Routes } from '@angular/router';
 import { TodayComponent } from 'src/app/features/today/today.component';
-import { ArchiveComponent } from './features/archive/archive.component';
-import { DeliveryComponent } from './features/delivery/delivery.component';
 import { AccountComponent } from './features/account/account.component';
 import { LandingComponent } from './features/landing/landing.component';
 import { SignupComponent } from './features/auth/signup.component';
@@ -47,20 +45,6 @@ export const routes: Routes = [
     component: TodayComponent,
     canActivate: [authGuard, requireOnboardingGuard],
     title: 'Gist — mygist.app',
-  },
-
-  {
-    path: 'archive',
-    component: ArchiveComponent,
-    canActivate: [authGuard],
-    title: 'Archive',
-  },
-
-  {
-    path: 'delivery',
-    component: DeliveryComponent,
-    canActivate: [authGuard],
-    title: 'Delivery',
   },
 
   {

@@ -5,15 +5,13 @@
  * Data model:
  *
  *   users/{uid}/morningGists/{dateKey}   ← gist doc, delivery.status updated here
- *   users/{uid}/deliveryLogs/{auto-id}   ← append-only log, one entry per event
  */
 
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { getDb } from './firebaseAdmin';
 
 const db = getDb();
 
-export type DeliveryMethod = 'web' | 'email';
 export type DeliveryStatus = 'queued' | 'delivered' | 'failed';
 
 // ─── updateGistDeliveryStatus ─────────────────────────────────────────────────
@@ -25,7 +23,7 @@ export type DeliveryStatus = 'queued' | 'delivered' | 'failed';
 export async function updateGistDeliveryStatus(
   userId: string,
   dateKey: string,
-  status: 'delivered' | 'failed',
+  status: DeliveryStatus,
   extra?: Record<string, unknown>,
 ): Promise<void> {
   const update: Record<string, unknown> = {
@@ -41,35 +39,4 @@ export async function updateGistDeliveryStatus(
     .collection('morningGists')
     .doc(dateKey)
     .update(update);
-}
-
-// ─── writeDeliveryLog ─────────────────────────────────────────────────────────
-
-/**
- * Append a delivery log entry. Each meaningful delivery event (queued, delivered,
- * failed) gets its own entry — the delivery page shows the latest 50.
- */
-export async function writeDeliveryLog(
-  userId: string,
-  payload: {
-    type: 'morning';
-    method: DeliveryMethod;
-    status: string;
-    pages?: number;
-    note?: string;
-  },
-): Promise<void> {
-  await db
-    .collection('users')
-    .doc(userId)
-    .collection('deliveryLogs')
-    .doc()
-    .set({
-      type: payload.type,
-      method: payload.method,
-      status: payload.status,
-      pages: payload.pages ?? null,
-      note: payload.note ?? null,
-      createdAt: FieldValue.serverTimestamp(),
-    });
 }

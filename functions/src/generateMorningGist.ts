@@ -10,9 +10,7 @@ import { buildNewspaperHtml } from './integrations/newspaperTemplate';
 import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrations/newspaperEmailTemplate';
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
-import {
-  writeDeliveryLog,
-} from './firestoreUtils';
+import { updateGistDeliveryStatus } from './firestoreUtils';
 
 import {
   GOOGLE_CLIENT_ID,
@@ -326,6 +324,10 @@ export async function generateMorningGistForUser(
       finalStatus = result.status;
     }
 
+    // Sync the gist doc's delivery.status for BOTH methods. The gist doc is the
+    // single source of truth for delivery outcome.
+    await updateGistDeliveryStatus(user.uid, dateKey, finalStatus);
+
   } catch (error) {
     finalStatus = 'failed';
     if (error instanceof Error) {
@@ -337,14 +339,13 @@ export async function generateMorningGistForUser(
     } else {
       logger.error('Failed to build/save gist.', { error, userId: user.uid });
     }
-  }
 
-  await writeDeliveryLog(user.uid, {
-    type: 'morning',
-    method,
-    status: finalStatus,
-    pages,
-  });
+    // Best-effort: if the gist doc was already written before the throw (e.g. a
+    // delivery exception), mark it failed so /today and admin stats don't report
+    // it as still queued. No-ops (NOT_FOUND) when the failure happened before the
+    // gist was created — we avoid creating a stub doc that would break rendering.
+    await updateGistDeliveryStatus(user.uid, dateKey, 'failed').catch(() => {});
+  }
 
   logger.info('generateMorningGistForUser complete.', {
     userId: user.uid,

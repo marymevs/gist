@@ -7,7 +7,7 @@ import { of } from 'rxjs';
 
 /**
  * Redirects users to /onboarding if they haven't completed it.
- * Used on protected routes like /today, /archive, etc.
+ * Used on protected routes like /today, /account, etc.
  */
 export const requireOnboardingGuard: CanActivateFn = () => {
   const auth = inject(Auth);
