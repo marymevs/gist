@@ -70,6 +70,12 @@ export class AccountComponent {
   editDeliveryHour = 7; // 1–12 (display value)
   editDeliveryMinute = 0; // 0/15/30/45
   editDeliveryMeridiem: 'AM' | 'PM' = 'AM';
+  // Snapshot of the delivery time when the editor opened — used to detect whether
+  // the user actually changed it, so we never overwrite the schedule (or its
+  // backend default) just because they edited tone/length/timezone.
+  private hadStoredSchedule = false;
+  private initialDeliveryHour24 = 7;
+  private initialDeliveryMinute = 0;
   // Timezone list for the picker — may gain the user's saved zone at edit time.
   timezoneOptions = [...TIMEZONE_OPTIONS];
 
@@ -251,11 +257,16 @@ export class AccountComponent {
       ? [...TIMEZONE_OPTIONS]
       : [{ value: this.editTimezone, label: this.editTimezone }, ...TIMEZONE_OPTIONS];
 
-    // Delivery time — stored as 24h; present as 12h + meridiem.
+    // Delivery time — stored as 24h; present as 12h + meridiem. When the user
+    // has no stored schedule, show 7:00 AM as a hint but remember it was unset
+    // so we don't persist it unless they actually pick a time.
+    this.hadStoredSchedule = user.delivery?.schedule?.hour != null;
     const hour24 = user.delivery?.schedule?.hour ?? 7;
     this.editDeliveryMinute = user.delivery?.schedule?.minute ?? 0;
     this.editDeliveryMeridiem = hour24 >= 12 ? 'PM' : 'AM';
     this.editDeliveryHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    this.initialDeliveryHour24 = this.editDeliveryHour24;
+    this.initialDeliveryMinute = this.editDeliveryMinute;
 
     this.isEditingPreferences = true;
   }
@@ -277,6 +288,22 @@ export class AccountComponent {
       .map((checked, i) => (checked ? i : -1))
       .filter((i) => i >= 0);
 
+    // Only persist the delivery schedule if the user already had one or actually
+    // changed the time here — otherwise editing tone/timezone would silently
+    // overwrite an unset schedule (and its backend default).
+    const scheduleChanged =
+      this.editDeliveryHour24 !== this.initialDeliveryHour24 ||
+      this.editDeliveryMinute !== this.initialDeliveryMinute;
+    const delivery =
+      this.hadStoredSchedule || scheduleChanged
+        ? {
+            schedule: {
+              hour: this.editDeliveryHour24,
+              minute: this.editDeliveryMinute,
+            },
+          }
+        : undefined;
+
     this.isSavingPreferences = true;
     try {
       await this.accountData.updatePreferences(
@@ -287,12 +314,7 @@ export class AccountComponent {
           quietDays,
           timezone: this.editTimezone,
         },
-        {
-          schedule: {
-            hour: this.editDeliveryHour24,
-            minute: this.editDeliveryMinute,
-          },
-        },
+        delivery,
       );
       this.isEditingPreferences = false;
       this.toast.show('Preferences saved.', 'success');
