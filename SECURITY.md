@@ -24,24 +24,35 @@ PII access is documented and minimized.
 | Class | Data | At-rest protection |
 |-------|------|--------------------|
 | **RESTRICTED** | OAuth access/refresh/id tokens (`users/{uid}/integrations/*`) | **AES-256-GCM encrypted** (issue #177). Never client-readable (rules `if false`). |
-| **CONFIDENTIAL** | `profile.context`, `prefs.importantPeople`, `executiveFunctionStatus`, rendered gist bodies | Plaintext at rest — **read back by the browser**, so encrypting at rest would require routing every read through a decrypting function (rejected for the beta; see below). Protected by per-uid Firestore rules + access-path hardening. |
+| **RESTRICTED** | Gist personal-data fields — `dayItems` (calendar) and `emailCards` (inbox) in `users/{uid}/morningGists/*` | **AES-256-GCM encrypted** (issue #177). Server-only fields; the browser never reads them (it renders `renderedHtml`), so encryption is invisible to the UI. |
+| **CONFIDENTIAL** | `profile.context`, `prefs.importantPeople`, `executiveFunctionStatus`, `renderedHtml`, `worldItems` (news) | Plaintext at rest. `worldItems` is public news (not PII). The others are **read back by the browser**, so encrypting would require a decrypting-function read proxy (deferred — see below). Note: `renderedHtml` still contains the calendar/email content as rendered HTML; it's an opaque blob (not an accidental-read vector in the console), so it was left plaintext. Protected by per-uid Firestore rules. |
 | **CONFIDENTIAL** | API keys (Anthropic, Resend, Google, WeatherAPI, field-encryption key, feedback-link key) | Firebase **Secret Manager**; never in code or git. |
 | **INTERNAL** | Cloud Functions logs | Avoid logging token values or raw PII (current code logs uids/dates only). |
 
-### Why client-displayed PII is not encrypted at rest
+### What is encrypted vs. left plaintext, and why
 
-`profile.context`, the important-people list, and the rendered brief are read
-directly by the browser to display the Account and Today screens. Encrypting them
-at rest means the browser can no longer read them — every read/write would have to
-be proxied through a decrypting Cloud Function and Firestore rules locked to block
-direct field access. That is a re-architecture of the app's data flow (loses
-real-time reads, touches onboarding/account/today + new callables) with real
-breakage risk, for a 5-user beta. Decision (#177): **defer**. The tokens — the
-only data whose leak enables external account takeover — are encrypted; the rest
-is covered by access control + the operational hardening below.
+The goal is concrete: **the owner pokes around Firestore regularly and must not
+accidentally read user PII.** Encryption-at-rest delivers exactly that — the
+console shows `enc:v1:…`, so reading requires a deliberate decrypt, not a glance.
 
-If/when the user base or compliance needs grow, revisit "Full encryption" (proxy
-all PII reads/writes through decrypting functions).
+- **Encrypted:** the structured personal-data fields — OAuth tokens, plus a gist's
+  `dayItems` (calendar) and `emailCards` (inbox). These are clean, glanceable
+  fields *and* server-only, so encrypting them is both high-value and zero-risk.
+  As new integrations land that pull personal data, their fields get the same
+  treatment.
+- **Left plaintext:**
+  - `worldItems` (news) and weather — public, not PII.
+  - `profile.context`, `importantPeople`, `executiveFunctionStatus` — owner chose
+    to keep these readable; they're user self-descriptions, not synthesized from
+    third-party accounts.
+  - `renderedHtml` — the browser renders it directly on `/today`, so encrypting it
+    would need a decrypting read-proxy + Firestore lockdown (a data-flow rewire).
+    It contains the same calendar/email content, but as one opaque HTML blob it
+    isn't an accidental-read vector when browsing the console. Deferred.
+
+If the bar later rises to "encrypt everything the browser shows," the path is a
+decrypting callable for `renderedHtml` (the rest of the brief follows the same
+pattern).
 
 ## What is encrypted (issue #177)
 
@@ -51,6 +62,9 @@ all PII reads/writes through decrypting functions).
     `enc:v1:<iv>:<tag>:<ciphertext>`, all base64).
   - Key: `FIELD_ENCRYPTION_KEY` secret (32-byte base64). Decryption passes
     legacy plaintext through unchanged, so rollout is non-breaking.
+- **Gist personal-data fields** (`dayItems`, `emailCards`) are encrypted with the
+  same key via `encryptJson()` before the gist doc is written. The in-memory copy
+  used for email delivery stays plaintext, so encryption only affects data at rest.
 - **Email-feedback links** are HMAC-SHA256 signed (`FEEDBACK_LINK_SECRET`); the
   unauthenticated `/emailFeedback` endpoint rejects unsigned/forged links so
   feedback can't be forged for an arbitrary uid (memory-poisoning).
@@ -93,12 +107,17 @@ firebase deploy --only functions
 gcloud scheduler jobs pause firebase-schedule-generateMorningGist-us-central1 \
   --location us-central1
 export FIELD_ENCRYPTION_KEY="<the same base64 value from step 1>"
+# Tokens:
 npx tsx scripts/migrate-encrypt-tokens.ts            # dry run
 npx tsx scripts/migrate-encrypt-tokens.ts --apply    # write
+# Existing gists (dayItems / emailCards):
+npx tsx scripts/migrate-encrypt-gists.ts             # dry run
+npx tsx scripts/migrate-encrypt-gists.ts --apply     # write
 gcloud scheduler jobs resume firebase-schedule-generateMorningGist-us-central1 \
   --location us-central1
 
-# 5. Verify in the console: integration docs show enc:v1:… for token fields.
+# 5. Verify in the console: integration docs show enc:v1:… for token fields,
+#    and morningGists show enc:v1:… for dayItems / emailCards.
 ```
 
 ## Audit trail
