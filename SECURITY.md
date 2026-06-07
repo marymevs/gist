@@ -74,6 +74,25 @@ pattern).
   feedback can't be forged for an arbitrary uid (memory-poisoning).
   - Helper: `functions/src/crypto/feedbackLink.ts`.
 
+## Reading encrypted data on purpose
+
+Encryption is reversible (AES-GCM, not a hash) — with the key you can always read
+the data. `scripts/decrypt-field.ts` (read-only) is the deliberate-access tool:
+
+```bash
+export FIELD_ENCRYPTION_KEY="<base64 key>"   # same value as the secret
+# Decrypt one value pasted from the console (no DB access needed):
+npx tsx scripts/decrypt-field.ts 'enc:v1:...'
+# Decrypt every encrypted field in a doc:
+npx tsx scripts/decrypt-field.ts --doc users/UID/integrations/gmail
+npx tsx scripts/decrypt-field.ts --doc users/UID/morningGists/2026-06-07
+```
+
+It requires the key, so it isn't a backdoor: reading needs both the
+service-account creds *and* `FIELD_ENCRYPTION_KEY` (two separate doors). This is
+the "deliberate, not accidental" path — you won't read PII by browsing, but you
+can when you mean to.
+
 ## Operational hardening checklist (Finding 2 + ongoing)
 
 - [ ] **Service-account key**: store `gist-sa.json` only in `~/.firebase-keys/`
