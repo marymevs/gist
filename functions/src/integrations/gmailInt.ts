@@ -44,9 +44,7 @@ type StoredGoogleTokens = {
   idToken?: string;
 };
 
-type TokenStorageLocation =
-  | { kind: 'integration'; refPath: string }
-  | { kind: 'user'; userId: string };
+type TokenStorageLocation = { kind: 'integration'; refPath: string };
 
 type GmailMessageListResponse = {
   messages?: Array<{ id: string; threadId: string }>;
@@ -247,24 +245,6 @@ async function loadStoredTokens(userId: string): Promise<{
     }
   }
 
-  const userSnap = await db.collection('users').doc(userId).get();
-  const userData = userSnap.data() as
-    | {
-        integrations?: { gmail?: StoredGoogleTokens };
-        gmailIntegration?: StoredGoogleTokens;
-      }
-    | undefined;
-
-  const nested = userData?.integrations?.gmail;
-  if (nested?.accessToken || nested?.refreshToken) {
-    return { tokens: nested, location: { kind: 'user', userId } };
-  }
-
-  const legacy = userData?.gmailIntegration;
-  if (legacy?.accessToken || legacy?.refreshToken) {
-    return { tokens: legacy, location: { kind: 'user', userId } };
-  }
-
   return { tokens: null, location: null };
 }
 
@@ -283,15 +263,7 @@ async function persistTokens(
     updatedAt: new Date().toISOString(),
   };
 
-  if (location.kind === 'integration') {
-    await db.doc(location.refPath).set(payload, { merge: true });
-    return;
-  }
-
-  await db
-    .collection('users')
-    .doc(location.userId)
-    .set({ integrations: { gmail: payload } }, { merge: true });
+  await db.doc(location.refPath).set(payload, { merge: true });
 }
 
 async function refreshAccessToken(

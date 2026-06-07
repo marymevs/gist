@@ -62,7 +62,11 @@ export type UserDelivery = {
 };
 
 export type IntegrationStatus = {
+  /** 'google' for calendar, 'gmail' for email. */
+  provider?: 'google' | 'gmail';
   status?: 'connected' | 'disconnected';
+  /** When the integration was connected. Firestore Timestamp. */
+  connectedAt?: Timestamp;
 };
 
 export type UserDoc = {
@@ -78,10 +82,16 @@ export type UserDoc = {
     name?: string;
     context?: string;
   };
+  /** Whether the user finished onboarding. Gates the /today vs /onboarding route. */
+  onboardingComplete?: boolean;
   /** Date key (YYYY-MM-DD, user's tz) of the most recent generation. */
   lastGeneratedDate?: string;
   /** UTC instant of the next scheduled delivery; drives the cron query. */
   nextDeliveryAt?: unknown;
+  /** Set at signup. Firestore Timestamp. */
+  createdAt?: Timestamp;
+  /** Bumped on every write. Firestore Timestamp. */
+  updatedAt?: Timestamp;
 };
 
 export type MorningGist = {

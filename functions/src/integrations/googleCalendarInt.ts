@@ -16,9 +16,7 @@ type StoredGoogleTokens = {
   idToken?: string;
 };
 
-type TokenStorageLocation =
-  | { kind: 'integration'; refPath: string }
-  | { kind: 'user'; userId: string };
+type TokenStorageLocation = { kind: 'integration'; refPath: string };
 
 const db = getDb();
 
@@ -66,23 +64,6 @@ async function loadStoredTokens(userId: string): Promise<{
     }
   }
 
-  const userSnap = await db.collection('users').doc(userId).get();
-  const userData = userSnap.data() as
-    | {
-        integrations?: { googleCalendar?: StoredGoogleTokens };
-        calendarIntegration?: StoredGoogleTokens;
-      }
-    | undefined;
-  const nested = userData?.integrations?.googleCalendar;
-  if (nested?.accessToken || nested?.refreshToken) {
-    return { tokens: nested, location: { kind: 'user', userId } };
-  }
-
-  const legacy = userData?.calendarIntegration;
-  if (legacy?.accessToken || legacy?.refreshToken) {
-    return { tokens: legacy, location: { kind: 'user', userId } };
-  }
-
   return { tokens: null, location: null };
 }
 
@@ -101,15 +82,7 @@ async function persistTokens(
     updatedAt: new Date().toISOString(),
   };
 
-  if (location.kind === 'integration') {
-    await db.doc(location.refPath).set(payload, { merge: true });
-    return;
-  }
-
-  await db
-    .collection('users')
-    .doc(location.userId)
-    .set({ integrations: { googleCalendar: payload } }, { merge: true });
+  await db.doc(location.refPath).set(payload, { merge: true });
 }
 
 function getTimeZoneOffset(date: Date, timeZone: string): number {
