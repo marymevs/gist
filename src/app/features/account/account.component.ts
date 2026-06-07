@@ -110,9 +110,6 @@ export class AccountComponent {
     if (integration.status === 'connected' || integration.connectedAt) {
       return 'Connected';
     }
-    if (integration.accessToken || integration.authorizationCode) {
-      return 'Connected';
-    }
     return 'Not connected';
   }
 

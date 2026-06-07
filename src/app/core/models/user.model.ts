@@ -1,9 +1,10 @@
 export interface CalendarIntegration {
   provider?: 'google';
   status?: 'connected' | 'disconnected';
-  accessToken?: string | null;
-  authorizationCode?: string | null;
   connectedAt?: any;
+  // NB: OAuth tokens are NOT stored here. They live, server-only, in the
+  // users/{uid}/integrations/{googleCalendar|gmail} subcollection. The legacy
+  // accessToken/authorizationCode fields were removed (issue #55).
 }
 
 export interface EmailIntegration {
