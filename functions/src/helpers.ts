@@ -50,6 +50,93 @@ export function toDateLabel(date: Date, timeZone: string): string {
   });
 }
 
+/**
+ * Milliseconds that `timeZone` is offset from UTC at the given instant.
+ * Positive east of UTC (e.g. +3_600_000 for CET), negative west
+ * (e.g. -25_200_000 for PDT). Accounts for DST via the Intl database.
+ */
+function tzOffsetMs(timeZone: string, at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(at);
+
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value ?? '0');
+
+  const asUTC = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour') % 24, // some engines emit "24" for midnight under h23
+    get('minute'),
+    get('second'),
+  );
+  return asUTC - at.getTime();
+}
+
+/**
+ * Convert a wall-clock time in a given IANA timezone to the corresponding
+ * UTC instant. e.g. (2026, 6, 6, 7, 0, 'America/Los_Angeles') → the UTC
+ * Date for 7:00 AM Pacific on that day.
+ *
+ * Treats the components as if UTC, then corrects by the zone's offset at
+ * that instant. A single correction pass is accurate except within the
+ * ~1h DST overlap, which is acceptable for delivery scheduling.
+ */
+export function zonedWallTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+): Date {
+  const guessUTC = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const offset = tzOffsetMs(timeZone, new Date(guessUTC));
+  return new Date(guessUTC - offset);
+}
+
+/**
+ * Compute the next delivery instant for a user, in UTC, based on their
+ * schedule prefs interpreted in their own timezone. Returns today's slot if
+ * it hasn't passed yet, otherwise the next calendar day's slot (DST-safe).
+ *
+ * Defaults to 7:00 AM in the user's timezone when no schedule is set.
+ */
+export function computeNextDeliveryDate(
+  now: Date,
+  timeZone: string,
+  schedule?: { hour?: number; minute?: number },
+): Date {
+  const hour = schedule?.hour ?? 7;
+  const minute = schedule?.minute ?? 0;
+
+  const todayKey = toDateKeyISO(now, timeZone); // YYYY-MM-DD in the user's tz
+  const [y, m, d] = todayKey.split('-').map(Number);
+
+  const todaySlot = zonedWallTimeToUtc(y, m, d, hour, minute, timeZone);
+  if (todaySlot.getTime() > now.getTime()) return todaySlot;
+
+  // Today's window has passed → roll to the next calendar day in the user's
+  // timezone. Date.UTC normalizes month/year rollover for us.
+  const next = new Date(Date.UTC(y, m - 1, d + 1));
+  return zonedWallTimeToUtc(
+    next.getUTCFullYear(),
+    next.getUTCMonth() + 1,
+    next.getUTCDate(),
+    hour,
+    minute,
+    timeZone,
+  );
+}
+
 export function safeTimezone(tz?: string): string {
   if (!tz) return 'America/New_York';
   try {

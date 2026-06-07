@@ -16,6 +16,12 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 import { generateMorningGistForUser } from './generateMorningGist';
+import { Timestamp } from 'firebase-admin/firestore';
+import {
+  safeTimezone,
+  toDateKeyISO,
+  computeNextDeliveryDate,
+} from './helpers';
 import type { UserDoc, IntegrationStatus } from './types';
 
 const db = getDb();
@@ -86,7 +92,21 @@ export const generateGistOnDemand = onRequest(
     logger.info('On-demand gist generation requested.', { userId: uid });
 
     try {
-      await generateMorningGistForUser(user, new Date());
+      const now = new Date();
+      await generateMorningGistForUser(user, now);
+
+      // Seed the scheduler fields so this user enters the 15-min delivery
+      // sweep. Mark today as already generated (this preview counts) so the
+      // scheduler won't double-deliver, and point nextDeliveryAt at their
+      // next slot in their own timezone.
+      const timezone = safeTimezone(user.prefs?.timezone);
+      await db.collection('users').doc(uid).update({
+        lastGeneratedDate: toDateKeyISO(now, timezone),
+        nextDeliveryAt: Timestamp.fromDate(
+          computeNextDeliveryDate(now, timezone, user.delivery?.schedule),
+        ),
+      });
+
       res.status(200).json({ ok: true });
     } catch (error) {
       logger.error('On-demand gist generation failed.', {

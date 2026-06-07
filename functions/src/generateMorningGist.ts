@@ -31,6 +31,7 @@ import {
   estimatePages,
   normalizeDayItems,
   normalizeEmailCards,
+  computeNextDeliveryDate,
 } from './helpers';
 
 import { deliverByEmail } from './delivery/email';
@@ -355,27 +356,14 @@ export async function generateMorningGistForUser(
 
 /**
  * Compute the next delivery Timestamp for a user based on their schedule prefs.
- * Returns a Timestamp for tomorrow at the specified hour:minute in the user's timezone.
+ * Thin Firestore wrapper around the pure, tz-aware helper.
  */
 function computeNextDelivery(
   now: Date,
   timezone: string,
   schedule?: { hour?: number; minute?: number },
 ): Timestamp {
-  const hour = schedule?.hour ?? 7;
-  const minute = schedule?.minute ?? 30;
-
-  // Get "today" in the user's timezone
-  const todayStr = toDateKeyISO(now, timezone);
-  // Build a Date for today at delivery time in the user's timezone
-  const deliveryToday = new Date(`${todayStr}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
-
-  // Use tomorrow if today's delivery time has passed
-  const target = deliveryToday.getTime() > now.getTime()
-    ? deliveryToday
-    : new Date(deliveryToday.getTime() + 24 * 60 * 60 * 1000);
-
-  return Timestamp.fromDate(target);
+  return Timestamp.fromDate(computeNextDeliveryDate(now, timezone, schedule));
 }
 
 /** === Scheduled job (15-min cron, per-user delivery times) === */
