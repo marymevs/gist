@@ -66,9 +66,9 @@
         </div>
       </div>
 
-      <!-- Tone & length -->
+      <!-- Delivery & preferences -->
       <div class="card" style="padding: 16px">
-        <h2 style="font-size: 16px; margin: 0 0 10px">Tone &amp; length</h2>
+        <h2 style="font-size: 16px; margin: 0 0 10px">Delivery &amp; preferences</h2>
         <div class="sub">If it can't fit on paper, it doesn't belong.</div>
 
         <!-- Display mode -->
@@ -76,7 +76,9 @@
           <div class="kv" style="grid-template-columns: 140px 1fr">
             <span>Length</span><b>{{ lengthLabel(user) }}</b> <span>Tone</span
             ><b>{{ toneLabel(user) }}</b> <span>Quiet days</span
-            ><b>{{ quietDaysLabel(user) }}</b>
+            ><b>{{ quietDaysLabel(user) }}</b> <span>Timezone</span
+            ><b>{{ timezoneLabel(user) }}</b> <span>Delivery time</span
+            ><b>{{ deliveryTimeLabel(user) }}</b>
           </div>
 
           <div style="margin-top: 12px">
@@ -127,6 +129,55 @@
                   <input type="checkbox" [(ngModel)]="editQuietDays[i]" />
                   {{ day }}
                 </label>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px">
+              <label class="sub" style="display: block; margin-bottom: 4px"
+                >Timezone</label
+              >
+              <select class="textInput" [(ngModel)]="editTimezone">
+                <option *ngFor="let tz of timezoneOptions" [value]="tz.value">
+                  {{ tz.label }}
+                </option>
+              </select>
+            </div>
+
+            <div style="margin-top: 10px">
+              <label class="sub" style="display: block; margin-bottom: 4px"
+                >Delivery time</label
+              >
+              <div style="display: flex; gap: 8px; align-items: center">
+                <select
+                  class="textInput"
+                  style="width: auto"
+                  [(ngModel)]="editDeliveryHour"
+                  aria-label="Hour"
+                >
+                  <option *ngFor="let h of hourOptions" [ngValue]="h">
+                    {{ h }}
+                  </option>
+                </select>
+                <span aria-hidden="true">:</span>
+                <select
+                  class="textInput"
+                  style="width: auto"
+                  [(ngModel)]="editDeliveryMinute"
+                  aria-label="Minute"
+                >
+                  <option *ngFor="let m of minuteOptions" [ngValue]="m">
+                    {{ m < 10 ? "0" + m : m }}
+                  </option>
+                </select>
+                <select
+                  class="textInput"
+                  style="width: auto"
+                  [(ngModel)]="editDeliveryMeridiem"
+                  aria-label="AM or PM"
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
               </div>
             </div>
 

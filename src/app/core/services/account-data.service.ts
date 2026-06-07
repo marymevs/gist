@@ -46,21 +46,32 @@ export class AccountDataService {
 
   async updatePreferences(
     uid: string,
-    prefs: { length?: string; tone?: string; quietDays?: number[] },
+    prefs: {
+      length?: string;
+      tone?: string;
+      quietDays?: number[];
+      timezone?: string;
+    },
+    delivery?: { schedule?: { hour?: number; minute?: number } },
   ): Promise<void> {
     const ref = doc(this.firestore, 'users', uid);
-    await setDoc(
-      ref,
-      {
-        prefs: {
-          length: prefs.length,
-          tone: prefs.tone,
-          quietDays: prefs.quietDays,
-        },
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
+
+    const prefsPatch: Record<string, unknown> = {
+      length: prefs.length,
+      tone: prefs.tone,
+      quietDays: prefs.quietDays,
+    };
+    if (prefs.timezone) prefsPatch['timezone'] = prefs.timezone;
+
+    const patch: Record<string, unknown> = {
+      prefs: prefsPatch,
+      updatedAt: serverTimestamp(),
+    };
+    if (delivery?.schedule) {
+      patch['delivery'] = { schedule: delivery.schedule };
+    }
+
+    await setDoc(ref, patch, { merge: true });
   }
 
   async updateEmailVipSenders(uid: string, vipSenders: string[]): Promise<void> {
