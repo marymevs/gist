@@ -283,21 +283,24 @@ export async function generateMorningGistForUser(
           : timezone.replace(/.*\//, '');
         const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
 
-        // Season estimate from month (meteorological seasons)
-        const month = now.getMonth(); // 0-indexed
-        const season = month <= 1 || month === 11 ? 'Winter'
-          : month <= 4 ? 'Spring'
-          : month <= 7 ? 'Summer'
-          : 'Autumn';
-        // Days since the season began — day 1 on the first of Dec/Mar/Jun/Sep.
-        let seasonStartMonth = 8; // Autumn (Sep)
-        let seasonStartYear = now.getFullYear();
-        if (month === 11) seasonStartMonth = 11;          // Dec → Winter began Dec 1
-        else if (month <= 1) { seasonStartMonth = 11; seasonStartYear -= 1; } // Jan/Feb → Dec 1 last year
-        else if (month <= 4) seasonStartMonth = 2;        // Spring → Mar 1
-        else if (month <= 7) seasonStartMonth = 5;        // Summer → Jun 1
-        const seasonStart = new Date(seasonStartYear, seasonStartMonth, 1);
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // Astronomical seasons (Northern Hemisphere): summer begins at the June
+        // solstice, not Jun 1. Boundary dates are the typical solstice/equinox
+        // days — they drift ±1 day year to year, which is close enough for the
+        // rhythms bar. `season` is the name; `dayOfSeason` counts days since the
+        // season began (day 1 on the solstice/equinox itself).
+        const yr = now.getFullYear();
+        const today = new Date(yr, now.getMonth(), now.getDate());
+        const springStart = new Date(yr, 2, 20); // ~Mar 20 equinox
+        const summerStart = new Date(yr, 5, 21); // ~Jun 21 solstice
+        const autumnStart = new Date(yr, 8, 22); // ~Sep 22 equinox
+        const winterStart = new Date(yr, 11, 21); // ~Dec 21 solstice
+        let season: string;
+        let seasonStart: Date;
+        if (today >= winterStart) { season = 'Winter'; seasonStart = winterStart; }
+        else if (today >= autumnStart) { season = 'Autumn'; seasonStart = autumnStart; }
+        else if (today >= summerStart) { season = 'Summer'; seasonStart = summerStart; }
+        else if (today >= springStart) { season = 'Spring'; seasonStart = springStart; }
+        else { season = 'Winter'; seasonStart = new Date(yr - 1, 11, 21); } // Jan–Mar → last Dec solstice
         const dayOfSeason =
           Math.floor((today.getTime() - seasonStart.getTime()) / 86_400_000) + 1;
 
