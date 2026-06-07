@@ -34,7 +34,6 @@ export type ConnectorContext = {
   city: string;
   prefs?: {
     email?: {
-      vipSenders?: string[];
       includeUnreadOnly?: boolean;
       includeInboxOnly?: boolean;
       maxCards?: number;
@@ -42,6 +41,15 @@ export type ConnectorContext = {
       maxCandidates?: number;
       enableAi?: boolean;
     };
+    /**
+     * Single source of truth for VIP email prioritization — the Gmail connector
+     * derives its VIP sender list from the entries that carry an email.
+     */
+    importantPeople?: {
+      name: string;
+      relationship: string;
+      email?: string;
+    }[];
   };
   now: Date;
 };

@@ -18,11 +18,10 @@ export type UserPrefs = {
   topics?: string[];
   rhythms?: string[];
   /**
-   * Important people in the user's life. Single source of truth for the prompt —
-   * used to ground the People section AND to prioritize email signals in the
-   * generated brief. The legacy email.vipSenders field below is retained for the
-   * Gmail fetch/scoring layer (gmailInt.ts) and the Account UI until those are
-   * migrated to derive from importantPeople in a follow-up PR.
+   * Important people in the user's life. Single source of truth for both the
+   * prompt (grounds the People section) and email prioritization — the Gmail
+   * fetch/scoring layer (gmailInt.ts) derives its VIP sender list from the
+   * entries that carry an email. Edited directly in the Account UI.
    */
   importantPeople?: {
     name: string;
@@ -33,12 +32,6 @@ export type UserPrefs = {
   tone?: string;
   maxPages?: number;
   email?: {
-    /**
-     * Legacy field consumed by gmailInt.ts email scoring and the Account UI.
-     * Not passed to the prompt — the prompt uses importantPeople instead.
-     * Will be derived from importantPeople in a future PR.
-     */
-    vipSenders?: string[];
     includeUnreadOnly?: boolean;
     includeInboxOnly?: boolean;
     maxCards?: number;

@@ -26,7 +26,6 @@ export type EmailCard = {
 };
 
 type EmailPrefs = {
-  vipSenders?: string[];
   includeUnreadOnly?: boolean;
   includeInboxOnly?: boolean;
   maxCards?: number;
@@ -512,6 +511,11 @@ export async function fetchEmailCards(params: {
   userId: string;
   userEmail?: string | null;
   prefs?: EmailPrefs;
+  /**
+   * Single source of truth for VIP senders. The VIP list is derived from the
+   * entries that carry an email — see importantPeople in UserPrefs.
+   */
+  importantPeople?: { name: string; relationship: string; email?: string }[];
   now: Date;
 }): Promise<EmailCard[]> {
   const prefs: EmailPrefs = params.prefs ?? {};
@@ -573,9 +577,10 @@ export async function fetchEmailCards(params: {
   );
 
   const userEmail = params.userEmail?.toLowerCase() ?? '';
-  const vipSenders = (prefs.vipSenders ?? []).map((email) =>
-    email.toLowerCase(),
-  );
+  const vipEmails = (params.importantPeople ?? [])
+    .map((person) => person.email)
+    .filter((email): email is string => !!email)
+    .map((email) => email.toLowerCase());
   const nowMs = params.now.getTime();
   const lookbackMs = lookbackHours * 60 * 60 * 1000;
 
@@ -644,7 +649,7 @@ export async function fetchEmailCards(params: {
     const senderDomain = senderEmail
       ? (senderEmail.split('@')[1] ?? null)
       : null;
-    const fromVip = senderEmail ? vipSenders.includes(senderEmail) : false;
+    const fromVip = senderEmail ? vipEmails.includes(senderEmail) : false;
 
     let categoryHint: EmailCategory = 'FYI';
     if (hasWaitingOn) categoryHint = 'WaitingOn';

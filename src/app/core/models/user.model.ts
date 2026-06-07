@@ -44,14 +44,15 @@ export interface GistUser {
   };
 
   prefs?: {
-    email?: {
-      /** Legacy — kept for Account UI; not passed to the prompt (importantPeople is). */
-      vipSenders?: string[];
-    };
     length?: 'brief' | 'standard' | 'detailed';
     tone?: 'calm' | 'detailed' | 'concise';
     topics?: string[]; // chip selections from onboarding
     rhythms?: string[]; // chip selections from onboarding
+    /**
+     * Important people — single source of truth for both the prompt's People
+     * section and email VIP prioritization. Entries with an email are treated
+     * as VIP senders by the Gmail fetch layer.
+     */
     importantPeople?: {
       name: string;
       relationship: string;
