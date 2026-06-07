@@ -6,6 +6,13 @@
       "fields": [
         { "fieldPath": "delivery.phaxioFaxId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "morningGists",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
