@@ -11,6 +11,7 @@ import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrati
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
+import { FIELD_ENCRYPTION_KEY } from './crypto/fieldCrypto';
 
 import {
   GOOGLE_CLIENT_ID,
@@ -425,6 +426,7 @@ export const generateMorningGist = onSchedule(
       GOOGLE_CLIENT_SECRET,
       ANTHROPIC_API_KEY,
       RESEND_API_KEY,
+      FIELD_ENCRYPTION_KEY,
     ],
   },
   async () => {

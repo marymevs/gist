@@ -1,6 +1,10 @@
 import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
 import { getDb } from '../firebaseAdmin';
+import {
+  decryptTokenRecord,
+  encryptTokenRecord,
+} from '../crypto/fieldCrypto';
 
 export const GOOGLE_CLIENT_ID = defineSecret('GOOGLE_CLIENT_ID');
 export const GOOGLE_CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
@@ -58,7 +62,7 @@ async function loadStoredTokens(userId: string): Promise<{
     const data = integrationSnap.data() as StoredGoogleTokens | undefined;
     if (data?.accessToken || data?.refreshToken) {
       return {
-        tokens: data,
+        tokens: decryptTokenRecord(data),
         location: { kind: 'integration', refPath: integrationRef.path },
       };
     }
@@ -73,12 +77,14 @@ async function persistTokens(
 ): Promise<void> {
   if (!location) return;
   const payload = {
-    accessToken: tokens.accessToken ?? null,
-    refreshToken: tokens.refreshToken ?? null,
+    ...encryptTokenRecord({
+      accessToken: tokens.accessToken ?? null,
+      refreshToken: tokens.refreshToken ?? null,
+      idToken: tokens.idToken ?? null,
+    }),
     scope: tokens.scope ?? null,
     tokenType: tokens.tokenType ?? null,
     expiryDate: tokens.expiryDate ?? null,
-    idToken: tokens.idToken ?? null,
     updatedAt: new Date().toISOString(),
   };
 

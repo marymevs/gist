@@ -16,6 +16,7 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 import { generateMorningGistForUser } from './generateMorningGist';
+import { FIELD_ENCRYPTION_KEY } from './crypto/fieldCrypto';
 import { buildUserDoc } from './firestoreUtils';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
@@ -38,6 +39,7 @@ export const generateGistOnDemand = onRequest(
       GOOGLE_CLIENT_SECRET,
       ANTHROPIC_API_KEY,
       RESEND_API_KEY,
+      FIELD_ENCRYPTION_KEY,
     ],
   },
   async (req, res) => {
