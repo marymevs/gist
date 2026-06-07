@@ -1,12 +1,24 @@
 {
-  "indexes": [
+  "indexes": [],
+  "fieldOverrides": [
     {
       "collectionGroup": "morningGists",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "delivery.phaxioFaxId", "order": "ASCENDING" }
+      "fieldPath": "createdAt",
+      "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
+        { "queryScope": "COLLECTION_GROUP", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "morningGists",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": [
+        { "queryScope": "COLLECTION", "order": "ASCENDING" },
+        { "queryScope": "COLLECTION", "order": "DESCENDING" },
+        { "queryScope": "COLLECTION", "arrayConfig": "CONTAINS" }
       ]
     }
-  ],
-  "fieldOverrides": []
+  ]
 }
