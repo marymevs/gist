@@ -21,7 +21,14 @@ export type NewspaperGenerationInput = {
   date: string;
   timezone: string;
   subscriberName: string;
-  userContext?: string;      // free-text role/situation from profile
+  userContext?: string;      // raw free-text self-description from profile.context
+  /** Backend-derived structure of userContext (issue #156). Scaffolding only. */
+  profileDerived?: {
+    work?: string;
+    freeTime?: string;
+    creative?: string;
+    misc?: string;
+  };
 
   // Connector data
   weatherSummary: string;
@@ -65,6 +72,12 @@ function serializeContext(input: NewspaperGenerationInput): string {
   if (input.moonPhase) parts.push(`<moon>${input.moonPhase}</moon>`);
   if (input.location) parts.push(`<location>${input.location}</location>`);
   if (input.userContext) parts.push(`<user_context>${input.userContext}</user_context>`);
+  if (input.profileDerived) {
+    const d = input.profileDerived;
+    if (d.work || d.freeTime || d.creative || d.misc) {
+      parts.push(safeUserData('user_context_structured', d));
+    }
+  }
   if (input.tone) parts.push(`<tone>${input.tone}</tone>`);
   if (input.rhythms?.length) {
     parts.push(`<rhythms>${input.rhythms.join(', ')}</rhythms>`);
@@ -120,6 +133,7 @@ The People section should include gentle accountability nudges. If someone hasn'
 The moon highlight should be metaphorical — connecting the current moon phase to the reader's life situation. Not astrology. Poetry.
 
 PERSONALIZATION:
+- <user_context> is the reader's own words about themselves — use it for voice, nuance, and the specific details that make the writing feel personal. <user_context_structured>, when present, is a parsed summary of that same text (work / freeTime / creative / misc); lean on it for quick scaffolding and orientation, but always defer to <user_context> for tone and specifics. If they conflict, the raw <user_context> wins.
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
 - Reference <location>, weather, and season to ground the writing in the reader's specific place.

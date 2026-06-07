@@ -168,6 +168,15 @@ export async function generateMorningGistForUser(
       timezone,
       subscriberName: user.profile?.name ?? 'Friend',
       userContext: user.profile?.context,
+      // Pass only the text fields — drop parsedAt/parserVersion metadata.
+      profileDerived: user.profile?.contextDerived
+        ? {
+            work: user.profile.contextDerived.work,
+            freeTime: user.profile.contextDerived.freeTime,
+            creative: user.profile.contextDerived.creative,
+            misc: user.profile.contextDerived.misc,
+          }
+        : undefined,
       weatherSummary: weather,
       moonPhase: `${moon.emoji} ${moon.phase}`,
       dayItems,
