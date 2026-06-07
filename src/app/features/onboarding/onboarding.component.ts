@@ -34,6 +34,27 @@ const RHYTHM_CHIPS = [
   'Lunchtime catch-up',
 ] as const;
 
+// Sample self-descriptions shown in the optional expandable panel under the
+// context textarea. Deliberately cross-generational and varied — they show
+// what "good" looks like without prescribing a shape (issue #156).
+const CONTEXT_EXAMPLES = [
+  {
+    tag: 'Writer',
+    text:
+      'I’m a fiction writer working on my second novel — historical, set in 1960s Brooklyn. I teach part-time at a community college, mostly nights, which means my mornings are my real working hours. I live with my partner and our two cats. Outside of writing I’m into long walks, jazz records, and cooking projects that take all weekend. I’m trying to be less reactive to my phone and more present with the people I care about.',
+  },
+  {
+    tag: 'Bar owner',
+    text:
+      'I own a wine bar in Brooklyn — six employees, busy weekends, slow weekdays. I have ADHD and mornings are the hardest part of my day; I tend to spiral on my phone if I don’t have something to anchor on. My fiancée and I just got engaged; her parents are visiting next month. I’m in a band that practices Tuesdays — I play bass, badly. I’m trying to figure out whether to open a second location.',
+  },
+  {
+    tag: 'Retired professional',
+    text:
+      'I retired from corporate law three years ago and now I sit on two non-profit boards. I read every morning — newspaper, then a novel. My grandchildren are 4 and 6 and I see them most weekends. I’ve started taking watercolor lessons; I’m bad but it’s the first thing in years I’ve done purely for myself. I want to use my mornings well; I have time now and I don’t want to waste it.',
+  },
+] as const;
+
 const LOADING_MESSAGES = [
   'Checking tomorrow\u2019s forecast\u2026',
   'Reading your calendar\u2026',
@@ -49,23 +70,37 @@ const LOADING_MESSAGES = [
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
+  /** Total onboarding screens. Bumped from 4 → 6 for the expanded questionnaire. */
+  readonly maxStep = 6;
   step = 1;
 
   // Screen 1: Who You Are
   profileName = '';
   profileContext = '';
+  showContextExamples = false;
 
-  // Screen 2: Connect Your Data
+  // Screen 2: Your Days (direct asks)
+  majorProject = '';
+  morningRoutine = '';
+  wakingTime = '';
+
+  // Screen 3: Mornings & What Works (direct asks)
+  worstPartOfMorning = '';
+  whatWorksPerfectly = '';
+  whatWouldMakeYouStop = '';
+  executiveFunctionStatus: 'yes' | 'no' | 'prefer-not-to-say' | null = null;
+
+  // Screen 4: Connect Your Data
   calendarStatus: 'idle' | 'connecting' | 'connected' = 'idle';
   gmailStatus: 'idle' | 'connecting' | 'connected' = 'idle';
   showOAuthTrust = false;
 
-  // Screen 3: Preferences
+  // Screen 5: Preferences
   selectedTone: 'calm' | 'detailed' | 'concise' | null = null;
   selectedTopics: string[] = [];
   selectedRhythms: string[] = [];
 
-  // Screen 4: Delivery time
+  // Screen 6: Delivery time
   // Delivery method itself is not stored — runtime resolveDeliveryMethod()
   // returns 'email' if Gmail is connected, 'web' otherwise.
   // deliveryHour is the displayed 12-hour value (1-12); pair with
@@ -85,6 +120,9 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   readonly topicChips = TOPIC_CHIPS;
   readonly rhythmChips = RHYTHM_CHIPS;
   readonly loadingMessages = LOADING_MESSAGES;
+  readonly contextExamples = CONTEXT_EXAMPLES;
+  /** [1..maxStep] — drives the step-dot indicator and progress label. */
+  readonly stepSequence = Array.from({ length: this.maxStep }, (_, i) => i + 1);
 
   private authUser: User | null = null;
   private userSub?: Subscription;
@@ -138,28 +176,39 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       case 1:
         return this.profileName.trim().length > 0;
       case 2:
-        return this.calendarStatus === 'connected' || this.gmailStatus === 'connected';
       case 3:
-        return true; // all optional
+        return true; // questionnaire \u2014 all optional
       case 4:
-        return true;
+        return this.calendarStatus === 'connected' || this.gmailStatus === 'connected';
+      case 5:
+      case 6:
+        return true; // preferences + delivery \u2014 all optional
       default:
         return false;
     }
   }
 
   get connectorWarning(): string {
-    if (this.step !== 2) return '';
+    if (this.step !== 4) return '';
     if (this.calendarStatus === 'connected' || this.gmailStatus === 'connected') return '';
     return 'Your first Gist will be lighter without connected data \u2014 you can always add sources later from Settings.';
   }
 
   next(): void {
-    if (this.step < 4) {
+    if (this.step < this.maxStep) {
       this.step++;
     } else {
       this.finishOnboarding();
     }
+  }
+
+  toggleContextExamples(): void {
+    this.showContextExamples = !this.showContextExamples;
+  }
+
+  setExecutiveFunction(status: 'yes' | 'no' | 'prefer-not-to-say'): void {
+    this.executiveFunctionStatus =
+      this.executiveFunctionStatus === status ? null : status;
   }
 
   back(): void {
@@ -289,20 +338,31 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     const uid = this.authUser.uid;
     const ref = doc(this.firestore, 'users', uid);
 
-    // Save onboarding profile to Firestore
+    // Save onboarding profile to Firestore.
+    // Empty optional fields are written as null (not omitted) so re-running
+    // onboarding clears a previously-entered value rather than leaving it stale.
+    const orNull = (v: string): string | null => v.trim() || null;
     try {
       await setDoc(
         ref,
         {
           profile: {
             name: this.profileName.trim(),
-            context: this.profileContext.trim() || null,
+            context: orNull(this.profileContext),
           },
           prefs: {
             tone: this.selectedTone ?? 'calm',
             topics: this.selectedTopics.length > 0 ? this.selectedTopics : null,
             rhythms: this.selectedRhythms.length > 0 ? this.selectedRhythms : null,
             timezone: this.timezone,
+            // Expanded questionnaire (issue #156)
+            majorProject: orNull(this.majorProject),
+            morningRoutine: orNull(this.morningRoutine),
+            wakingTime: orNull(this.wakingTime),
+            worstPartOfMorning: orNull(this.worstPartOfMorning),
+            whatWorksPerfectly: orNull(this.whatWorksPerfectly),
+            whatWouldMakeYouStop: orNull(this.whatWouldMakeYouStop),
+            executiveFunctionStatus: this.executiveFunctionStatus ?? null,
           },
           delivery: {
             schedule: {
