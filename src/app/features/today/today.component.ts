@@ -6,8 +6,6 @@ import { doc, docData } from '@angular/fire/firestore';
 
 import { Auth, authState } from '@angular/fire/auth';
 import { Firestore, Timestamp } from '@angular/fire/firestore';
-import { Functions, httpsCallable } from '@angular/fire/functions';
-
 import { Observable, of, combineLatest, tap } from 'rxjs';
 import { map, switchMap, startWith, shareReplay } from 'rxjs/operators';
 
@@ -126,7 +124,6 @@ export class TodayComponent {
   private db = inject(Firestore);
   private router = inject(Router);
   private datePipe = inject(DatePipe);
-  private functions = inject(Functions);
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
 
@@ -135,7 +132,6 @@ export class TodayComponent {
 
   // UI state
   isGenerating = false;
-  isResending = false;
 
   // Memoize the trusted srcdoc so change detection doesn't re-sanitize (and
   // reload the iframe) on every tick.
@@ -243,30 +239,21 @@ export class TodayComponent {
     }
   }
 
-  async onResend(): Promise<void> {
-    if (this.isResending) return;
-    this.isResending = true;
-    try {
-      const fn = httpsCallable(this.functions, 'resendMorningGist');
-      await fn({});
-      this.toast.show('Gist resend queued.', 'success');
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unable to resend — try again later.';
-      this.toast.show(message, 'error');
-    } finally {
-      this.isResending = false;
-    }
-  }
-
-  async onGenerateOnDemand(): Promise<void> {
+  /**
+   * Regenerate today's brief on demand. Rebuilds the gist from scratch,
+   * re-emails it, and seeds the delivery scheduler so this preview counts
+   * toward today's send. The page updates live via the gist$ Firestore
+   * listener — no manual refresh needed.
+   */
+  async onRegenerate(): Promise<void> {
     if (this.isGenerating) return;
     this.isGenerating = true;
     try {
       const token = await this.auth.currentUser?.getIdToken();
-      if (!token) return;
+      if (!token) {
+        this.toast.show('Sign in to regenerate your brief.', 'error');
+        return;
+      }
       const projectId = this.auth.app.options.projectId;
       const h = window.location.hostname;
       const isLocal = h === 'localhost' || h === '127.0.0.1' || h === '::1';
@@ -283,17 +270,13 @@ export class TodayComponent {
       });
       if (!resp.ok) throw new Error(`Generation failed: ${resp.status}`);
       // gist$ is a real-time Firestore listener — page updates automatically
+      this.toast.show('Brief regenerated and re-sent.', 'success');
     } catch (err) {
       console.error('generateGistOnDemand failed', err);
+      this.toast.show('Unable to regenerate — try again later.', 'error');
     } finally {
       this.isGenerating = false;
     }
-  }
-
-  onEditTomorrow(): void {
-    this.router.navigate(['/account'], {
-      queryParams: { section: 'preferences' },
-    });
   }
 
   goToSchedule(): void {
