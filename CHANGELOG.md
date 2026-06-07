@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **`buildUserDoc` consolidated into a single shared helper** in `firestoreUtils.ts`. UserDoc construction previously lived in two places — the canonical helper in `generateMorningGist.ts` and an inline copy in `generateGistOnDemand.ts` — which is how #167/#168 silently dropped `profile` and `gistIssueCount` from the on-demand path. Both code paths now call the same `buildUserDoc(uid, data)`, so adding a future UserDoc field can no longer drift between them (#171).
+
 ### Removed
 - **`observeTopicAffinities` memory function** deleted (and its call site in `generateMorningGist.ts`). It only echoed `prefs.topics` into the memory layer as "Interested in X." signals — the same information the `<interests>` prompt block already carries from the same source field, so the model saw stated interests twice. The memory layer is now reserved for genuinely observed behavioral patterns (the calendar/people observations); real topic-affinity tracking from engagement signals is deferred to the Phase 4 scan-back loop (#169).
 - **`generateGistPrint` Cloud Function** deleted (and its `generateGistPrint.test.ts`). The endpoint had no callers — the UI "Print" button uses `window.print()` on the rendered page, and nothing linked to the server-rendered print URL. Dropped its `index.ts` export.

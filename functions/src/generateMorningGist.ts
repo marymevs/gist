@@ -10,7 +10,7 @@ import { buildNewspaperHtml } from './integrations/newspaperTemplate';
 import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrations/newspaperEmailTemplate';
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
-import { updateGistDeliveryStatus } from './firestoreUtils';
+import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
 
 import {
   GOOGLE_CLIENT_ID,
@@ -440,19 +440,6 @@ export const generateMorningGist = onSchedule(
     });
   },
 );
-
-function buildUserDoc(uid: string, data: Record<string, any>): UserDoc {
-  return {
-    uid,
-    email: data.email ?? null,
-    prefs: data.prefs ?? {},
-    delivery: data.delivery ?? {},
-    calendarIntegration: data.calendarIntegration,
-    emailIntegration: data.emailIntegration,
-    gistIssueCount: data.gistIssueCount ?? 0,
-    profile: data.profile ?? {},
-  };
-}
 
 async function generateAndUpdateSchedule(
   user: UserDoc,

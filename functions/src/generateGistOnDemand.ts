@@ -16,13 +16,13 @@ import {
   GOOGLE_CLIENT_SECRET,
 } from './integrations/googleCalendarInt';
 import { generateMorningGistForUser } from './generateMorningGist';
+import { buildUserDoc } from './firestoreUtils';
 import { Timestamp } from 'firebase-admin/firestore';
 import {
   safeTimezone,
   toDateKeyISO,
   computeNextDeliveryDate,
 } from './helpers';
-import type { UserDoc, IntegrationStatus } from './types';
 
 const db = getDb();
 
@@ -71,23 +71,7 @@ export const generateGistOnDemand = onRequest(
       return;
     }
 
-    const data = userSnap.data() as Partial<
-      UserDoc & {
-        calendarIntegration?: IntegrationStatus;
-        emailIntegration?: IntegrationStatus;
-      }
-    >;
-
-    const user: UserDoc = {
-      uid,
-      email: data.email ?? null,
-      prefs: data.prefs ?? {},
-      delivery: data.delivery ?? {},
-      calendarIntegration: data.calendarIntegration,
-      emailIntegration: data.emailIntegration,
-      profile: data.profile ?? {},
-      gistIssueCount: data.gistIssueCount ?? 0,
-    };
+    const user = buildUserDoc(uid, userSnap.data() ?? {});
 
     logger.info('On-demand gist generation requested.', { userId: uid });
 
