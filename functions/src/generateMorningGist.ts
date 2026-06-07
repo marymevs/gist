@@ -11,7 +11,7 @@ import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrati
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
-import { FIELD_ENCRYPTION_KEY } from './crypto/fieldCrypto';
+import { FIELD_ENCRYPTION_KEY, encryptJson } from './crypto/fieldCrypto';
 
 import {
   GOOGLE_CLIENT_ID,
@@ -246,7 +246,20 @@ export async function generateMorningGistForUser(
       createdAt: Timestamp.now(),
     };
 
-    await gistRef.set({ ...gist, dayItems: cleanDayItems }, { merge: true });
+    // Encrypt the personal-data fields at rest (issue #177): dayItems (calendar)
+    // and emailCards (inbox). These are server-only — the browser renders the
+    // gist from renderedHtml, never these — so encrypting them is invisible to
+    // the UI. The in-memory `gist`/cleanDayItems/cleanEmailCards stay plaintext
+    // for email delivery below. News (worldItems) and weather are public; left
+    // as-is.
+    await gistRef.set(
+      {
+        ...gist,
+        dayItems: encryptJson(cleanDayItems),
+        emailCards: encryptJson(cleanEmailCards),
+      },
+      { merge: true },
+    );
 
     const dateLabel = toDateLabel(now, timezone);
 

@@ -5,6 +5,8 @@ import {
   isEncrypted,
   encryptTokenRecord,
   decryptTokenRecord,
+  encryptJson,
+  decryptJson,
 } from './fieldCrypto';
 
 // A deterministic 32-byte key (base64) for tests. The module reads the key
@@ -83,5 +85,22 @@ describe('fieldCrypto', () => {
   it('decryptTokenRecord passes through a legacy plaintext record', () => {
     const legacy = { accessToken: 'plain-at', refreshToken: 'plain-rt' };
     expect(decryptTokenRecord(legacy)).toEqual(legacy);
+  });
+
+  it('round-trips structured data via encryptJson/decryptJson', () => {
+    const dayItems = [
+      { time: '09:00', title: 'Therapy', note: 'weekly' },
+      { time: '14:00', title: 'Investor call' },
+    ];
+    const enc = encryptJson(dayItems);
+    expect(typeof enc).toBe('string');
+    expect(isEncrypted(enc)).toBe(true);
+    expect(enc).not.toContain('Therapy'); // plaintext not present in ciphertext
+    expect(decryptJson(enc)).toEqual(dayItems);
+  });
+
+  it('decryptJson passes through legacy already-parsed values', () => {
+    const legacy = [{ title: 'old plaintext event' }];
+    expect(decryptJson(legacy)).toEqual(legacy);
   });
 });

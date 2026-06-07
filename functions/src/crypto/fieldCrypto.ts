@@ -120,6 +120,26 @@ export function decryptString(value: string): string {
   ]).toString('utf8');
 }
 
+/**
+ * Encrypt a structured value (array/object) for at-rest storage. The value is
+ * JSON-serialized then encrypted, yielding a single enc:v1 string. Use for
+ * fields like a gist's dayItems / emailCards that hold personal data pulled from
+ * a user's calendar and inbox.
+ */
+export function encryptJson(value: unknown): string {
+  return encryptString(JSON.stringify(value));
+}
+
+/**
+ * Inverse of encryptJson. Encrypted strings are decrypted and JSON-parsed;
+ * legacy already-parsed values (plaintext arrays/objects from before migration)
+ * are returned unchanged.
+ */
+export function decryptJson<T>(value: unknown): T {
+  if (isEncrypted(value)) return JSON.parse(decryptString(value)) as T;
+  return value as T;
+}
+
 /** Token fields that must be encrypted at rest. */
 const TOKEN_FIELDS = ['accessToken', 'refreshToken', 'idToken'] as const;
 
