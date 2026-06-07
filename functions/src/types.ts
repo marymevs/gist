@@ -50,6 +50,20 @@ export type UserPrefs = {
     label: string;       // e.g. "Thesis", "Race"
     targetDate: string;  // ISO date e.g. "2026-05-07"
   };
+
+  // ── Expanded questionnaire (issue #156) ──
+  // Direct asks — specific enough that asking beats parsing from profile.context.
+  /** What they're working on right now — grounds the Practice Arc. */
+  majorProject?: string;
+  /** Long-form: "walk me through the first 2 hours of your day". */
+  morningRoutine?: string;
+  worstPartOfMorning?: string;
+  whatWorksPerfectly?: string;
+  whatWouldMakeYouStop?: string;
+  /** Self-reported executive-function challenges (e.g. ADHD). */
+  executiveFunctionStatus?: 'yes' | 'no' | 'prefer-not-to-say';
+  /** Free-format wake time, e.g. "6:30 most days", "varies". */
+  wakingTime?: string;
 };
 
 export type UserDelivery = {
@@ -80,7 +94,20 @@ export type UserDoc = {
   gistIssueCount?: number;
   profile?: {
     name?: string;
+    /** Long-form, free-text self-description — the source of truth. */
     context?: string;
+    /**
+     * Backend-derived structure parsed from `context` by deriveProfileContext.
+     * Regenerable; the generator uses it if present, raw `context` otherwise.
+     */
+    contextDerived?: {
+      work?: string;
+      freeTime?: string;
+      creative?: string;
+      misc?: string;
+      parsedAt?: Timestamp;
+      parserVersion?: string;
+    };
   };
   /** Whether the user finished onboarding. Gates the /today vs /onboarding route. */
   onboardingComplete?: boolean;
