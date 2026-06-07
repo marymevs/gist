@@ -23,7 +23,24 @@ export interface GistUser {
   // Onboarding profile fields
   profile?: {
     name?: string;
-    context?: string; // free-text role/situation
+    /**
+     * Long-form, free-text self-description (the source of truth). The user
+     * describes themselves in their own words; we never overwrite this.
+     */
+    context?: string;
+    /**
+     * Backend-derived structure parsed from `context` by the deriveProfileContext
+     * Cloud Function. Regenerable — re-derived whenever `context` changes or the
+     * parser improves. The first Gist uses this if ready, raw `context` if not.
+     */
+    contextDerived?: {
+      work?: string;
+      freeTime?: string;
+      creative?: string;
+      misc?: string;
+      parsedAt?: any; // Firestore Timestamp
+      parserVersion?: string;
+    };
   };
 
   prefs?: {
@@ -48,6 +65,21 @@ export interface GistUser {
       label: string; // e.g. "Thesis", "Race"
       targetDate: string; // ISO date e.g. "2026-05-07"
     };
+
+    // ── Expanded questionnaire (issue #156) ──
+    // Direct asks — kept as distinct questions because they're specific enough
+    // that asking beats parsing them out of the free-text `profile.context`.
+    /** What they're working on right now — grounds the Practice Arc. */
+    majorProject?: string;
+    /** Long-form: "walk me through the first 2 hours of your day". */
+    morningRoutine?: string;
+    worstPartOfMorning?: string;
+    whatWorksPerfectly?: string;
+    whatWouldMakeYouStop?: string;
+    /** Self-reported executive-function challenges (e.g. ADHD). */
+    executiveFunctionStatus?: 'yes' | 'no' | 'prefer-not-to-say';
+    /** Free-format wake time, e.g. "6:30 most days", "varies". */
+    wakingTime?: string;
   };
 
   // Delivery schedule (per-user delivery times)

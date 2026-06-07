@@ -168,6 +168,15 @@ export async function generateMorningGistForUser(
       timezone,
       subscriberName: user.profile?.name ?? 'Friend',
       userContext: user.profile?.context,
+      // Pass only the text fields — drop parsedAt/parserVersion metadata.
+      profileDerived: user.profile?.contextDerived
+        ? {
+            work: user.profile.contextDerived.work,
+            freeTime: user.profile.contextDerived.freeTime,
+            creative: user.profile.contextDerived.creative,
+            misc: user.profile.contextDerived.misc,
+          }
+        : undefined,
       weatherSummary: weather,
       moonPhase: `${moon.emoji} ${moon.phase}`,
       dayItems,
@@ -186,6 +195,16 @@ export async function generateMorningGistForUser(
       location: user.prefs?.city,
       rhythms: user.prefs?.rhythms,
       importantPeople: user.prefs?.importantPeople,
+      // Expanded questionnaire direct asks (issue #156).
+      majorProject: user.prefs?.majorProject,
+      morningRoutine: user.prefs?.morningRoutine,
+      wakingTime: user.prefs?.wakingTime,
+      worstPartOfMorning: user.prefs?.worstPartOfMorning,
+      whatWorksPerfectly: user.prefs?.whatWorksPerfectly,
+      whatWouldMakeYouStop: user.prefs?.whatWouldMakeYouStop,
+      // Only forward an affirmative ADHD signal; withhold 'no'/'prefer-not-to-say'.
+      executiveFunctionStatus:
+        user.prefs?.executiveFunctionStatus === 'yes' ? 'yes' : undefined,
     });
 
     const newspaperData: Record<string, unknown> = newspaperOutput as unknown as Record<string, unknown>;

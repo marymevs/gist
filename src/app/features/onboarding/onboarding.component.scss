@@ -106,7 +106,119 @@
   &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 }
 
-// ── Connectors (Screen 2) ──
+// Long-form context textarea (Screen 1 / Screen 2)
+.contextTextarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.55;
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 0.15s ease-out;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 96px;
+  &::placeholder { color: var(--muted); opacity: 0.6; }
+  &:hover { border-color: var(--border-strong); }
+  &:focus { outline: none; border-color: var(--ink); }
+  &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  &--short { min-height: 72px; }
+}
+
+// ── Expandable examples (Screen 1) ──
+
+.examples { margin-top: calc(var(--space-sm) * -1); }
+
+.examplesToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s ease-out;
+  &:hover { color: var(--ink); }
+  &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+
+.examplesChevron {
+  display: inline-block;
+  transition: transform 0.2s ease-in-out;
+  .examplesToggle.open & { transform: rotate(90deg); }
+}
+
+.examplesPanel {
+  margin-top: var(--space-sm);
+  display: grid;
+  gap: var(--space-sm);
+  animation: fadeIn 200ms ease-in;
+}
+
+.examplesDisclaimer {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 var(--space-xs);
+}
+
+.exampleCard {
+  margin: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+}
+
+.exampleTag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: var(--space-xs);
+}
+
+.exampleText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+// ── Pills (Screen 3 — executive-function question) ──
+
+.pillRow { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+.pill {
+  font-size: 14px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  transition: background 0.15s ease-out, color 0.15s ease-out;
+  &:hover { background: var(--surface-alt); }
+  &:active { transform: scale(0.97); }
+  &:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  &.selected {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    &:hover { background: #0d0d1a; }
+  }
+}
+
+// ── Connectors (Screen 4) ──
 
 .connectorList { display: grid; gap: var(--space-sm); }
 

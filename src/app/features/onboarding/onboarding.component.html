@@ -26,10 +26,10 @@
       <p class="brandTagline">Your day, on paper.</p>
     </div>
 
-    <div class="stepIndicator" [attr.aria-label]="'Step ' + step + ' of 4'">
+    <div class="stepIndicator" [attr.aria-label]="'Step ' + step + ' of ' + maxStep">
       <span
         class="stepDot"
-        *ngFor="let s of [1, 2, 3, 4]"
+        *ngFor="let s of stepSequence"
         [class.active]="s === step"
         [class.done]="s < step"
       ></span>
@@ -47,7 +47,8 @@
     <section class="screen" *ngIf="step === 1">
       <h2 class="screenTitle">Who you are</h2>
       <p class="screenSub">
-        Just enough so your Gist reads like it was written for you.
+        Describe yourself in your own words. The more you say, the more your
+        Gist reads like it was written for you.
       </p>
 
       <div class="formGroup">
@@ -63,18 +64,169 @@
         </label>
 
         <label class="field">
-          <span>What do you do? <em class="optional">(optional)</em></span>
+          <span>Tell me about yourself <em class="optional">(optional)</em></span>
+          <textarea
+            class="contextTextarea"
+            [(ngModel)]="profileContext"
+            rows="7"
+            placeholder="At least a paragraph or two. What you do, how you spend your time, what you're into, what occupies your attention. The more you say in your own voice, the more your morning Gist will feel like it was written for you."
+          ></textarea>
+        </label>
+
+        <!-- Optional, expandable examples — closed by default so they don't
+             crowd the page or prescribe a shape. -->
+        <div class="examples">
+          <button
+            type="button"
+            class="examplesToggle"
+            [class.open]="showContextExamples"
+            (click)="toggleContextExamples()"
+            [attr.aria-expanded]="showContextExamples"
+          >
+            Need inspiration? See examples
+            <span class="examplesChevron" aria-hidden="true">&rarr;</span>
+          </button>
+
+          <div class="examplesPanel" *ngIf="showContextExamples">
+            <p class="examplesDisclaimer">
+              These are real-feeling examples of how others might describe
+              themselves. Yours doesn&rsquo;t need to look like any of these
+              &mdash; write in your own voice.
+            </p>
+            <figure class="exampleCard" *ngFor="let ex of contextExamples">
+              <figcaption class="exampleTag">{{ ex.tag }}</figcaption>
+              <blockquote class="exampleText">{{ ex.text }}</blockquote>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Screen 2: Your Days ──────────────────────────────────────── -->
+    <section class="screen" *ngIf="step === 2">
+      <h2 class="screenTitle">Your days</h2>
+      <p class="screenSub">
+        A little texture on the shape of your day. All optional.
+      </p>
+
+      <div class="formGroup">
+        <label class="field">
+          <span
+            >What are you working on right now?
+            <em class="optional">(optional)</em></span
+          >
           <input
             type="text"
-            [(ngModel)]="profileContext"
-            placeholder="e.g. I run a wine bar in Brooklyn"
+            [(ngModel)]="majorProject"
+            placeholder="e.g. Opening a second location, finishing my thesis"
+          />
+        </label>
+
+        <label class="field">
+          <span
+            >Walk me through the first two hours of your day
+            <em class="optional">(optional)</em></span
+          >
+          <textarea
+            class="contextTextarea contextTextarea--short"
+            [(ngModel)]="morningRoutine"
+            rows="4"
+            placeholder="What actually happens between waking up and getting going."
+          ></textarea>
+        </label>
+
+        <label class="field">
+          <span>When do you usually wake up? <em class="optional">(optional)</em></span>
+          <input
+            type="text"
+            [(ngModel)]="wakingTime"
+            placeholder="e.g. 6:30 most days, varies"
           />
         </label>
       </div>
     </section>
 
-    <!-- ── Screen 2: Connect Your Data ──────────────────────────────── -->
-    <section class="screen" *ngIf="step === 2">
+    <!-- ── Screen 3: Mornings & What Works ──────────────────────────── -->
+    <section class="screen" *ngIf="step === 3">
+      <h2 class="screenTitle">Mornings &amp; what works</h2>
+      <p class="screenSub">
+        This helps your Gist meet you where you actually are. All optional.
+      </p>
+
+      <div class="formGroup">
+        <label class="field">
+          <span
+            >What&rsquo;s the worst part of your morning?
+            <em class="optional">(optional)</em></span
+          >
+          <input
+            type="text"
+            [(ngModel)]="worstPartOfMorning"
+            placeholder="e.g. I spiral on my phone before I've done anything"
+          />
+        </label>
+
+        <label class="field">
+          <span
+            >On a perfect morning, what works?
+            <em class="optional">(optional)</em></span
+          >
+          <input
+            type="text"
+            [(ngModel)]="whatWorksPerfectly"
+            placeholder="e.g. Coffee, quiet, and one clear thing to do first"
+          />
+        </label>
+
+        <label class="field">
+          <span
+            >What would make you stop using this?
+            <em class="optional">(optional)</em></span
+          >
+          <input
+            type="text"
+            [(ngModel)]="whatWouldMakeYouStop"
+            placeholder="e.g. If it felt like one more thing to manage"
+          />
+        </label>
+
+        <div class="field">
+          <span
+            >Do you deal with executive-function challenges (e.g. ADHD)?
+            <em class="optional">(optional)</em></span
+          >
+          <div class="pillRow">
+            <button
+              type="button"
+              class="pill"
+              [class.selected]="executiveFunctionStatus === 'yes'"
+              (click)="setExecutiveFunction('yes')"
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              class="pill"
+              [class.selected]="executiveFunctionStatus === 'no'"
+              (click)="setExecutiveFunction('no')"
+            >
+              No
+            </button>
+            <button
+              type="button"
+              class="pill"
+              [class.selected]="executiveFunctionStatus === 'prefer-not-to-say'"
+              (click)="setExecutiveFunction('prefer-not-to-say')"
+            >
+              Prefer not to say
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Screen 4: Connect Your Data ──────────────────────────────── -->
+    <section class="screen" *ngIf="step === 4">
       <h2 class="screenTitle">Connect your data</h2>
       <p class="screenSub">
         We pull from these sources to build your daily briefing.
@@ -150,8 +302,8 @@
       </p>
     </section>
 
-    <!-- ── Screen 3: People & Preferences ───────────────────────────── -->
-    <section class="screen" *ngIf="step === 3">
+    <!-- ── Screen 5: People & Preferences ───────────────────────────── -->
+    <section class="screen" *ngIf="step === 5">
       <h2 class="screenTitle">Preferences</h2>
       <p class="screenSub">
         All optional. We&rsquo;ll start with sensible defaults and learn over
@@ -226,8 +378,8 @@
       </p>
     </section>
 
-    <!-- ── Screen 4: Delivery ───────────────────────────────────────── -->
-    <section class="screen" *ngIf="step === 4">
+    <!-- ── Screen 6: Delivery ───────────────────────────────────────── -->
+    <section class="screen" *ngIf="step === 6">
       <h2 class="screenTitle">Delivery</h2>
       <p class="screenSub">When and how you get your morning Gist.</p>
 
@@ -267,10 +419,10 @@
     <!-- ── Navigation footer ────────────────────────────────────────── -->
     <div class="navFooter">
       <button class="primary" [disabled]="!canAdvance" (click)="next()">
-        {{ step === 4 ? "Finish & generate my Gist" : "Continue" }}
+        {{ step === maxStep ? "Finish & generate my Gist" : "Continue" }}
       </button>
 
-      <div class="stepLabel">Step {{ step }} of 4</div>
+      <div class="stepLabel">Step {{ step }} of {{ maxStep }}</div>
     </div>
   </main>
 </div>

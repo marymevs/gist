@@ -3,6 +3,7 @@ ensureFirebaseApp();
 
 export { generateMorningGist } from './generateMorningGist';
 export { generateGistOnDemand } from './generateGistOnDemand';
+export { deriveProfileContext } from './deriveProfileContext';
 export { emailFeedback } from './emailFeedback';
 export { resendMorningGist } from './resendMorningGist';
 export { exchangeGoogleCalendarCode } from './googleCalendarOAuth';
