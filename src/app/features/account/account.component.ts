@@ -132,19 +132,26 @@ export class AccountComponent {
     }
 
     this.isConnectingCalendar = true;
+
+    // Open the popup synchronously, inside the tap handler, so mobile browsers
+    // (iOS Safari / Chrome Android) don't treat it as an unsolicited popup. Any
+    // await before window.open() expires the user-gesture token and the popup is
+    // blocked. We point it at about:blank now and navigate it to Google once the
+    // authorization URL comes back from the server.
+    const popup = this.openOAuthPopup('about:blank', 'google-calendar-oauth');
+    if (!popup) {
+      this.isConnectingCalendar = false;
+      this.toast.show(
+        'Popup was blocked. Please allow popups and try again.',
+        'error',
+      );
+      return;
+    }
+
     try {
       const { authorizationUrl, callbackOrigin } =
         await this.startGoogleCalendarAuth(currentUser);
-
-      const popup = this.openOAuthPopup(
-        authorizationUrl,
-        'google-calendar-oauth',
-      );
-      if (!popup) {
-        throw new Error(
-          'Popup was blocked. Please allow popups and try again.',
-        );
-      }
+      popup.location.href = authorizationUrl;
 
       await this.waitForOAuthResult(
         popup,
@@ -153,6 +160,7 @@ export class AccountComponent {
       );
       this.toast.show('Google Calendar connected.', 'success');
     } catch (error) {
+      if (!popup.closed) popup.close();
       const message =
         error instanceof Error
           ? error.message
@@ -173,16 +181,26 @@ export class AccountComponent {
     }
 
     this.isConnectingGmail = true;
+
+    // Open the popup synchronously, inside the tap handler, so mobile browsers
+    // (iOS Safari / Chrome Android) don't treat it as an unsolicited popup. Any
+    // await before window.open() expires the user-gesture token and the popup is
+    // blocked. We point it at about:blank now and navigate it to Google once the
+    // authorization URL comes back from the server.
+    const popup = this.openOAuthPopup('about:blank', 'google-gmail-oauth');
+    if (!popup) {
+      this.isConnectingGmail = false;
+      this.toast.show(
+        'Popup was blocked. Please allow popups and try again.',
+        'error',
+      );
+      return;
+    }
+
     try {
       const { authorizationUrl, callbackOrigin } =
         await this.startGoogleGmailAuth(currentUser);
-
-      const popup = this.openOAuthPopup(authorizationUrl, 'google-gmail-oauth');
-      if (!popup) {
-        throw new Error(
-          'Popup was blocked. Please allow popups and try again.',
-        );
-      }
+      popup.location.href = authorizationUrl;
 
       await this.waitForOAuthResult(
         popup,
@@ -191,6 +209,7 @@ export class AccountComponent {
       );
       this.toast.show('Gmail connected.', 'success');
     } catch (error) {
+      if (!popup.closed) popup.close();
       const message =
         error instanceof Error
           ? error.message
