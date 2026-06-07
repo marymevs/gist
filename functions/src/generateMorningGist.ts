@@ -45,7 +45,6 @@ import { moonConnector } from './connectors/moon';
 import { readMemoryContext, formatMemoryForPrompt } from './personalization/memoryReader';
 import {
   observeCalendarPatterns,
-  observeTopicAffinities,
   observeQualityScore,
   pruneExpiredMemory,
 } from './personalization/memoryEngine';
@@ -219,7 +218,6 @@ export async function generateMorningGistForUser(
     // Write behavioral signals to memory (fire-and-forget)
     Promise.allSettled([
       observeCalendarPatterns(user.uid, dayItems),
-      observeTopicAffinities(user.uid, worldItems, user.prefs?.topics),
       newspaperOutput.qualityScore
         ? observeQualityScore(user.uid, newspaperOutput.qualityScore)
         : Promise.resolve(),

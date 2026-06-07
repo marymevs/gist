@@ -112,27 +112,6 @@ export async function observeCalendarPatterns(
   }
 }
 
-// ── Topic affinity detection ──────────────────────────────────────────────────
-
-type WorldItem = { headline: string; implication: string };
-
-export async function observeTopicAffinities(
-  userId: string,
-  worldItems: WorldItem[],
-  userTopics?: string[],
-): Promise<void> {
-  if (!userTopics || userTopics.length === 0) return;
-
-  // Record explicitly chosen topics from onboarding as high-confidence signals
-  for (const topic of userTopics) {
-    await upsertMemory(userId, 'topic_affinity', `Interested in ${topic}.`, {
-      source: 'onboarding_prefs',
-      confidence: 0.9,
-      ttlDays: 90,
-    });
-  }
-}
-
 // ── Quality score trending ────────────────────────────────────────────────────
 
 export async function observeQualityScore(
