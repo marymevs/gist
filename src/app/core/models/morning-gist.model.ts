@@ -35,6 +35,9 @@ export interface MorningGist {
     suggestedNextStep?: string;
   }[];
 
+  /** Server-rendered broadsheet artifact HTML (web/print view). */
+  renderedHtml?: string;
+
   delivery: {
     method: 'web' | 'email';
     pages: number;

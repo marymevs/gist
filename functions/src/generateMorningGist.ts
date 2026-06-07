@@ -283,13 +283,26 @@ export async function generateMorningGistForUser(
           : timezone.replace(/.*\//, '');
         const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
 
-        // Season estimate from month
-        const month = now.getMonth(); // 0-indexed
-        const season = month <= 1 || month === 11 ? 'Winter'
-          : month <= 4 ? 'Spring'
-          : month <= 7 ? 'Summer'
-          : 'Autumn';
-        const dayOfSeason = ((month % 3) * 30) + now.getDate();
+        // Astronomical seasons (Northern Hemisphere): summer begins at the June
+        // solstice, not Jun 1. Boundary dates are the typical solstice/equinox
+        // days — they drift ±1 day year to year, which is close enough for the
+        // rhythms bar. `season` is the name; `dayOfSeason` counts days since the
+        // season began (day 1 on the solstice/equinox itself).
+        const yr = now.getFullYear();
+        const today = new Date(yr, now.getMonth(), now.getDate());
+        const springStart = new Date(yr, 2, 20); // ~Mar 20 equinox
+        const summerStart = new Date(yr, 5, 21); // ~Jun 21 solstice
+        const autumnStart = new Date(yr, 8, 22); // ~Sep 22 equinox
+        const winterStart = new Date(yr, 11, 21); // ~Dec 21 solstice
+        let season: string;
+        let seasonStart: Date;
+        if (today >= winterStart) { season = 'Winter'; seasonStart = winterStart; }
+        else if (today >= autumnStart) { season = 'Autumn'; seasonStart = autumnStart; }
+        else if (today >= summerStart) { season = 'Summer'; seasonStart = summerStart; }
+        else if (today >= springStart) { season = 'Spring'; seasonStart = springStart; }
+        else { season = 'Winter'; seasonStart = new Date(yr - 1, 11, 21); } // Jan–Mar → last Dec solstice
+        const dayOfSeason =
+          Math.floor((today.getTime() - seasonStart.getTime()) / 86_400_000) + 1;
 
         newspaperTemplateInput = {
           ...(newspaperData as unknown as import('./integrations/newspaperTypes').NewspaperGistOutput),
@@ -315,6 +328,21 @@ export async function generateMorningGistForUser(
         };
       } catch (err) {
         logger.warn('Failed to build newspaper template input.', {
+          userId: user.uid,
+          error: err instanceof Error ? err.message : err,
+        });
+      }
+    }
+
+    // ── Render + persist the broadsheet artifact (web/print view) ───────────
+    // Same input drives the email body, so /today and the inbox never drift.
+    // /today renders this string in an <iframe srcdoc>; Print prints the iframe.
+    if (newspaperTemplateInput) {
+      try {
+        const renderedHtml = buildNewspaperHtml(newspaperTemplateInput);
+        await gistRef.set({ renderedHtml }, { merge: true });
+      } catch (err) {
+        logger.warn('Failed to render/persist gist artifact HTML.', {
           userId: user.uid,
           error: err instanceof Error ? err.message : err,
         });

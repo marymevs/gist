@@ -136,7 +136,18 @@ const CSS = `
   p:last-child { margin-bottom: 0; }
 
   @media print { body { background: white; } }
-  @media screen { body { padding: 24px; background: #e7e5e4; } .page { background: var(--paper); padding: 0.55in 0.65in; box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04); margin-bottom: 24px; } }
+  /* SCREEN — rendered inside the /today <iframe>. Pages fill the frame edge to
+     edge (no grey "desk" surround), but the grey shows in the gap BETWEEN the
+     two sheets, so they read as two stacked pages with depth. */
+  @media screen {
+    body { background: #e7e5e4; }
+    .page {
+      background: var(--paper);
+      padding: 0.55in 0.65in;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+    }
+    .page + .page { margin-top: 24px; }
+  }
 `;
 
 // ─── Page 1: The Briefing ───────────────────────────────────────────────────
