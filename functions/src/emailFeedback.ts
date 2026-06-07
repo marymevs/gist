@@ -12,6 +12,10 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { recordEmailFeedback } from './personalization/memoryEngine';
+import {
+  FEEDBACK_LINK_SECRET,
+  verifyFeedbackSignature,
+} from './crypto/feedbackLink';
 
 const VALID_CATEGORIES = ['Action', 'WaitingOn', 'FYI'] as const;
 type Category = typeof VALID_CATEGORIES[number];
@@ -20,6 +24,7 @@ export const emailFeedback = onRequest(
   {
     region: 'us-central1',
     cors: true,
+    secrets: [FEEDBACK_LINK_SECRET],
   },
   async (req, res) => {
     const uid = req.query.uid as string | undefined;
@@ -27,6 +32,7 @@ export const emailFeedback = onRequest(
     const card = req.query.card as string | undefined;
     const cat = req.query.cat as string | undefined;
     const rating = req.query.r as string | undefined;
+    const sig = req.query.sig as string | undefined;
 
     // Validate params
     if (!uid || !date || !card || !cat || !rating) {
@@ -41,6 +47,15 @@ export const emailFeedback = onRequest(
 
     if (!VALID_CATEGORIES.includes(cat as Category)) {
       res.status(400).send(thanksPage('Invalid category.'));
+      return;
+    }
+
+    // The link is the credential: verify its HMAC signature so feedback can't
+    // be forged for an arbitrary uid (which would poison personalization
+    // memory). Unsigned/forged links are rejected without touching the DB.
+    if (!verifyFeedbackSignature({ uid, date, card, cat, rating }, sig)) {
+      logger.warn('Email feedback rejected: invalid signature.', { uid, date });
+      res.status(403).send(thanksPage('This feedback link is invalid or expired.'));
       return;
     }
 
