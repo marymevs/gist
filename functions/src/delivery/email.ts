@@ -45,15 +45,12 @@ export async function deliverByEmail(input: EmailDeliveryInput): Promise<Deliver
     return { status: 'delivered' };
   }
 
-  let html: string;
-  let subject: string;
-
   if (!input.newspaperInput) {
     throw new Error(`deliverByEmail: newspaperInput is required (userId=${input.userId})`);
   }
 
-  html = buildNewspaperEmailHtml(input.newspaperInput);
-  subject = buildNewspaperEmailSubject(input.newspaperInput);
+  const html = buildNewspaperEmailHtml(input.newspaperInput);
+  const subject = buildNewspaperEmailSubject(input.newspaperInput);
   logger.info('Sending newspaper email.', { userId: input.userId });
 
   const result = await sendMorningGistEmail({ toEmail, subject, html });

@@ -97,7 +97,7 @@ export async function observeCalendarPatterns(
 
   // Detect recurring people from event titles (simple heuristic: "1:1 with X", "Meeting with X")
   for (const item of dayItems) {
-    const match = item.title.match(/(?:1[:\-]1|meeting|sync|standup|check.?in)\s+(?:with\s+)?(.{2,25})/i);
+    const match = item.title.match(/(?:1[:-]1|meeting|sync|standup|check.?in)\s+(?:with\s+)?(.{2,25})/i);
     if (match) {
       const person = match[1].trim().replace(/[^a-zA-Z\s'-]/g, '');
       if (person.length >= 2) {
