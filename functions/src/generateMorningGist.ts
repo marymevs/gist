@@ -359,6 +359,7 @@ export async function generateMorningGistForUser(
           moonFooter: moon.phase,
           seasonFooter: season,
           intentionPrompt: 'What is your one intention for today?',
+          tone: user.prefs?.tone,
         };
       } catch (err) {
         logger.warn('Failed to build newspaper template input.', {

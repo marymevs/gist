@@ -137,4 +137,12 @@ export type NewspaperTemplateInput = NewspaperGistOutput & {
   seasonFooter: string;
   /** Morning intention prompt text */
   intentionPrompt: string;
+  /**
+   * Output density, from the user's tone preference ('calm' | 'detailed' |
+   * 'concise'). 'concise' collapses the brief to page 1 only (drops the page-2
+   * reflection spread and its writing lines); every other value (including
+   * undefined) renders the full two-page broadsheet. Typed as a plain string
+   * because it arrives straight from the user doc.
+   */
+  tone?: string;
 };
