@@ -78,6 +78,10 @@ export type UserDoc = {
     name?: string;
     context?: string;
   };
+  /** Date key (YYYY-MM-DD, user's tz) of the most recent generation. */
+  lastGeneratedDate?: string;
+  /** UTC instant of the next scheduled delivery; drives the cron query. */
+  nextDeliveryAt?: unknown;
 };
 
 export type MorningGist = {
