@@ -18,7 +18,7 @@
 
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { getDb } from './firebaseAdmin';
 import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
 import {
@@ -40,7 +40,22 @@ export const deriveProfileContext = onDocumentWritten(
     if (!after) return; // document deleted
 
     const context = after.profile?.context?.trim();
-    if (!context) return; // nothing to derive
+    if (!context) {
+      // Source cleared — drop any stale derived structure so the generator
+      // never personalizes from facts the user explicitly removed. The delete
+      // re-fires this trigger, but the next pass finds no contextDerived and
+      // returns below without writing, so it doesn't loop.
+      if (after.profile?.contextDerived) {
+        await getDb()
+          .doc(`users/${uid}`)
+          .set(
+            { profile: { contextDerived: FieldValue.delete() } },
+            { merge: true },
+          );
+        logger.info('deriveProfileContext: cleared stale contextDerived', { uid });
+      }
+      return;
+    }
 
     const before = event.data?.before.data() as UserDoc | undefined;
     const prevContext = before?.profile?.context?.trim();

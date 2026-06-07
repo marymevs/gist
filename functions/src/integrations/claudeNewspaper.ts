@@ -51,6 +51,16 @@ export type NewspaperGenerationInput = {
   location?: string;
   rhythms?: string[];
   importantPeople?: { name: string; relationship: string; email?: string }[];
+
+  // Expanded questionnaire direct asks (issue #156).
+  majorProject?: string;
+  morningRoutine?: string;
+  wakingTime?: string;
+  worstPartOfMorning?: string;
+  whatWorksPerfectly?: string;
+  whatWouldMakeYouStop?: string;
+  /** Only set to 'yes' — 'no'/'prefer-not-to-say' are withheld for privacy. */
+  executiveFunctionStatus?: 'yes';
 };
 
 // ─── Prompt injection hardening ─────────────────────────────────────────────
@@ -90,6 +100,20 @@ function serializeContext(input: NewspaperGenerationInput): string {
   }
   if (input.importantPeople?.length) {
     parts.push(safeUserData('important_people', input.importantPeople));
+  }
+
+  // Expanded questionnaire direct asks (issue #156) — bundled into one
+  // injection-hardened block so the editor can ground the brief in them.
+  const readerProfile: Record<string, string> = {};
+  if (input.majorProject) readerProfile.majorProject = input.majorProject;
+  if (input.morningRoutine) readerProfile.morningRoutine = input.morningRoutine;
+  if (input.wakingTime) readerProfile.wakingTime = input.wakingTime;
+  if (input.worstPartOfMorning) readerProfile.worstPartOfMorning = input.worstPartOfMorning;
+  if (input.whatWorksPerfectly) readerProfile.whatWorksPerfectly = input.whatWorksPerfectly;
+  if (input.whatWouldMakeYouStop) readerProfile.whatWouldMakeYouStop = input.whatWouldMakeYouStop;
+  if (input.executiveFunctionStatus === 'yes') readerProfile.executiveFunctionChallenges = 'yes';
+  if (Object.keys(readerProfile).length) {
+    parts.push(safeUserData('reader_profile', readerProfile));
   }
 
   parts.push(safeUserData('calendar_items', input.dayItems.slice(0, 12)));
@@ -134,6 +158,13 @@ The moon highlight should be metaphorical — connecting the current moon phase 
 
 PERSONALIZATION:
 - <user_context> is the reader's own words about themselves — use it for voice, nuance, and the specific details that make the writing feel personal. <user_context_structured>, when present, is a parsed summary of that same text (work / freeTime / creative / misc); lean on it for quick scaffolding and orientation, but always defer to <user_context> for tone and specifics. If they conflict, the raw <user_context> wins.
+- <reader_profile> holds the reader's own answers about their life and mornings. Use them to make the brief land:
+  - majorProject: what they're actively working on — let it anchor the Practice Arc and surface in the lede when relevant.
+  - morningRoutine / wakingTime: shape the timing and pacing of the schedule and coaching notes around how their morning actually goes.
+  - whatWorksPerfectly: lean into these conditions — reinforce what already works rather than prescribing new habits.
+  - worstPartOfMorning: gently buffer against it; never lecture about it.
+  - whatWouldMakeYouStop: a hard constraint on what NOT to do (e.g. if they fear "one more thing to manage," keep the brief light and add no tasks).
+  - executiveFunctionChallenges = "yes": write ADHD-aware — one clear anchor for the day, short scannable sections, minimal choices, no overwhelming lists. Do not name or diagnose the condition in the output.
 - If a <memory> section is present, use patterns to make output more specific.
 - If a <countdown> is present, weave it into the rhythms and editorial naturally.
 - Reference <location>, weather, and season to ground the writing in the reader's specific place.
