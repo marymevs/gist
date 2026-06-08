@@ -15,7 +15,7 @@ export class LandingComponent {
     this.router.navigate(['/login']);
   }
 
-  goToSignup(): void {
-    this.router.navigate(['/signup']);
+  goToWaitlist(): void {
+    this.router.navigate(['/waitlist']);
   }
 }
