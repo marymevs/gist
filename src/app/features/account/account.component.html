@@ -11,7 +11,6 @@
 
         <div class="kv" style="grid-template-columns: 140px 1fr">
           <span>Calendar</span><b>{{ calendarStatus(user) }}</b>
-          <span>Email</span><b>{{ emailStatus(user) }}</b>
         </div>
 
         <div style="margin-top: 12px">
@@ -27,15 +26,74 @@
           </button>
         </div>
 
-        <div style="margin-top: 8px">
-          <button
-            class="secondary"
-            type="button"
-            (click)="onConnectGmail()"
-            [disabled]="isConnectingGmail"
+        <!-- Email inboxes (issue #184) — connect one or more Gmail accounts -->
+        <div style="margin-top: 16px">
+          <label class="sub" style="display: block; margin-bottom: 6px">
+            Email inboxes
+          </label>
+
+          <div
+            *ngFor="let account of emailAccounts(user)"
+            class="kv"
+            style="
+              grid-template-columns: 1fr auto;
+              align-items: center;
+              gap: 8px;
+            "
           >
-            {{ isConnectingGmail ? "Connecting…" : "Connect Gmail" }}
-          </button>
+            <span>
+              <b>{{ account.email }}</b>
+              <em *ngIf="account.status === 'error'" class="sub">
+                — reconnect needed
+              </em>
+            </span>
+            <span style="display: flex; gap: 8px">
+              <button
+                *ngIf="account.status === 'error'"
+                class="secondary"
+                type="button"
+                (click)="onConnectGmail()"
+                [disabled]="isConnectingGmail"
+              >
+                Reconnect
+              </button>
+              <button
+                class="secondary"
+                type="button"
+                (click)="onDisconnectEmail(account)"
+                [disabled]="disconnectingId === account.id"
+              >
+                {{
+                  disconnectingId === account.id ? "Removing…" : "Disconnect"
+                }}
+              </button>
+            </span>
+          </div>
+
+          <div
+            *ngIf="emailAccounts(user).length === 0"
+            class="sub"
+            style="margin-bottom: 8px"
+          >
+            No inboxes connected.
+          </div>
+
+          <div style="margin-top: 8px">
+            <button
+              class="secondary"
+              type="button"
+              (click)="onConnectGmail()"
+              [disabled]="isConnectingGmail"
+            >
+              {{
+                isConnectingGmail
+                  ? "Connecting…"
+                  : emailAccounts(user).length
+                    ? "Add another inbox"
+                    : "Connect Gmail"
+              }}
+            </button>
+          </div>
         </div>
 
         <div class="divider"></div>
