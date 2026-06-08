@@ -3,6 +3,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Waitlist signups — anyone may add themselves (newcomers are gated here
+    // instead of creating an account). Entries are private: no client reads,
+    // updates, or deletes. Review happens via the Admin SDK / console.
+    //
+    // create is intentionally permissive: we'd rather accept an occasional
+    // junk/bot write (easily deleted) than risk an over-strict rule silently
+    // rejecting a real signup. Shape/timestamp validation can be revisited
+    // later if junk becomes a problem.
+    match /waitlist/{entry} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
     // User profile document — owned by the authenticated user
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
