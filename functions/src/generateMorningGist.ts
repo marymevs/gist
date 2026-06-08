@@ -76,7 +76,12 @@ export async function generateMorningGistForUser(
   const dateKey = toDateKeyISO(now, timezone);
   const method = resolveDeliveryMethod(user);
   const city = user.prefs?.city ?? 'New York, NY';
-  const pages = estimatePages(user.prefs?.maxPages);
+  // Keep the stored page count in lockstep with what buildNewspaperHtml will
+  // actually render: concise readers get the one-page brief (page 1 only), so
+  // delivery.pages must report 1 — the /today pill and admin dashboard read it.
+  const pages = user.prefs?.tone === 'concise'
+    ? 1
+    : estimatePages(user.prefs?.maxPages);
 
   // Build connector context
   const connectorCtx: ConnectorContext = {
@@ -359,6 +364,7 @@ export async function generateMorningGistForUser(
           moonFooter: moon.phase,
           seasonFooter: season,
           intentionPrompt: 'What is your one intention for today?',
+          tone: user.prefs?.tone,
         };
       } catch (err) {
         logger.warn('Failed to build newspaper template input.', {

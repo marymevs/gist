@@ -281,7 +281,7 @@ function page1(input: NewspaperTemplateInput): string {
   </div>
 
   <div class="ft">
-    <span>The Gist &middot; Page 1</span>
+    <span>The Gist${input.tone === 'concise' ? '' : ' &middot; Page 1'}</span>
     <span>mygist.app</span>
     <span>&#9789; ${esc(input.moonFooter)}</span>
   </div>
@@ -383,6 +383,14 @@ function page2(input: NewspaperTemplateInput): string {
  * Used for print, PDF, and web preview.
  */
 export function buildNewspaperHtml(input: NewspaperTemplateInput): string {
+  // Concise readers get the one-page operational brief: page 1 is already a
+  // complete standalone front page, so we drop the page-2 reflection spread
+  // (Body & Mind, Practice Arc, moon, and the intention writing lines) rather
+  // than render a half-empty second sheet.
+  const pages = input.tone === 'concise'
+    ? page1(input)
+    : `${page1(input)}\n${page2(input)}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -392,8 +400,7 @@ export function buildNewspaperHtml(input: NewspaperTemplateInput): string {
 <style>${CSS}</style>
 </head>
 <body>
-${page1(input)}
-${page2(input)}
+${pages}
 </body>
 </html>`;
 }

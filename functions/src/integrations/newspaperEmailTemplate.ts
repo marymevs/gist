@@ -333,7 +333,7 @@ export function buildNewspaperEmailHtml(input: NewspaperTemplateInput): string {
     </table>
   </td></tr>
 
-  ${page2Email(input)}
+  ${input.tone === 'concise' ? '' : page2Email(input)}
 
   <!-- Footer -->
   <tr><td style="padding:10px 0;border-top:1px solid ${C.ink};text-align:center;">
