@@ -121,11 +121,20 @@ export class AccountComponent {
    */
   emailAccounts(user: GistUser | null): EmailAccount[] {
     if (!user) return [];
-    if (user.emailAccounts?.length) return user.emailAccounts;
-    if (user.emailIntegration?.status === 'connected') {
-      return [{ id: 'gmail', email: user.email ?? 'Gmail', status: 'connected' }];
+    const registry = user.emailAccounts ?? [];
+    const seen = new Set(registry.map((a) => a.email?.toLowerCase()));
+    const list = [...registry];
+    // A connection made before the emailAccounts registry existed lives only on
+    // user.email + emailIntegration. Show it alongside registry entries (not
+    // instead of them) so adding a second inbox doesn't hide the original.
+    if (
+      user.emailIntegration?.status === 'connected' &&
+      user.email &&
+      !seen.has(user.email.toLowerCase())
+    ) {
+      list.unshift({ id: 'gmail', email: user.email, status: 'connected' });
     }
-    return [];
+    return list;
   }
 
   async onDisconnectEmail(account: EmailAccount): Promise<void> {
