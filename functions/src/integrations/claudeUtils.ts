@@ -31,7 +31,13 @@ function getClient(): Anthropic {
     throw new Error('ANTHROPIC_API_KEY is not configured.');
   }
 
-  _client = new Anthropic({ apiKey });
+  // Bound each request well under the function timeouts (180s cron / 120s
+  // on-demand). The SDK default is a 600s per-request timeout — longer than the
+  // function itself — so a slow/throttled call would run until the *function* is
+  // killed mid-generation with nothing persisted (issue #194). 45s × 1 retry
+  // keeps the worst case for one callClaudeJson under ~90s; the MAX_ATTEMPTS=2
+  // outer loop in claudeNewspaper.ts handles validation retries above this.
+  _client = new Anthropic({ apiKey, timeout: 45_000, maxRetries: 1 });
   return _client;
 }
 

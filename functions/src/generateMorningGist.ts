@@ -39,6 +39,7 @@ import {
   normalizeDayItems,
   normalizeEmailCards,
   computeNextDeliveryDate,
+  runWithConcurrency,
 } from './helpers';
 
 import { deliverByEmail } from './delivery/email';
@@ -452,12 +453,25 @@ function computeNextDelivery(
   return Timestamp.fromDate(computeNextDeliveryDate(now, timezone, schedule));
 }
 
+/**
+ * Fan-out limits for a single scheduler tick (issue #194). Each due user runs
+ * ~5 connector calls + a Claude Sonnet generation, so an unbounded fan-out from
+ * one instance hits Anthropic 429s and the 180s timeout once a delivery window
+ * fills up. These caps keep a tick well within budget; overflow drains on the
+ * next tick(s) — the `lastGeneratedDate` idempotency guard makes that safe (no
+ * double-delivery). Deliberately conservative for the current friends-and-family
+ * stage; the real path to 10k+ is the deferred Cloud Tasks fan-out.
+ */
+const GENERATION_CONCURRENCY = 5; // concurrent Sonnet pipelines per tick
+const MAX_USERS_PER_TICK = 10; // hard cap on users generated per tick
+
 /** === Scheduled job (15-min cron, per-user delivery times) === */
 export const generateMorningGist = onSchedule(
   {
     schedule: 'every 15 minutes',
     region: 'us-central1',
     timeoutSeconds: 180,
+    memory: '512MiB',
     secrets: [
       WEATHERAPI_KEY,
       NYT_API_KEY,
@@ -472,13 +486,23 @@ export const generateMorningGist = onSchedule(
     const now = new Date();
     logger.info('Morning Gist scheduler tick', { now: now.toISOString() });
 
-    // Query users whose nextDeliveryAt is in the past (due for delivery)
+    // Query users whose nextDeliveryAt is in the past (due for delivery).
+    // Oldest-due first so a saturated window drains fairly, and capped so one
+    // tick can't load an unbounded set into memory or fan out past budget
+    // (issue #194). orderBy + inequality on the same field needs no composite
+    // index. Overflow beyond the limit is picked up on the next tick.
     const dueSnap = await db
       .collection('users')
       .where('nextDeliveryAt', '<=', Timestamp.fromDate(now))
+      .orderBy('nextDeliveryAt')
+      .limit(MAX_USERS_PER_TICK)
       .get();
 
-    const tasks: Promise<void>[] = [];
+    // Users already generated today only need a cheap nextDeliveryAt bump (no
+    // LLM call) — fire those off without consuming a generation slot. The rest
+    // run through a concurrency-limited generation pass.
+    const toGenerate: { user: UserDoc; todayKey: string; timezone: string }[] = [];
+    let skipped = 0;
 
     dueSnap.forEach((docSnap) => {
       const data = docSnap.data();
@@ -490,6 +514,7 @@ export const generateMorningGist = onSchedule(
 
       // Idempotency: skip if already generated today
       if (data.lastGeneratedDate === todayKey) {
+        skipped += 1;
         // Still update nextDeliveryAt so we don't re-query this user
         db.collection('users').doc(uid).update({
           nextDeliveryAt: computeNextDelivery(now, timezone, data.delivery?.schedule),
@@ -497,15 +522,24 @@ export const generateMorningGist = onSchedule(
         return;
       }
 
-      const user = buildUserDoc(uid, data);
-      tasks.push(generateAndUpdateSchedule(user, now, todayKey, timezone));
+      toGenerate.push({ user: buildUserDoc(uid, data), todayKey, timezone });
     });
 
-    await Promise.allSettled(tasks);
+    // Cap concurrent Sonnet pipelines per tick to respect the Anthropic rate
+    // budget. A failed user's slot is isolated (settled, not thrown) so it
+    // doesn't sink the batch; they retry on the next tick.
+    await runWithConcurrency(toGenerate, GENERATION_CONCURRENCY, ({ user, todayKey, timezone }) =>
+      generateAndUpdateSchedule(user, now, todayKey, timezone),
+    );
 
     logger.info('Morning Gist scheduler tick finished', {
       due: dueSnap.size,
-      processed: tasks.length,
+      limit: MAX_USERS_PER_TICK,
+      skipped,
+      processed: toGenerate.length,
+      // dueSnap.size === MAX_USERS_PER_TICK likely means more users are waiting
+      // and will drain on subsequent ticks.
+      spilledOver: dueSnap.size === MAX_USERS_PER_TICK,
     });
   },
 );

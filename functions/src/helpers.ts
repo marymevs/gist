@@ -170,6 +170,41 @@ export function normalizeDayItems(
   }));
 }
 
+/**
+ * Run `worker` over `items` with at most `limit` invocations in flight at once,
+ * returning results in the original item order. Used by the morning scheduler
+ * to cap how many Sonnet pipelines fan out concurrently within a single tick
+ * (issue #194) — without pulling in an ESM-only dependency like `p-limit`.
+ *
+ * A worker that rejects does NOT sink the batch: its slot is recorded as a
+ * rejected settlement, mirroring `Promise.allSettled`. `limit <= 0` is treated
+ * as 1 (fully sequential).
+ */
+export async function runWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+  const max = Math.max(1, Math.min(limit, items.length || 1));
+  let next = 0;
+
+  async function runner(): Promise<void> {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      try {
+        results[i] = { status: 'fulfilled', value: await worker(items[i], i) };
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: max }, () => runner()));
+  return results;
+}
+
 export function normalizeEmailCards(cards: EmailCard[]): EmailCard[] {
   return cards.map((card) => ({
     id: card.id,

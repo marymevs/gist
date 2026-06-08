@@ -15,6 +15,7 @@ import {
   normalizeEmailCards,
   zonedWallTimeToUtc,
   computeNextDeliveryDate,
+  runWithConcurrency,
 } from './helpers';
 import type { UserDoc } from './types';
 
@@ -319,5 +320,65 @@ describe('computeNextDeliveryDate', () => {
     expect(ny.toISOString()).toBe('2026-06-06T11:00:00.000Z');
     expect(la.toISOString()).toBe('2026-06-06T14:00:00.000Z');
     expect(la.getTime()).toBeGreaterThan(ny.getTime());
+  });
+});
+
+describe('runWithConcurrency', () => {
+  it('returns results in the original item order', async () => {
+    const items = [10, 20, 30, 40];
+    const results = await runWithConcurrency(items, 2, async (n) => n * 2);
+    expect(results).toEqual([
+      { status: 'fulfilled', value: 20 },
+      { status: 'fulfilled', value: 40 },
+      { status: 'fulfilled', value: 60 },
+      { status: 'fulfilled', value: 80 },
+    ]);
+  });
+
+  it('never exceeds the concurrency limit', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const work = (): Promise<void> =>
+      new Promise((resolve) => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        setTimeout(() => {
+          inFlight -= 1;
+          resolve();
+        }, 5);
+      });
+
+    await runWithConcurrency(Array.from({ length: 12 }, (_, i) => i), 3, work);
+    expect(peak).toBeLessThanOrEqual(3);
+  });
+
+  it('isolates a rejected worker without sinking the batch', async () => {
+    const results = await runWithConcurrency([1, 2, 3], 2, async (n) => {
+      if (n === 2) throw new Error('boom');
+      return n;
+    });
+    expect(results[0]).toEqual({ status: 'fulfilled', value: 1 });
+    expect(results[1].status).toBe('rejected');
+    expect((results[1] as PromiseRejectedResult).reason).toBeInstanceOf(Error);
+    expect(results[2]).toEqual({ status: 'fulfilled', value: 3 });
+  });
+
+  it('treats limit <= 0 as fully sequential', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const results = await runWithConcurrency([1, 2, 3], 0, async (n) => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 1));
+      inFlight -= 1;
+      return n;
+    });
+    expect(peak).toBe(1);
+    expect(results.map((r) => (r as PromiseFulfilledResult<number>).value)).toEqual([1, 2, 3]);
+  });
+
+  it('handles an empty item list', async () => {
+    const results = await runWithConcurrency([], 5, async (n) => n);
+    expect(results).toEqual([]);
   });
 });

@@ -31,6 +31,7 @@ export const generateGistOnDemand = onRequest(
   {
     region: 'us-central1',
     timeoutSeconds: 120,
+    memory: '512MiB',
     cors: true,
     secrets: [
       WEATHERAPI_KEY,
