@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Auth, user } from '@angular/fire/auth';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { AccountDataService } from '../../core/services/account-data.service';
 import { ToastService } from '../../shared/services/toast.service';
-import { GistUser } from '../../core/models/user.model';
+import { GistUser, EmailAccount } from '../../core/models/user.model';
 import { Observable } from 'rxjs';
 import { User, signOut } from 'firebase/auth';
 
@@ -52,6 +53,8 @@ export class AccountComponent {
   authUser$ = user(this.auth);
   isConnectingCalendar = false;
   isConnectingGmail = false;
+  /** Account id currently being disconnected, for per-row button state. */
+  disconnectingId: string | null = null;
   isSavingImportantPeople = false;
   isSavingPreferences = false;
 
@@ -88,6 +91,7 @@ export class AccountComponent {
 
   constructor(
     private auth: Auth,
+    private functions: Functions,
     private accountData: AccountDataService,
     private toast: ToastService,
     private route: ActivatedRoute,
@@ -110,13 +114,44 @@ export class AccountComponent {
     return 'Not connected';
   }
 
-  emailStatus(user: GistUser | null): string {
-    const integration = user?.emailIntegration;
-    if (!integration) return 'Not connected';
-    if (integration.status === 'connected' || integration.connectedAt) {
-      return 'Connected';
+  /**
+   * Connected Gmail inboxes for display (issue #184). Prefers the emailAccounts
+   * registry; falls back to a synthetic single entry for pre-#184 users who
+   * have a connection but no registry yet (until the migration backfills them).
+   */
+  emailAccounts(user: GistUser | null): EmailAccount[] {
+    if (!user) return [];
+    const registry = user.emailAccounts ?? [];
+    const seen = new Set(registry.map((a) => a.email?.toLowerCase()));
+    const list = [...registry];
+    // A connection made before the emailAccounts registry existed lives only on
+    // user.email + emailIntegration. Show it alongside registry entries (not
+    // instead of them) so adding a second inbox doesn't hide the original.
+    if (
+      user.emailIntegration?.status === 'connected' &&
+      user.email &&
+      !seen.has(user.email.toLowerCase())
+    ) {
+      list.unshift({ id: 'gmail', email: user.email, status: 'connected' });
     }
-    return 'Not connected';
+    return list;
+  }
+
+  async onDisconnectEmail(account: EmailAccount): Promise<void> {
+    if (this.disconnectingId) return;
+    this.disconnectingId = account.id;
+    try {
+      const disconnect = httpsCallable<
+        { accountId: string },
+        { success: boolean; remaining: number }
+      >(this.functions, 'disconnectEmailAccount');
+      await disconnect({ accountId: account.id });
+      this.toast.show(`Disconnected ${account.email}.`, 'success');
+    } catch {
+      this.toast.show('Unable to disconnect. Please try again.', 'error');
+    } finally {
+      this.disconnectingId = null;
+    }
   }
 
   async onConnectGoogleCalendar(): Promise<void> {

@@ -31,6 +31,19 @@ type OAuthStatePayload = {
   issuedAtMs: number;
 };
 
+/**
+ * Stored shape of an EmailAccount registry entry. Mirrors the `EmailAccount`
+ * type in types.ts but allows `connectedAt` to be a FieldValue sentinel at
+ * write time.
+ */
+type EmailAccountDoc = {
+  id: string;
+  email: string;
+  label?: string;
+  status: 'connected' | 'error';
+  connectedAt?: unknown;
+};
+
 const GOOGLE_GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const OAUTH_STATE_MAX_AGE_MS = 10 * 60 * 1000;
 
@@ -132,7 +145,9 @@ function buildAuthorizationUrl(stateToken: string): string {
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', GOOGLE_GMAIL_SCOPE);
   url.searchParams.set('access_type', 'offline');
-  url.searchParams.set('prompt', 'consent');
+  // 'select_account' lets a user connecting a second inbox pick a different
+  // account; 'consent' keeps Google returning a refresh_token each time.
+  url.searchParams.set('prompt', 'select_account consent');
   url.searchParams.set('include_granted_scopes', 'true');
   url.searchParams.set('state', stateToken);
   return url.toString();
@@ -179,6 +194,37 @@ async function exchangeAuthorizationCode(
   return tokenJson;
 }
 
+/**
+ * Look up the email address of the inbox these tokens belong to. The OAuth
+ * scope is `gmail.readonly`, so we can't rely on an `id_token.email` claim
+ * (no `openid email` scope requested); `users/me/profile` works under
+ * `gmail.readonly` and returns the canonical `emailAddress`. This address is
+ * the stable identity for a connected inbox (issue #184).
+ */
+async function fetchGmailAddress(accessToken: string): Promise<string> {
+  const response = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    logger.error('Gmail getProfile failed', {
+      status: response.status,
+      body: body.slice(0, 300),
+    });
+    throw new Error('Failed to resolve Gmail account address');
+  }
+  const data = (await response.json()) as { emailAddress?: string };
+  const email = asNonEmptyString(data.emailAddress)?.toLowerCase();
+  if (!email) throw new Error('Gmail profile returned no email address');
+  return email;
+}
+
+/** Integration doc id (and EmailAccount id) for a connected inbox. */
+function emailAccountId(email: string): string {
+  return `gmail:${email.toLowerCase()}`;
+}
+
 async function persistTokensForUser(
   uid: string,
   tokens: GoogleTokenResponse,
@@ -186,18 +232,26 @@ async function persistTokensForUser(
   const expiryDate = Date.now() + tokens.expires_in * 1000;
   const expiresAt = Timestamp.fromMillis(expiryDate);
 
+  const email = await fetchGmailAddress(tokens.access_token);
+  const accountId = emailAccountId(email);
+
+  // Only write token fields that are present. A re-consent for an already-
+  // connected inbox may omit the refresh_token; with merge:true, writing a
+  // null would clobber the good refresh token we already hold.
+  const tokenFields: Record<string, unknown> = { accessToken: tokens.access_token };
+  if (tokens.refresh_token) tokenFields['refreshToken'] = tokens.refresh_token;
+  if (tokens.id_token) tokenFields['idToken'] = tokens.id_token;
+
   await db
     .collection('users')
     .doc(uid)
     .collection('integrations')
-    .doc('gmail')
+    .doc(accountId)
     .set(
       {
-        ...encryptTokenRecord({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token ?? null,
-          idToken: tokens.id_token ?? null,
-        }),
+        ...encryptTokenRecord(tokenFields),
+        provider: 'gmail',
+        accountEmail: email,
         tokenType: tokens.token_type ?? null,
         scope: tokens.scope ?? null,
         expiryDate,
@@ -207,20 +261,37 @@ async function persistTokensForUser(
       { merge: true },
     );
 
-  await db
-    .collection('users')
-    .doc(uid)
-    .set(
+  // Upsert the inbox into the client-readable registry and recompute the
+  // derived emailIntegration summary — transactionally so two concurrent
+  // connects don't lose each other's entry.
+  const userRef = db.collection('users').doc(uid);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const existing = (snap.data()?.['emailAccounts'] as EmailAccountDoc[]) ?? [];
+    const others = existing.filter((a) => a?.id !== accountId);
+    const prior = existing.find((a) => a?.id === accountId);
+    const entry: EmailAccountDoc = {
+      id: accountId,
+      email,
+      status: 'connected',
+      // Concrete timestamp, NOT FieldValue.serverTimestamp() — sentinels are
+      // rejected inside array elements, which would throw the whole write.
+      connectedAt: prior?.connectedAt ?? Timestamp.now(),
+    };
+    tx.set(
+      userRef,
       {
+        emailAccounts: [...others, entry],
         emailIntegration: {
           provider: 'gmail',
           status: 'connected',
-          connectedAt: FieldValue.serverTimestamp(),
+          connectedAt: prior?.connectedAt ?? FieldValue.serverTimestamp(),
         },
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
+  });
 }
 
 function escapeHtml(value: string): string {
