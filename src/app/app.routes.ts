@@ -3,6 +3,7 @@ import { TodayComponent } from 'src/app/features/today/today.component';
 import { AccountComponent } from './features/account/account.component';
 import { LandingComponent } from './features/landing/landing.component';
 import { LoginComponent } from './features/auth/login.component';
+import { SignupComponent } from './features/auth/signup.component';
 import { WaitlistComponent } from './features/waitlist/waitlist.component';
 import { OnboardingComponent } from './features/onboarding/onboarding.component';
 import { AdminComponent } from './features/admin/admin.component';
@@ -27,13 +28,13 @@ export const routes: Routes = [
     title: 'Join the waitlist — Gist',
   },
 
-  // Public account creation is gated behind the waitlist. The signup flow
-  // (SignupComponent) is kept in the codebase for when invites land; for now
-  // any attempt to reach it is redirected to the waitlist.
+  // Public account creation is gated behind the waitlist: no surface links to
+  // /signup. The route still works as an unlinked backdoor so specific people
+  // can be invited by URL.
   {
     path: 'signup',
-    redirectTo: 'waitlist',
-    pathMatch: 'full',
+    component: SignupComponent,
+    title: 'Gist',
   },
 
   {
