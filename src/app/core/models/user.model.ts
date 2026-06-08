@@ -13,6 +13,24 @@ export interface EmailIntegration {
   connectedAt?: any;
 }
 
+/**
+ * A single connected Gmail inbox (issue #184). Client-readable metadata only —
+ * tokens stay server-only in users/{uid}/integrations/{id}. The `emailAccounts`
+ * array on the user doc is the authoritative registry of connected inboxes;
+ * `emailIntegration` is a derived "≥1 connected" summary kept for compat.
+ */
+export interface EmailAccount {
+  /** Integration doc id — `gmail:<email>`. */
+  id: string;
+  /** The connected inbox address. Doubles as the display label. */
+  email: string;
+  /** Reserved user-editable label; defaults to `email`. */
+  label?: string;
+  /** 'error' once a token refresh fails (revoked / expired). */
+  status: 'connected' | 'error';
+  connectedAt?: any;
+}
+
 export interface GistUser {
   uid: string;
   email: string | null;
@@ -104,5 +122,8 @@ export interface GistUser {
 
   // Integrations
   calendarIntegration?: CalendarIntegration;
+  /** Derived "≥1 inbox connected" summary. See emailAccounts for the registry. */
   emailIntegration?: EmailIntegration;
+  /** Connected Gmail inboxes (issue #184). */
+  emailAccounts?: EmailAccount[];
 }

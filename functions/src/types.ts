@@ -76,13 +76,40 @@ export type IntegrationStatus = {
   connectedAt?: Timestamp;
 };
 
+/**
+ * A single connected Gmail inbox (issue #184). The authoritative registry of
+ * which inboxes a user has connected lives in `UserDoc.emailAccounts` — never
+ * scan the `integrations` subcollection, which also holds the calendar token
+ * doc. Tokens themselves stay server-only in `integrations/{id}`; this metadata
+ * is client-readable (no secrets).
+ */
+export type EmailAccount = {
+  /** Integration doc id — `gmail:<email>`. Stable identity per inbox. */
+  id: string;
+  /** The connected inbox address. Doubles as the display label for now. */
+  email: string;
+  /** Reserved for a user-editable label; defaults to `email`. */
+  label?: string;
+  /** 'error' once a token refresh fails (revoked / expired). */
+  status: 'connected' | 'error';
+  /** When the inbox was connected. Firestore Timestamp. */
+  connectedAt?: Timestamp;
+};
+
 export type UserDoc = {
   uid: string;
   email: string | null;
   prefs?: UserPrefs;
   delivery?: UserDelivery;
   calendarIntegration?: IntegrationStatus;
+  /**
+   * Overall email status — derived summary kept for backward compat
+   * (`hasConnectedIntegration` / `resolveDeliveryMethod`). `connected` iff at
+   * least one entry in `emailAccounts` is connected.
+   */
   emailIntegration?: IntegrationStatus;
+  /** Connected Gmail inboxes (issue #184). Authoritative registry. */
+  emailAccounts?: EmailAccount[];
   /** Running issue count — incremented each generation. */
   gistIssueCount?: number;
   profile?: {
