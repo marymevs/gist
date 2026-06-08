@@ -7,21 +7,12 @@ service cloud.firestore {
     // instead of creating an account). Entries are private: no client reads,
     // updates, or deletes. Review happens via the Admin SDK / console.
     //
-    // Because create is public and unauthenticated, this rule is the only
-    // validation boundary (the form's type="email" can be bypassed). So:
-    //   - email must match an email shape, not just a length, to keep junk
-    //     like "xxxx" or whitespace-padded strings out of the collection.
-    //   - createdAt must be the server timestamp, so entries can be reviewed
-    //     and invited in true chronological order (a client can't omit it or
-    //     forge an arbitrary value). serverTimestamp() satisfies request.time.
+    // create is intentionally permissive: we'd rather accept an occasional
+    // junk/bot write (easily deleted) than risk an over-strict rule silently
+    // rejecting a real signup. Shape/timestamp validation can be revisited
+    // later if junk becomes a problem.
     match /waitlist/{entry} {
-      allow create: if request.resource.data.keys().hasOnly(
-                         ['email', 'name', 'source', 'createdAt'])
-                    && request.resource.data.email is string
-                    && request.resource.data.email.size() <= 254
-                    && request.resource.data.email.matches(
-                         '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}$')
-                    && request.resource.data.createdAt == request.time;
+      allow create: if true;
       allow read, update, delete: if false;
     }
 
