@@ -30,6 +30,18 @@ export const disconnectEmailAccount = onCall(
       throw new HttpsError('invalid-argument', 'accountId is required.');
     }
 
+    // Guard the doc id before we delete anything. The integrations subcollection
+    // also holds the calendar token (googleCalendar), so without this a client
+    // could call disconnectEmailAccount({ accountId: 'googleCalendar' }) and wipe
+    // their calendar credentials. Email account ids are only ever the legacy
+    // 'gmail' doc or the 'gmail:<email>' form.
+    if (accountId !== 'gmail' && !accountId.startsWith('gmail:')) {
+      throw new HttpsError(
+        'invalid-argument',
+        'accountId is not an email account.',
+      );
+    }
+
     const db = getDb();
     const userRef = db.collection('users').doc(uid);
 
