@@ -2,8 +2,8 @@ import { Routes } from '@angular/router';
 import { TodayComponent } from 'src/app/features/today/today.component';
 import { AccountComponent } from './features/account/account.component';
 import { LandingComponent } from './features/landing/landing.component';
-import { SignupComponent } from './features/auth/signup.component';
 import { LoginComponent } from './features/auth/login.component';
+import { WaitlistComponent } from './features/waitlist/waitlist.component';
 import { OnboardingComponent } from './features/onboarding/onboarding.component';
 import { AdminComponent } from './features/admin/admin.component';
 import { PrivacyPolicyComponent } from './features/privacy-policy/privacy-policy.component';
@@ -22,9 +22,18 @@ export const routes: Routes = [
   },
 
   {
+    path: 'waitlist',
+    component: WaitlistComponent,
+    title: 'Join the waitlist — Gist',
+  },
+
+  // Public account creation is gated behind the waitlist. The signup flow
+  // (SignupComponent) is kept in the codebase for when invites land; for now
+  // any attempt to reach it is redirected to the waitlist.
+  {
     path: 'signup',
-    component: SignupComponent,
-    title: 'Gist',
+    redirectTo: 'waitlist',
+    pathMatch: 'full',
   },
 
   {

@@ -1,0 +1,58 @@
+<section class="card page auth">
+  <ng-container *ngIf="!submitted; else done">
+    <h1>Join the waitlist</h1>
+    <div class="sub">
+      Gist is still in a small, private edition. Leave your email and we&rsquo;ll
+      write when there&rsquo;s a seat at the press for you.
+    </div>
+
+    <div class="divider"></div>
+
+    <form (ngSubmit)="join()" class="form">
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          autocomplete="email"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Name <em>(optional)</em></span>
+        <input
+          type="text"
+          name="name"
+          [(ngModel)]="name"
+          autocomplete="name"
+        />
+      </label>
+
+      <div class="actions" style="margin-top: 10px">
+        <button class="primary" type="submit" [disabled]="loading">
+          {{ loading ? 'Adding you…' : 'Join the waitlist' }}
+        </button>
+        <a class="link" routerLink="/login">Already a subscriber? Log in</a>
+      </div>
+
+      <div class="error" *ngIf="error">{{ error }}</div>
+    </form>
+  </ng-container>
+
+  <ng-template #done>
+    <h1>You&rsquo;re on the list.</h1>
+    <div class="sub">
+      Thank you &mdash; we&rsquo;ve noted your interest. When the next edition
+      opens, you&rsquo;ll hear from us at <strong>{{ email }}</strong>.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="fineprint">
+      Already have an account?
+      <a class="link" routerLink="/login">Log in here.</a>
+    </div>
+  </ng-template>
+</section>
