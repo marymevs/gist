@@ -274,7 +274,9 @@ async function persistTokensForUser(
       id: accountId,
       email,
       status: 'connected',
-      connectedAt: prior?.connectedAt ?? FieldValue.serverTimestamp(),
+      // Concrete timestamp, NOT FieldValue.serverTimestamp() — sentinels are
+      // rejected inside array elements, which would throw the whole write.
+      connectedAt: prior?.connectedAt ?? Timestamp.now(),
     };
     tx.set(
       userRef,
