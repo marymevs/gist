@@ -10,6 +10,9 @@ import {
   type EmailAiInput,
   type EmailAiResult,
 } from './claudeEmail';
+// Type-only import — erased at compile, so no runtime cycle with types.ts
+// (which imports EmailCard from this file).
+import type { EmailAccount } from '../types';
 
 export type EmailCategory = 'Action' | 'WaitingOn' | 'FYI';
 
@@ -27,6 +30,10 @@ export type EmailCard = {
   importance: number;
   why: string;
   suggestedNextStep?: string;
+  /** Which connected inbox this card came from (issue #184). */
+  accountId?: string;
+  /** Display label for the source inbox — the account's email address. */
+  accountLabel?: string;
 };
 
 type EmailPrefs = {
@@ -48,6 +55,20 @@ type StoredGoogleTokens = {
 };
 
 type TokenStorageLocation = { kind: 'integration'; refPath: string };
+
+/** A connected Gmail inbox with its decrypted tokens, ready to fetch from. */
+type GmailAccount = {
+  accountId: string;
+  /** The inbox's email address — also the card's accountLabel. */
+  accountLabel: string;
+  /** Current registry status, used to self-heal a stale 'error' flag. */
+  status: 'connected' | 'error';
+  tokens: StoredGoogleTokens;
+  location: TokenStorageLocation;
+};
+
+/** Thrown when an account's token can't be refreshed (likely revoked). */
+class GmailAuthError extends Error {}
 
 type GmailMessageListResponse = {
   messages?: Array<{ id: string; threadId: string }>;
@@ -74,7 +95,10 @@ type GmailMessage = {
   payload?: GmailPayload;
 };
 
-type EmailCandidate = {
+/** Exported for unit tests of the global selection pass (selectEmailCards). */
+export type EmailCandidate = {
+  accountId: string;
+  accountLabel: string;
   messageId: string;
   threadId: string;
   fromName?: string;
@@ -117,6 +141,8 @@ const db = getDb();
 const DEFAULT_MAX_CARDS = 5;
 const DEFAULT_LOOKBACK_HOURS = 24;
 const DEFAULT_MAX_CANDIDATES = 120;
+/** Hard cap on candidates fetched across ALL inboxes in one run (issue #184). */
+const GLOBAL_CANDIDATE_CEILING = 240;
 const AI_MAX_CANDIDATES = 30;
 const FETCH_CONCURRENCY = 10;
 
@@ -228,27 +254,103 @@ function getOAuthConfig(): {
   return { clientId, clientSecret };
 }
 
-async function loadStoredTokens(userId: string): Promise<{
-  tokens: StoredGoogleTokens | null;
-  location: TokenStorageLocation | null;
-}> {
-  const integrationRef = db
-    .collection('users')
-    .doc(userId)
-    .collection('integrations')
-    .doc('gmail');
-  const integrationSnap = await integrationRef.get();
-  if (integrationSnap.exists) {
-    const data = integrationSnap.data() as StoredGoogleTokens | undefined;
-    if (data?.accessToken || data?.refreshToken) {
-      return {
+/**
+ * Load every connected Gmail inbox for a user, with decrypted tokens.
+ *
+ * Driven by the `emailAccounts` registry on the user doc — we never scan the
+ * `integrations` subcollection, which also holds the calendar token doc. Falls
+ * back to the pre-#184 single `gmail` doc when no registry exists yet (the lazy
+ * migration safety net), deriving the label from the user's own address.
+ */
+async function loadGmailAccounts(userId: string): Promise<GmailAccount[]> {
+  const userRef = db.collection('users').doc(userId);
+  const userSnap = await userRef.get();
+  const userData = userSnap.data() as
+    | { emailAccounts?: EmailAccount[]; email?: string | null }
+    | undefined;
+  const registry = userData?.emailAccounts ?? [];
+
+  const accounts: GmailAccount[] = [];
+
+  if (registry.length) {
+    for (const entry of registry) {
+      if (!entry?.id) continue;
+      const ref = userRef.collection('integrations').doc(entry.id);
+      const snap = await ref.get();
+      if (!snap.exists) continue;
+      const data = snap.data() as StoredGoogleTokens | undefined;
+      if (!data?.accessToken && !data?.refreshToken) continue;
+      accounts.push({
+        accountId: entry.id,
+        accountLabel: entry.email ?? entry.id,
+        status: entry.status ?? 'connected',
         tokens: decryptTokenRecord(data),
-        location: { kind: 'integration', refPath: integrationRef.path },
-      };
+        location: { kind: 'integration', refPath: ref.path },
+      });
+    }
+    return accounts;
+  }
+
+  // Legacy fallback: the single hardcoded `gmail` doc from before #184.
+  const legacyRef = userRef.collection('integrations').doc('gmail');
+  const legacySnap = await legacyRef.get();
+  if (legacySnap.exists) {
+    const data = legacySnap.data() as StoredGoogleTokens | undefined;
+    if (data?.accessToken || data?.refreshToken) {
+      accounts.push({
+        accountId: 'gmail',
+        accountLabel: userData?.email ?? 'gmail',
+        status: 'connected',
+        tokens: decryptTokenRecord(data),
+        location: { kind: 'integration', refPath: legacyRef.path },
+      });
     }
   }
 
-  return { tokens: null, location: null };
+  return accounts;
+}
+
+/**
+ * Best-effort write-back of changed per-account statuses after a fetch. Only
+ * called when a status actually changed (a fetch failed → 'error', or a
+ * previously-failing account recovered → 'connected'), so generation stays a
+ * read path in the common case. Also recomputes the derived emailIntegration
+ * summary. Swallows errors — a status write must never fail a gist.
+ */
+async function applyAccountStatusUpdates(
+  userId: string,
+  updates: Map<string, 'connected' | 'error'>,
+): Promise<void> {
+  if (!updates.size) return;
+  const userRef = db.collection('users').doc(userId);
+  try {
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      const existing =
+        (snap.data()?.['emailAccounts'] as EmailAccount[] | undefined) ?? [];
+      if (!existing.length) return;
+      const next = existing.map((a) =>
+        updates.has(a.id) ? { ...a, status: updates.get(a.id)! } : a,
+      );
+      const anyConnected = next.some((a) => a.status === 'connected');
+      tx.set(
+        userRef,
+        {
+          emailAccounts: next,
+          emailIntegration: {
+            provider: 'gmail',
+            status: anyConnected ? 'connected' : 'disconnected',
+          },
+        },
+        { merge: true },
+      );
+    });
+  } catch (error) {
+    logger.warn('Failed to write back Gmail account statuses.', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function persistTokens(
@@ -513,61 +615,42 @@ function isPersonalDomain(domain: string | null): boolean {
   return PERSONAL_DOMAINS.has(domain.toLowerCase());
 }
 
-export async function fetchEmailCards(params: {
-  userId: string;
-  userEmail?: string | null;
-  prefs?: EmailPrefs;
-  /**
-   * Single source of truth for VIP senders. The VIP list is derived from the
-   * entries that carry an email — see importantPeople in UserPrefs.
-   */
-  importantPeople?: { name: string; relationship: string; email?: string }[];
+/**
+ * Fetch and heuristically score candidate emails from a single connected inbox.
+ * Throws GmailAuthError if the account's token can't be refreshed, so the
+ * orchestrator can flag that inbox as needing reconnect. Selection (AI
+ * classify, quotas, dedup) is global and happens later in selectEmailCards.
+ */
+async function fetchScoredCandidatesForAccount(params: {
+  account: GmailAccount;
+  prefs: EmailPrefs;
+  vipEmails: string[];
+  /** All of the user's own addresses — every connected inbox counts as "you". */
+  youEmails: Set<string>;
   now: Date;
-}): Promise<EmailCard[]> {
-  const prefs: EmailPrefs = params.prefs ?? {};
-  const maxCards = Math.max(
-    1,
-    Math.min(prefs.maxCards ?? DEFAULT_MAX_CARDS, 7),
-  );
-  const lookbackHours = Math.max(
-    1,
-    Math.min(prefs.lookbackHours ?? DEFAULT_LOOKBACK_HOURS, 72),
-  );
-  const maxCandidates = Math.max(
-    20,
-    Math.min(prefs.maxCandidates ?? DEFAULT_MAX_CANDIDATES, 200),
-  );
-
-  const { clientId, clientSecret } = getOAuthConfig();
-  if (!clientId || !clientSecret) {
-    logger.warn('Google OAuth client configuration missing for Gmail.');
-    return [];
-  }
-
-  const { tokens, location } = await loadStoredTokens(params.userId);
-  if (!tokens) {
-    logger.info('No Gmail tokens available for user.', {
-      userId: params.userId,
-    });
-    return [];
-  }
+  maxCandidates: number;
+  lookbackHours: number;
+  oauth: { clientId: string; clientSecret: string };
+}): Promise<EmailCandidate[]> {
+  const { account, prefs, vipEmails, youEmails } = params;
 
   const refreshedTokens = await ensureFreshAccessToken(
-    tokens,
-    { clientId, clientSecret },
-    location,
+    account.tokens,
+    params.oauth,
+    account.location,
   );
   if (!refreshedTokens?.accessToken) {
-    logger.warn('No valid Gmail access token.', { userId: params.userId });
-    return [];
+    throw new GmailAuthError(
+      `Gmail token refresh failed for ${account.accountId}`,
+    );
   }
 
   const query = buildBaseQuery(prefs);
   const messageIds = await listMessageIds({
     accessToken: refreshedTokens.accessToken,
     query,
-    maxResults: maxCandidates,
-    userId: params.userId,
+    maxResults: params.maxCandidates,
+    userId: account.accountId,
   });
 
   if (!messageIds.length) return [];
@@ -582,13 +665,8 @@ export async function fetchEmailCards(params: {
       }),
   );
 
-  const userEmail = params.userEmail?.toLowerCase() ?? '';
-  const vipEmails = (params.importantPeople ?? [])
-    .map((person) => person.email)
-    .filter((email): email is string => !!email)
-    .map((email) => email.toLowerCase());
   const nowMs = params.now.getTime();
-  const lookbackMs = lookbackHours * 60 * 60 * 1000;
+  const lookbackMs = params.lookbackHours * 60 * 60 * 1000;
 
   const candidates: EmailCandidate[] = [];
 
@@ -648,8 +726,8 @@ export async function fetchEmailCards(params: {
     const isNewsletterish =
       isList || textHasAny(combinedText, NEWSLETTER_PHRASES);
 
-    const isDirect = userEmail ? toEmails.includes(userEmail) : false;
-    const isCc = userEmail ? ccEmails.includes(userEmail) : false;
+    const isDirect = toEmails.some((email) => youEmails.has(email));
+    const isCc = ccEmails.some((email) => youEmails.has(email));
 
     const senderEmail = from.email ?? null;
     const senderDomain = senderEmail
@@ -730,6 +808,8 @@ export async function fetchEmailCards(params: {
     }
 
     candidates.push({
+      accountId: account.accountId,
+      accountLabel: account.accountLabel,
       messageId: message.id,
       threadId: message.threadId,
       fromName: from.name,
@@ -760,7 +840,28 @@ export async function fetchEmailCards(params: {
     });
   }
 
+  return candidates;
+}
+
+/**
+ * Select the final cards from a candidate pool merged across all inboxes
+ * (issue #184). The single global merit pass: repeated-sender penalty, optional
+ * AI classification, importance scoring, category quotas, and the personal-
+ * email guarantee — all applied across accounts together. Dedup and AI keys are
+ * namespaced by account because Gmail message/thread ids are unique only within
+ * a single inbox.
+ */
+export async function selectEmailCards(
+  candidates: EmailCandidate[],
+  prefs: EmailPrefs,
+  maxCards: number,
+): Promise<EmailCard[]> {
   if (!candidates.length) return [];
+
+  const candKey = (c: EmailCandidate): string =>
+    `${c.accountId}:${c.messageId}`;
+  const threadKey = (c: EmailCandidate): string =>
+    `${c.accountId}:${c.threadId}`;
 
   const senderCounts = new Map<string, number>();
   for (const candidate of candidates) {
@@ -790,7 +891,7 @@ export async function fetchEmailCards(params: {
       .slice(0, AI_MAX_CANDIDATES);
 
     const aiInputs: EmailAiInput[] = topForAi.map((candidate) => ({
-      id: candidate.messageId,
+      id: candKey(candidate),
       from: candidate.fromEmail ?? candidate.fromName ?? 'Unknown sender',
       subject: candidate.subject,
       snippet: candidate.snippet,
@@ -802,7 +903,7 @@ export async function fetchEmailCards(params: {
   const aiById = new Map(aiResults.map((result) => [result.id, result]));
 
   const scored: ScoredCandidate[] = candidates.map((candidate) => {
-    const ai = aiById.get(candidate.messageId);
+    const ai = aiById.get(candKey(candidate));
     const category = ai?.category ?? candidate.categoryHint;
     const urgency = ai?.urgency ?? candidate.urgencyHint;
 
@@ -839,7 +940,7 @@ export async function fetchEmailCards(params: {
   };
 
   const canTake = (candidate: ScoredCandidate): boolean => {
-    if (usedThreads.has(candidate.threadId)) return false;
+    if (usedThreads.has(threadKey(candidate))) return false;
     if (candidate.fromEmail && usedSenders.has(candidate.fromEmail))
       return false;
     if (candidate.isNewsletterish && newsletterUsed) return false;
@@ -849,7 +950,7 @@ export async function fetchEmailCards(params: {
   const take = (candidate: ScoredCandidate): void => {
     selections.push(candidate);
     if (candidate.fromEmail) usedSenders.add(candidate.fromEmail);
-    usedThreads.add(candidate.threadId);
+    usedThreads.add(threadKey(candidate));
     if (candidate.isNewsletterish) newsletterUsed = true;
     perCategoryCount[candidate.category] += 1;
   };
@@ -893,7 +994,7 @@ export async function fetchEmailCards(params: {
   }
 
   return selections.map((candidate) => ({
-    id: candidate.messageId,
+    id: candKey(candidate),
     threadId: candidate.threadId,
     messageId: candidate.messageId,
     fromName: candidate.fromName,
@@ -906,5 +1007,124 @@ export async function fetchEmailCards(params: {
     importance: Math.round(candidate.importance * 10) / 10,
     why: candidate.why,
     suggestedNextStep: candidate.suggestedNextStep,
+    accountId: candidate.accountId,
+    accountLabel: candidate.accountLabel,
   }));
+}
+
+/**
+ * Orchestrate the email pull across all of a user's connected Gmail inboxes
+ * (issue #184). Fans out per-account candidate fetching with failures isolated
+ * (one revoked inbox can't zero the gist), merges the pools, and runs a single
+ * global selection. Self-heals a stale 'error' status when an inbox recovers.
+ */
+export async function fetchEmailCards(params: {
+  userId: string;
+  userEmail?: string | null;
+  prefs?: EmailPrefs;
+  /**
+   * Single source of truth for VIP senders. The VIP list is derived from the
+   * entries that carry an email — see importantPeople in UserPrefs.
+   */
+  importantPeople?: { name: string; relationship: string; email?: string }[];
+  now: Date;
+}): Promise<EmailCard[]> {
+  const prefs: EmailPrefs = params.prefs ?? {};
+  const maxCards = Math.max(1, Math.min(prefs.maxCards ?? DEFAULT_MAX_CARDS, 7));
+  const lookbackHours = Math.max(
+    1,
+    Math.min(prefs.lookbackHours ?? DEFAULT_LOOKBACK_HOURS, 72),
+  );
+  const requestedMaxCandidates = Math.max(
+    20,
+    Math.min(prefs.maxCandidates ?? DEFAULT_MAX_CANDIDATES, 200),
+  );
+
+  const { clientId, clientSecret } = getOAuthConfig();
+  if (!clientId || !clientSecret) {
+    logger.warn('Google OAuth client configuration missing for Gmail.');
+    return [];
+  }
+
+  const accounts = await loadGmailAccounts(params.userId);
+  if (!accounts.length) {
+    logger.info('No Gmail accounts connected for user.', {
+      userId: params.userId,
+    });
+    return [];
+  }
+
+  // Divide a global fetch budget across inboxes so a many-account user can't
+  // blow the function timeout pulling metadata for every message.
+  const maxCandidates = Math.max(
+    20,
+    Math.min(
+      requestedMaxCandidates,
+      Math.floor(GLOBAL_CANDIDATE_CEILING / accounts.length),
+    ),
+  );
+
+  const vipEmails = (params.importantPeople ?? [])
+    .map((person) => person.email)
+    .filter((email): email is string => !!email)
+    .map((email) => email.toLowerCase());
+
+  // Every connected inbox address counts as "you" for direct/cc detection.
+  const youEmails = new Set<string>();
+  if (params.userEmail) youEmails.add(params.userEmail.toLowerCase());
+  for (const account of accounts) {
+    youEmails.add(account.accountLabel.toLowerCase());
+  }
+
+  const results = await Promise.allSettled(
+    accounts.map((account) =>
+      fetchScoredCandidatesForAccount({
+        account,
+        prefs,
+        vipEmails,
+        youEmails,
+        now: params.now,
+        maxCandidates,
+        lookbackHours,
+        oauth: { clientId, clientSecret },
+      }),
+    ),
+  );
+
+  const merged: EmailCandidate[] = [];
+  const statusUpdates = new Map<string, 'connected' | 'error'>();
+
+  results.forEach((result, index) => {
+    const account = accounts[index];
+    if (result.status === 'fulfilled') {
+      merged.push(...result.value);
+      // Recovered: a previously-failing inbox fetched cleanly this run.
+      if (account.status === 'error') {
+        statusUpdates.set(account.accountId, 'connected');
+      }
+    } else {
+      logger.warn('Gmail account fetch failed.', {
+        userId: params.userId,
+        accountId: account.accountId,
+        error:
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+      });
+      // Only a genuine auth failure flips an inbox to 'error'; transient list/
+      // fetch errors are left alone and self-heal on the next run.
+      if (
+        result.reason instanceof GmailAuthError &&
+        account.status !== 'error'
+      ) {
+        statusUpdates.set(account.accountId, 'error');
+      }
+    }
+  });
+
+  if (statusUpdates.size) {
+    await applyAccountStatusUpdates(params.userId, statusUpdates);
+  }
+
+  return selectEmailCards(merged, prefs, maxCards);
 }

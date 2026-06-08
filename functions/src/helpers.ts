@@ -187,5 +187,9 @@ export function normalizeEmailCards(cards: EmailCard[]): EmailCard[] {
     ...(card.suggestedNextStep !== undefined
       ? { suggestedNextStep: card.suggestedNextStep }
       : {}),
+    ...(card.accountId !== undefined ? { accountId: card.accountId } : {}),
+    ...(card.accountLabel !== undefined
+      ? { accountLabel: card.accountLabel }
+      : {}),
   }));
 }
