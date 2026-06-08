@@ -77,20 +77,25 @@ export const generateGistOnDemand = onRequest(
 
     logger.info('On-demand gist generation requested.', { userId: uid });
 
+    // Point nextDeliveryAt at the user's next slot in their own timezone.
+    // Computed up front so we can seed it whether or not generation succeeds —
+    // the scheduler query excludes docs missing this field, so failing to seed
+    // it strands the user out of the recurring loop entirely (issue #195).
+    const now = new Date();
+    const timezone = safeTimezone(user.prefs?.timezone);
+    const nextDeliveryAt = Timestamp.fromDate(
+      computeNextDeliveryDate(now, timezone, user.delivery?.schedule),
+    );
+
     try {
-      const now = new Date();
       await generateMorningGistForUser(user, now);
 
       // Seed the scheduler fields so this user enters the 15-min delivery
       // sweep. Mark today as already generated (this preview counts) so the
-      // scheduler won't double-deliver, and point nextDeliveryAt at their
-      // next slot in their own timezone.
-      const timezone = safeTimezone(user.prefs?.timezone);
+      // scheduler won't double-deliver.
       await db.collection('users').doc(uid).update({
         lastGeneratedDate: toDateKeyISO(now, timezone),
-        nextDeliveryAt: Timestamp.fromDate(
-          computeNextDeliveryDate(now, timezone, user.delivery?.schedule),
-        ),
+        nextDeliveryAt,
       });
 
       res.status(200).json({ ok: true });
@@ -99,6 +104,22 @@ export const generateGistOnDemand = onRequest(
         userId: uid,
         error: error instanceof Error ? error.message : error,
       });
+
+      // Still seed nextDeliveryAt so the user enters the recurring loop despite
+      // the failed preview. Deliberately leave lastGeneratedDate unset: the
+      // scheduler will then generate today's gist at the user's normal slot as
+      // a recovery. Best-effort — never let this mask the original failure.
+      await db
+        .collection('users')
+        .doc(uid)
+        .update({ nextDeliveryAt })
+        .catch((seedError) => {
+          logger.error('Failed to seed nextDeliveryAt after generation failure.', {
+            userId: uid,
+            error: seedError instanceof Error ? seedError.message : seedError,
+          });
+        });
+
       res.status(500).json({ error: 'Generation failed' });
     }
   },
