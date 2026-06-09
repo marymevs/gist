@@ -52,115 +52,183 @@
 
   <hr class="rule" />
 
-  <section class="sample">
-    <div class="sectionLabel">A sample</div>
+  <section class="np">
+    <div class="sectionLabel">A sample edition</div>
+    <h2 class="npHeadline">A newspaper made for one reader.</h2>
+    <p class="npIntro">
+      Built from the same parts every morning &mdash; but the editor knows you,
+      so the contents change. Here&rsquo;s an edition for <em>Riley</em>, a
+      working artist in Brooklyn.
+    </p>
 
-    <div class="paper serif preview">
-      <div class="previewTop">
-        <div>
-          <div class="previewKicker">Tuesday morning &middot; Vol. I, No. 14</div>
-          <div class="previewMeta">PREPARED 05:47 EST &middot; 2 PP.</div>
+    <!-- WIDE: full annotated specimen with leader lines -->
+    <div
+      class="npBreakout"
+      *ngIf="!npCompact"
+      [style.height.px]="npStageHeight"
+    >
+      <div class="npStage" [style.transform]="'scale(' + npScale + ')'">
+        <div class="npPage" aria-hidden="true">
+          <ng-container *ngTemplateOutlet="frontPage"></ng-container>
+        </div>
+
+        <!-- a sliver of page two, peeking below -->
+        <div class="npPage2" aria-hidden="true">
+          <div class="np2head">
+            <span class="t">The Gist</span>
+            <span class="m">Tuesday, June 9, 2026 &middot; Page 2</span>
+          </div>
+          <div class="np2cols">
+            <div class="c">
+              <div class="label">Body &amp; Mind</div>
+              <p class="sm">The afternoon dip is real &mdash; eat before the studio block, not during.</p>
+            </div>
+            <div class="c">
+              <div class="label">Morning Intention</div>
+              <div class="wl"></div><div class="wl"></div><div class="wl"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- annotation callouts + leader lines -->
+        <ng-container *ngFor="let f of npFeatures">
+          <div
+            class="npAnno"
+            [class.left]="f.side === 'left'"
+            [class.right]="f.side === 'right'"
+            [style.top.px]="f.top"
+            [style.left.px]="f.side === 'left' ? 30 : null"
+            [style.right.px]="f.side === 'right' ? 30 : null"
+          >
+            <span class="npNum">{{ f.n }}</span>
+            <div class="npT">{{ f.title }}</div>
+            <div class="npD">{{ f.desc }}</div>
+          </div>
+          <div
+            class="npLeader"
+            [class.toRight]="f.side === 'left'"
+            [class.toLeft]="f.side === 'right'"
+            [style.top.px]="f.leader"
+            [style.left.px]="f.side === 'left' ? 285 : 1086"
+            [style.width.px]="129"
+          ></div>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- COMPACT: a scaled thumbnail of the sheet, then the features stacked -->
+    <div class="npCompact" *ngIf="npCompact">
+      <div
+        class="npThumb"
+        aria-hidden="true"
+        [style.width.px]="npThumbWidth"
+        [style.height.px]="npThumbHeight"
+      >
+        <div class="npPage" [style.transform]="'scale(' + npThumbScale + ')'">
+          <ng-container *ngTemplateOutlet="frontPage"></ng-container>
         </div>
       </div>
 
-      <p class="kicker">Today at a glance</p>
-      <p><b>Weather.</b> 38&deg; / 51&deg;, light rain after 2pm.</p>
-      <p><b>First event.</b> 10:00 AM &mdash; writing block (90 min).</p>
-      <p><b>Rhythms.</b> Waning gibbous &middot; spring &middot; 13h 28m of daylight &middot; 41 days to launch.</p>
-
-      <h2>The lede</h2>
-      <p>
-        A 100-word editorial that names the shape of your day &mdash; what
-        you&rsquo;re carrying in, what the calendar is asking of you, where the
-        soft hours are. Written by a careful editor who knows your week.
-      </p>
-
-      <h2>Notifications</h2>
-      <p>
-        <b>Sarah, your agent</b>, is waiting on the contract markup. Threaded
-        with two emails from Friday.
-      </p>
-      <p class="why">5 more, scored on signal &mdash; not chronology.</p>
-
-      <h2>One thing</h2>
-      <p>
-        <b>Send the markup before noon</b>. It clears the largest piece of
-        ambient stress on the schedule.
-      </p>
+      <div class="npList">
+        <div class="npListItem" *ngFor="let f of npFeatures">
+          <span class="npNum">{{ f.n }}</span>
+          <div>
+            <div class="npT">{{ f.title }}</div>
+            <p class="npD">{{ f.desc }}</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="paperFooter">A real edition prints on US Letter, two pages, set in Fraunces.</div>
+    <div class="paperFooter">A real edition prints on US Letter &middot; two pages &middot; set in Fraunces &amp; IBM Plex</div>
   </section>
 
-  <hr class="rule" />
+  <!-- ── The front-page specimen, shared by the wide stage and the mobile thumb ── -->
+  <ng-template #frontPage>
+    <div class="mast">
+      <div class="mast-pre">Brooklyn, NY &nbsp;&middot;&nbsp; For Riley</div>
+      <h1>The Gist</h1>
+      <div class="mast-post">Your morning, on paper</div>
+      <div class="mast-sub">
+        <span>Tuesday, June 9, 2026</span>
+        <span>Vol. I, No. 14</span>
+        <span>7:30 AM ET</span>
+      </div>
+    </div>
 
-  <article class="block">
-    <div class="sectionLabel">What&rsquo;s inside every issue</div>
-    <h2>A newspaper made for one reader.</h2>
-    <p class="lede">
-      Gist is built from the same parts every morning &mdash; but the editor
-      knows you, and the contents change. Here&rsquo;s what shows up.
-    </p>
+    <div class="wx">
+      <span class="wx-temp">61&deg;</span>
+      <span class="wx-cond">Cool and grey, clearing by noon</span>
+      <div class="wx-week">
+        <div class="wx-day"><div class="wx-day-name">Wed</div><div class="wx-day-hi">72&deg;</div></div>
+        <div class="wx-day"><div class="wx-day-name">Thu</div><div class="wx-day-hi">75&deg;</div></div>
+        <div class="wx-day"><div class="wx-day-name">Fri</div><div class="wx-day-hi">68&deg;</div><div class="wx-day-rain">rain</div></div>
+        <div class="wx-day"><div class="wx-day-name">Sat</div><div class="wx-day-hi">70&deg;</div></div>
+        <div class="wx-day"><div class="wx-day-name">Sun</div><div class="wx-day-hi">66&deg;</div></div>
+      </div>
+    </div>
 
-    <div class="feature">
-      <div class="featureKicker">Page 1 &middot; The briefing</div>
-      <div class="featureTitle">Masthead, weather, rhythms, today&rsquo;s lede.</div>
+    <div class="rhythms">
+      <span><b>Moon</b> Waning gibbous</span>
+      <span><b>Season</b> Early summer</span>
+      <span><b>Light</b> 15h 04m</span>
+      <span><b>23 days</b> to the gallery show</span>
+    </div>
+
+    <div class="lede">
+      <div class="lede-kicker">Today&rsquo;s briefing</div>
+      <h2>A studio day &mdash; with one call to clear first.</h2>
       <p>
-        Forecast, moon phase, season, daylight hours, and any countdown
-        you&rsquo;re tracking, set across the top like a broadsheet. An
-        editorial lede sets the tone in a hundred warm words.
+        The week opens quiet and yours. The morning is unbroken studio time, and
+        the only thing standing between you and it is the 3:30 walkthrough with
+        the gallery &mdash; worth ten minutes of prep over coffee so it
+        doesn&rsquo;t eat the afternoon. Dana&rsquo;s waiting on the set list;
+        send it before you disappear into the work. Everything else can keep.
       </p>
     </div>
 
-    <div class="feature">
-      <div class="featureKicker">Schedule</div>
-      <div class="featureTitle">Your Google Calendar, set in clean type.</div>
-      <p>
-        Up to eight events, with a one-line coaching note where it matters.
-        Nothing to dismiss, nothing to swipe. Just the day.
-      </p>
+    <div class="cols">
+      <div class="c">
+        <div class="label">Schedule</div>
+        <div class="ev"><span class="ev-t">10:00 AM</span><div><div class="ev-name">&#127917; Studio block</div><div class="ev-note">Three hours, no calls. Your best window.</div></div></div>
+        <div class="ev"><span class="ev-t">1:00 PM</span><div><div class="ev-name">Lunch &mdash; Dana</div><div class="ev-note">Bring the set list; she&rsquo;s asked twice.</div></div></div>
+        <div class="ev"><span class="ev-t">3:30 PM</span><div><div class="ev-name">Gallery walkthrough</div><div class="ev-note">Ten minutes of prep clears the nerves.</div></div></div>
+        <div class="ev"><span class="ev-t">6:00 PM</span><div><div class="ev-name">Open</div><div class="ev-note">Left soft on purpose.</div></div></div>
+
+        <hr class="hr" />
+        <div class="label">Good News from the World</div>
+        <div class="nw"><h4>A 30-year-old mural is saved from demolition</h4><p>Neighbors raised the funds in a week to move the wall, brick by brick.</p></div>
+        <div class="nw"><h4>City doubles its small-grant arts budget</h4><p>Individual working artists are eligible for the first time since 2019.</p></div>
+        <div class="nw"><h4>The river is clean enough to swim again</h4><p>Forty years after the last advisory, the east bank reopens Saturday.</p></div>
+      </div>
+
+      <div class="c">
+        <div class="label">Notifications &amp; Life</div>
+        <div class="nt"><span class="nt-ico">&#9993;</span><div class="nt-body"><span class="nt-src">Gmail &middot; Dana</span><br />Still needs the final set list for Friday &mdash; replied twice, waiting on you.</div></div>
+        <div class="nt"><span class="nt-ico">&#128206;</span><div class="nt-body"><span class="nt-src">Gmail &middot; Marcus, gallery</span><br />Sent the floor plan and asks which three pieces lead the room.</div></div>
+        <div class="nt"><span class="nt-ico">&#128179;</span><div class="nt-body"><span class="nt-src">Gmail &middot; Studio rent</span><br />Autopay runs tomorrow; balance looks fine.</div></div>
+        <div class="nt"><span class="nt-ico">&#9200;</span><div class="nt-body"><span class="nt-src">Calendar</span><br />The grant application closes in 4 days. No draft started yet.</div></div>
+
+        <hr class="hr" />
+        <div class="label">People</div>
+        <p class="sm"><span class="bd">Dana</span> &mdash; your collaborator. Two unanswered notes; she leaves for tour Sunday.</p>
+        <p class="sm"><span class="bd">Marcus</span> &mdash; your gallerist. The show is his first solo booking for you.</p>
+        <p class="sm"><span class="bd">Mom</span> &mdash; birthday Thursday. A card mailed today still lands in time.</p>
+
+        <hr class="hr" />
+        <div class="qt">
+          <blockquote>&ldquo;Inspiration exists, but it has to find you working.&rdquo;</blockquote>
+          <cite>Pablo Picasso</cite>
+        </div>
+      </div>
     </div>
 
-    <div class="feature">
-      <div class="featureKicker">Notifications</div>
-      <div class="featureTitle">The six emails that actually need you.</div>
-      <p>
-        Gist reads your Gmail and scores each thread on signal &mdash; the ones
-        waiting on a reply, the ones that move your day, the ones from people
-        you&rsquo;ve told us about. Everything else stays in the inbox where it
-        belongs.
-      </p>
+    <div class="ft">
+      <span>The Gist &middot; Page 1</span>
+      <span>mygist.app</span>
+      <span>&#9789; Waning gibbous</span>
     </div>
-
-    <div class="feature">
-      <div class="featureKicker">People</div>
-      <div class="featureTitle">The faces you can&rsquo;t lose track of.</div>
-      <p>
-        Name the people who matter &mdash; your investor, your sister, your
-        agent &mdash; and they thread through the morning when the moment fits.
-        &ldquo;Sarah, your agent, wrote yesterday.&rdquo;
-      </p>
-    </div>
-
-    <div class="feature">
-      <div class="featureKicker">Good news</div>
-      <div class="featureTitle">Three stories. World only. Personal to you.</div>
-      <p>
-        From the New York Times, filtered through who you are and what
-        you&rsquo;re working on. A feed of three. Then it stops.
-      </p>
-    </div>
-
-    <div class="feature">
-      <div class="featureKicker">Page 2 &middot; The reflection</div>
-      <div class="featureTitle">A page that doesn&rsquo;t ask anything of you.</div>
-      <p>
-        An essay on body and mind. A practice arc for the work you care about.
-        A moon highlight. A closing thought. And ruled lines for your morning
-        intention &mdash; pen optional, but recommended.
-      </p>
-    </div>
-  </article>
+  </ng-template>
 
   <hr class="rule" />
 
