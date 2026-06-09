@@ -126,4 +126,20 @@ export interface GistUser {
   emailIntegration?: EmailIntegration;
   /** Connected Gmail inboxes (issue #184). */
   emailAccounts?: EmailAccount[];
+
+  /**
+   * First-touch acquisition captured at signup (issue #220) — where the user
+   * came from. Absent for users who signed up before this shipped.
+   */
+  acquisition?: {
+    referrer?: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+    utmTerm?: string | null;
+    utmContent?: string | null;
+    gclid?: string | null;
+    landingPath?: string | null;
+    capturedAt?: any; // Firestore Timestamp
+  };
 }

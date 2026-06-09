@@ -139,6 +139,21 @@ export type UserDoc = {
   createdAt?: Timestamp;
   /** Bumped on every write. Firestore Timestamp. */
   updatedAt?: Timestamp;
+  /**
+   * First-touch acquisition captured at signup (issue #220) — where the user
+   * came from. Absent for users who signed up before this shipped.
+   */
+  acquisition?: {
+    referrer?: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+    utmTerm?: string | null;
+    utmContent?: string | null;
+    gclid?: string | null;
+    landingPath?: string | null;
+    capturedAt?: Timestamp;
+  };
 };
 
 export type MorningGist = {

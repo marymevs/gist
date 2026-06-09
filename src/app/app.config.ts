@@ -1,4 +1,9 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import {
+  ApplicationConfig,
+  APP_INITIALIZER,
+  importProvidersFrom,
+} from '@angular/core';
+import { AcquisitionService } from './core/services/acquisition.service';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
 import { provideAuth, getAuth } from '@angular/fire/auth';
@@ -42,5 +47,13 @@ export const appConfig: ApplicationConfig = {
     provideStorage(() => getStorage()),
     provideMessaging(() => getMessaging()),
     provideRouter(routes),
+    // Capture first-touch acquisition (referrer / UTM) before routing can drop
+    // the landing URL's query string. See AcquisitionService / issue #220.
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [AcquisitionService],
+      useFactory: (acq: AcquisitionService) => () => acq.capture(),
+    },
   ],
 };
