@@ -1,3 +1,12 @@
+/* Contain the full-bleed specimen breakout so its 100vw width can't introduce
+   a horizontal scrollbar on platforms with classic (space-taking) scrollbars.
+   `clip` (not `hidden`) avoids creating a scroll container, so it doesn't
+   affect the vertical axis or position:sticky descendants. */
+:host {
+  display: block;
+  overflow-x: clip;
+}
+
 .landing {
   max-width: 640px;
   margin: 0 auto;
@@ -128,55 +137,9 @@
   font-style: italic;
 }
 
-/* ---------- Sample preview ---------- */
-
-.sample {
-  display: block;
-}
-
-.preview {
-  margin-top: var(--space-md);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  padding: var(--space-xl) var(--space-lg);
-  max-width: 100%;
-}
-
-.previewTop {
-  border-bottom: 1px solid var(--border);
-  padding-bottom: var(--space-md);
-  margin-bottom: var(--space-md);
-}
-
-.previewKicker {
-  font-family: var(--font-display);
-  font-size: 18px;
-  color: var(--ink-strong);
-  letter-spacing: -0.01em;
-}
-
-.previewMeta {
-  margin-top: 4px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.preview.paper {
-  /* Override global .paper (which adds margin-top + top border) */
-  margin-top: var(--space-md);
-  border-top: 1px solid var(--border);
-  padding-top: var(--space-xl);
-}
-
-.preview .why {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-}
+/* ---------- Sample edition (annotated specimen) ---------- */
+/* Styles for the annotated "anatomy of an edition" live in the
+   "Annotated specimen" section near the end of this file. */
 
 .paperFooter {
   margin-top: var(--space-md);
@@ -186,43 +149,6 @@
   color: var(--muted);
   text-align: center;
   text-transform: uppercase;
-}
-
-/* ---------- Features (stacked, no grid) ---------- */
-
-.feature {
-  padding: var(--space-lg) 0;
-  border-top: 1px dotted var(--border);
-}
-
-.feature:first-of-type {
-  border-top: 1px solid var(--border);
-  margin-top: var(--space-md);
-}
-
-.featureKicker {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-}
-
-.featureTitle {
-  margin-top: var(--space-sm);
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--ink-strong);
-  line-height: 1.2;
-}
-
-.feature p {
-  margin: var(--space-sm) 0 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--muted);
 }
 
 /* ---------- Steps (stacked, number above title) ---------- */
@@ -333,8 +259,533 @@
   .heroLede {
     font-size: 19px;
   }
-  .featureTitle,
   .stepTitle {
     font-size: 20px;
+  }
+}
+
+/* =====================================================================
+   Annotated specimen — "anatomy of an edition"
+   The page in the middle is a faithful screen rendering of the delivered
+   broadsheet, so it uses the OUTPUT type/colour system (Fraunces / IBM Plex).
+   The section chrome + callout labels are web-app UI → Instrument / Geist.
+   ===================================================================== */
+
+.np {
+  display: block;
+
+  /* Output palette (mirrors newspaperTemplate.ts / DESIGN.md "Output"). */
+  --o-ink: #1c1917;
+  --o-mid: #57534e;
+  --o-light: #a8a29e;
+  --o-rule: #d6d3d1;
+  --o-tint: #f5f0eb;
+  --o-paper: #fffdf9;
+  --o-warm: #92400e;
+
+  --leader: var(--border-strong);
+}
+
+.npHeadline {
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  color: var(--ink-strong);
+}
+
+.npIntro {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink);
+  em {
+    font-style: italic;
+  }
+}
+
+/* ---- Wide: full-bleed breakout stage ---- */
+
+.npBreakout {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: var(--space-2xl);
+  overflow: hidden; /* clip the unscaled stage box once it's transformed down */
+}
+
+.npStage {
+  position: relative;
+  width: 1500px;
+  height: 1210px;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+/* The sheet — shared base; positioning differs per context. */
+.npPage {
+  width: 672px; /* 7in */
+  background: var(--o-paper);
+  padding: 52.8px 62.4px; /* 0.55in / 0.65in */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 11.3px; /* 8.5pt */
+  line-height: 1.5;
+  font-weight: 300;
+  color: var(--o-ink);
+}
+
+.npStage > .npPage {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* margins/box-model reset inside the specimen (insulate from inherited UI CSS) */
+.npPage :where(h1, h2, h3, h4, p, blockquote, figure, dl, dd) {
+  margin: 0;
+}
+
+/* ---- Specimen typography (1:1 with newspaperTemplate.ts, screen-scaled) ---- */
+
+.npPage {
+  .mast {
+    text-align: center;
+    border-bottom: 2.6px solid var(--o-ink);
+    padding-bottom: 10px;
+  }
+  .mast-pre {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--o-light);
+    margin-bottom: 1px;
+  }
+  .mast h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 800;
+    font-size: 61px;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+  .mast-post {
+    font-family: "Fraunces", serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 12.6px;
+    color: var(--o-mid);
+    margin-top: 2px;
+  }
+  .mast-sub {
+    display: flex;
+    justify-content: space-between;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.3px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--o-light);
+    border-top: 0.5px solid var(--o-rule);
+    margin-top: 8px;
+    padding-top: 4px;
+  }
+
+  .wx {
+    display: flex;
+    align-items: baseline;
+    gap: 13px;
+    padding: 8px 0 7px;
+    border-bottom: 0.5px solid var(--o-rule);
+  }
+  .wx-temp {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 27px;
+    line-height: 1;
+  }
+  .wx-cond {
+    font-size: 10.6px;
+    color: var(--o-mid);
+  }
+  .wx-week {
+    margin-left: auto;
+    display: flex;
+    gap: 13px;
+  }
+  .wx-day {
+    text-align: center;
+  }
+  .wx-day-name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 6.6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--o-light);
+  }
+  .wx-day-hi {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 12px;
+  }
+  .wx-day-rain {
+    font-size: 8px;
+    color: var(--o-warm);
+  }
+
+  .rhythms {
+    display: flex;
+    gap: 18px;
+    padding: 4px 0 5px;
+    border-bottom: 0.5px solid var(--o-rule);
+    font-size: 9.3px;
+    color: var(--o-mid);
+    b {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 7.3px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--o-light);
+    }
+  }
+
+  .lede {
+    padding: 13px 0;
+  }
+  .lede-kicker {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.3px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--o-warm);
+  }
+  .lede h2 {
+    font-family: "Fraunces", serif;
+    font-weight: 700;
+    font-size: 21px;
+    line-height: 1.2;
+    margin: 4px 0 7px;
+    letter-spacing: -0.01em;
+    color: var(--o-ink);
+  }
+  .lede p {
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  .cols {
+    display: flex;
+    border-top: 2px solid var(--o-ink);
+    padding-top: 11px;
+  }
+  .c {
+    flex: 1;
+  }
+  .c + .c {
+    border-left: 0.5px solid var(--o-rule);
+    margin-left: 13px;
+    padding-left: 13px;
+  }
+
+  .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.3px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--o-warm);
+    margin-bottom: 5px;
+  }
+
+  .ev {
+    display: flex;
+    gap: 8px;
+    padding: 3.3px 0;
+    & + .ev {
+      border-top: 0.5px dotted var(--o-rule);
+    }
+  }
+  .ev-t {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 8px;
+    color: var(--o-light);
+    min-width: 48px;
+    padding-top: 2px;
+  }
+  .ev-name {
+    font-weight: 500;
+    font-size: 10.6px;
+  }
+  .ev-note {
+    font-size: 9.3px;
+    color: var(--o-mid);
+  }
+
+  .nt {
+    display: flex;
+    gap: 7px;
+    padding: 4px 0;
+    align-items: flex-start;
+    & + .nt {
+      border-top: 0.5px dotted var(--o-rule);
+    }
+  }
+  .nt-ico {
+    font-size: 9.3px;
+    min-width: 16px;
+    text-align: center;
+    padding-top: 1px;
+  }
+  .nt-body {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .nt-src {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 6.6px;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--o-light);
+  }
+
+  .nw {
+    padding: 4px 0;
+    & + .nw {
+      border-top: 0.5px dotted var(--o-rule);
+    }
+    h4 {
+      font-family: "Fraunces", serif;
+      font-weight: 500;
+      font-size: 11.3px;
+      line-height: 1.2;
+      margin-bottom: 1px;
+    }
+    p {
+      font-size: 9.3px;
+      color: var(--o-mid);
+      line-height: 1.35;
+    }
+  }
+
+  .hr {
+    border: none;
+    border-top: 0.5px solid var(--o-rule);
+    margin: 8px 0;
+  }
+
+  .qt {
+    text-align: center;
+    padding: 8px 16px;
+    blockquote {
+      font-family: "Fraunces", serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 14.6px;
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+    cite {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 7.3px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--o-light);
+      font-style: normal;
+    }
+  }
+
+  .ft {
+    padding-top: 7px;
+    border-top: 1.3px solid var(--o-ink);
+    display: flex;
+    justify-content: space-between;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 6.6px;
+    color: var(--o-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .sm {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .bd {
+    font-weight: 500;
+  }
+}
+
+/* ---- Page-two sliver ---- */
+
+.npPage2 {
+  position: absolute;
+  top: 1040px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 672px;
+  height: 120px;
+  overflow: hidden;
+  padding: 28px 62.4px;
+  background: var(--o-paper);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-weight: 300;
+  color: var(--o-ink);
+
+  .np2head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 2px solid var(--o-ink);
+    padding-bottom: 5px;
+    .t {
+      font-family: "Fraunces", serif;
+      font-weight: 700;
+      font-size: 17px;
+    }
+    .m {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 7px;
+      color: var(--o-light);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  }
+  .np2cols {
+    display: flex;
+    gap: 14px;
+    padding-top: 12px;
+    .c {
+      flex: 1;
+    }
+  }
+  .label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 7.3px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--o-warm);
+    margin-bottom: 5px;
+  }
+  .sm {
+    font-size: 10px;
+    line-height: 1.4;
+    margin: 0;
+  }
+  .wl {
+    border-bottom: 0.5px solid var(--o-rule);
+    height: 14px;
+  }
+}
+
+/* ---- Annotation callouts + leader lines ---- */
+
+.npAnno {
+  position: absolute;
+  width: 250px;
+  &.left {
+    text-align: right;
+  }
+  &.right {
+    text-align: left;
+  }
+}
+
+.npNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1px solid var(--o-warm);
+  color: var(--o-warm);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  margin-bottom: 6px;
+}
+
+.npT {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.npD {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.npLeader {
+  position: absolute;
+  height: 1px;
+  background: var(--leader);
+  &::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--o-warm);
+  }
+  &.toRight::after {
+    right: -2px;
+  }
+  &.toLeft::after {
+    left: -2px;
+  }
+}
+
+/* ---- Compact (stacked) layout for narrow viewports ---- */
+
+.npCompact {
+  margin-top: var(--space-xl);
+}
+
+.npThumb {
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  > .npPage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+  }
+}
+
+.npList {
+  margin-top: var(--space-xl);
+}
+
+.npListItem {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+  border-top: 1px dotted var(--border);
+  &:first-child {
+    border-top: 1px solid var(--border);
+  }
+  .npNum {
+    flex: none;
+    margin-bottom: 0;
+    margin-top: 2px;
+  }
+  .npD {
+    margin-top: 4px;
   }
 }
