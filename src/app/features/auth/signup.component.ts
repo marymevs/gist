@@ -15,6 +15,7 @@ import {
   signInWithPopup,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
+import { AcquisitionService } from '../../core/services/acquisition.service';
 
 @Component({
   standalone: true,
@@ -32,6 +33,7 @@ export class SignupComponent {
     private auth: Auth,
     private firestore: Firestore,
     private router: Router,
+    private acquisition: AcquisitionService,
   ) {}
 
   async signupWithEmail(): Promise<void> {
@@ -71,12 +73,18 @@ export class SignupComponent {
 
   private async saveProfile(uid: string, email: string | null): Promise<void> {
     const ref = doc(this.firestore, 'users', uid);
+    const acquisition = this.acquisition.snapshot();
     await setDoc(
       ref,
       {
         email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        // First-touch acquisition (referrer / UTM). Only written when something
+        // was captured, so returning users never clobber their original source.
+        ...(acquisition
+          ? { acquisition: { ...acquisition, capturedAt: serverTimestamp() } }
+          : {}),
       },
       { merge: true },
     );

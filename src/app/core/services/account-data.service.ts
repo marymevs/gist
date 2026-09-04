@@ -9,10 +9,15 @@ import {
 } from '@angular/fire/firestore';
 import { Observable, of, switchMap } from 'rxjs';
 import { GistUser } from '../models/user.model';
+import { AcquisitionService } from './acquisition.service';
 
 @Injectable({ providedIn: 'root' })
 export class AccountDataService {
-  constructor(private auth: Auth, private firestore: Firestore) {}
+  constructor(
+    private auth: Auth,
+    private firestore: Firestore,
+    private acquisition: AcquisitionService,
+  ) {}
 
   /** Emits the Firestore user doc for the currently signed-in user (or null if logged out). */
   currentUserDoc$(): Observable<GistUser | null> {
@@ -31,6 +36,7 @@ export class AccountDataService {
     email: string | null;
   }): Promise<void> {
     const ref = doc(this.firestore, 'users', params.uid);
+    const acquisition = this.acquisition.snapshot();
     await setDoc(
       ref,
       {
@@ -39,6 +45,9 @@ export class AccountDataService {
         plan: 'print', // sensible default for your product
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        ...(acquisition
+          ? { acquisition: { ...acquisition, capturedAt: serverTimestamp() } }
+          : {}),
       },
       { merge: true }
     );
