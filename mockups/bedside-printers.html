@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gist · Bedside Printer Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,800;1,9..144,300;1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c1917; --mid:#57534e; --light:#a8a29e; --rule:#d6d3d1;
+    --tint:#f5f0eb; --paper:#fffdf9; --warm:#92400e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:#cfc8bd;
+    background-image:
+      radial-gradient(1200px 600px at 30% -10%, #ddd6ca, transparent),
+      radial-gradient(900px 500px at 90% 110%, #c2bbb0, transparent);
+    font-family:'IBM Plex Sans',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    padding:56px 40px 80px;
+  }
+  .stage{
+    max-width:1080px; margin:0 auto;
+    display:flex; gap:64px; align-items:flex-start; justify-content:center;
+    flex-wrap:wrap;
+  }
+  .col{display:flex; flex-direction:column; align-items:center; gap:18px;}
+  .caption{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:#6b6457; text-align:center; line-height:1.7;
+  }
+  .caption b{color:#3a352d; font-weight:500;}
+  .pagehead{
+    max-width:1080px; margin:0 auto 44px; text-align:center;
+  }
+  .pagehead h1{font-family:'Fraunces',serif; font-weight:800; font-size:34px; letter-spacing:-.02em; color:#2c271f;}
+  .pagehead p{font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#6b6457; margin-top:8px;}
+
+  /* ---------- RECEIPT ---------- */
+  .receipt-wrap{filter:drop-shadow(0 18px 30px rgba(40,34,26,.35));}
+  .receipt{
+    width:230px; background:#fffefb; color:#15130f;
+    font-family:'IBM Plex Mono',monospace; font-weight:400;
+    padding:20px 18px 14px; position:relative;
+    background-image:repeating-linear-gradient(0deg, rgba(0,0,0,.012) 0 2px, transparent 2px 4px);
+  }
+  /* perforated top & bottom */
+  .perf{height:10px; width:230px; background:
+    radial-gradient(circle at 6px 10px, transparent 5px, #fffefb 5px);
+    background-size:12px 10px; background-repeat:repeat-x;}
+  .perf.top{background:radial-gradient(circle at 6px 0px, transparent 5px, #fffefb 5px); background-size:12px 10px;}
+  .receipt-stack{filter:drop-shadow(0 18px 30px rgba(40,34,26,.35));}
+
+  .r-center{text-align:center;}
+  .r-mast{
+    font-family:'Fraunces',serif; font-weight:800; font-size:30px; letter-spacing:.02em;
+    line-height:.95; margin:2px 0 6px;
+  }
+  .r-stars{font-size:10px; letter-spacing:.5em; color:#15130f; margin-bottom:8px;}
+  .r-sub{font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; line-height:1.8;}
+  .r-stamp{font-size:8.5px; letter-spacing:.1em; color:#5b554c; text-transform:uppercase;}
+  .dash{border:none; border-top:1px dashed #2a261f; margin:11px 0; height:0;}
+  .dot{border:none; border-top:1px dotted #6b6457; margin:9px 0; height:0;}
+  .r-label{font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:#15130f; font-weight:500; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;}
+  .r-label::after{content:""; flex:1; border-top:1px solid #2a261f; margin-left:8px; opacity:.5;}
+
+  .r-weather{display:flex; align-items:baseline; gap:8px; font-size:11px;}
+  .r-temp{font-family:'Fraunces',serif; font-weight:700; font-size:26px; line-height:1;}
+  .r-wnote{font-size:9.5px; line-height:1.35; color:#2a261f;}
+  .r-fc{display:flex; justify-content:space-between; font-size:9px; margin-top:8px; color:#2a261f; letter-spacing:.02em;}
+  .r-fc span{text-align:center;}
+  .r-fc b{display:block; font-weight:500; letter-spacing:.1em;}
+
+  .r-row{display:flex; gap:8px; font-size:10.5px; line-height:1.3; margin-bottom:7px;}
+  .r-time{min-width:42px; font-weight:500; letter-spacing:.02em;}
+  .r-evt b{font-weight:500;}
+  .r-evt small{display:block; font-size:9px; color:#5b554c; margin-top:1px; line-height:1.3;}
+
+  .r-bullet{font-size:10px; line-height:1.4; margin-bottom:6px; padding-left:12px; position:relative;}
+  .r-bullet::before{content:"+"; position:absolute; left:0; font-weight:500;}
+  .r-bullet small{color:#5b554c;}
+
+  .r-quote{font-family:'Fraunces',serif; font-style:italic; font-weight:400; font-size:12.5px; line-height:1.4; text-align:center; color:#15130f;}
+  .r-attr{font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; color:#5b554c; text-align:center; margin-top:6px;}
+
+  .r-check{font-size:10.5px; line-height:2.0; letter-spacing:.02em;}
+  .r-check .bx{display:inline-block; width:11px; height:11px; border:1px solid #2a261f; margin-right:8px; vertical-align:-1px;}
+  .r-line{border-bottom:1px dotted #6b6457; height:0; margin:13px 2px;}
+
+  .barcode{height:34px; margin:10px 0 6px; background:
+    repeating-linear-gradient(90deg, #15130f 0 2px, transparent 2px 3px, #15130f 3px 4px, transparent 4px 7px, #15130f 7px 10px, transparent 10px 11px, #15130f 11px 12px, transparent 12px 15px);}
+  .r-foot{font-size:8.5px; letter-spacing:.12em; text-transform:uppercase; text-align:center; color:#5b554c; line-height:1.8;}
+
+  /* ---------- A5 ---------- */
+  .a5-wrap{filter:drop-shadow(0 22px 40px rgba(40,34,26,.4));}
+  .a5{
+    width:520px; height:738px; background:var(--paper); color:var(--ink);
+    padding:34px 38px 26px; position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .a5-topmeta{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--light); padding-bottom:7px;}
+  .a5-mast{display:flex; align-items:flex-end; justify-content:space-between; border-bottom:2px solid var(--ink); padding-bottom:8px;}
+  .a5-mast h1{font-family:'Fraunces',serif; font-weight:800; font-size:50px; letter-spacing:-.03em; line-height:.9;}
+  .a5-mast .tag{font-family:'Fraunces',serif; font-style:italic; font-weight:300; font-size:11px; color:var(--mid); text-align:right; line-height:1.3; padding-bottom:6px;}
+
+  .a5-bars{display:flex; gap:14px; align-items:stretch; padding:10px 0 9px; border-bottom:.5px solid var(--rule);}
+  .a5-weather{display:flex; align-items:center; gap:9px; padding-right:14px; border-right:.5px solid var(--rule);}
+  .a5-weather .t{font-family:'Fraunces',serif; font-weight:500; font-size:30px; line-height:1;}
+  .a5-weather .c{font-size:10px; color:var(--mid); line-height:1.25; max-width:96px;}
+  .a5-rhythm{flex:1; display:flex; flex-wrap:wrap; align-content:center; gap:3px 14px; font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--mid);}
+  .a5-rhythm b{color:var(--ink); font-weight:500;}
+  .a5-fc{display:flex; gap:11px; font-family:'IBM Plex Mono',monospace; font-size:7.5px; letter-spacing:.06em; color:var(--mid); align-items:center;}
+  .a5-fc span{text-align:center; line-height:1.4;}
+  .a5-fc b{display:block; color:var(--ink); font-weight:500;}
+
+  .a5-lede{padding:13px 0 12px; border-bottom:1.5px solid var(--ink);}
+  .a5-kicker{font-family:'IBM Plex Mono',monospace; font-size:7.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--warm); margin-bottom:5px;}
+  .a5-head{font-family:'Fraunces',serif; font-weight:700; font-size:24px; line-height:1.04; letter-spacing:-.01em; margin-bottom:7px;}
+  .a5-para{font-size:10px; font-weight:300; line-height:1.5; color:#2c2a27;}
+
+  .a5-cols{display:flex; gap:18px; flex:1; padding-top:11px; min-height:0;}
+  .a5-c{flex:1; display:flex; flex-direction:column; gap:11px;}
+  .a5-c.right{flex:.92;}
+  .seclabel{font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.16em; text-transform:uppercase; color:var(--warm); padding-bottom:5px; border-bottom:1px solid var(--ink); margin-bottom:8px;}
+
+  .ev{display:flex; gap:8px; margin-bottom:8px;}
+  .ev .tm{font-family:'IBM Plex Mono',monospace; font-size:8px; color:var(--light); min-width:34px; padding-top:1px;}
+  .ev .nm{font-size:10px; line-height:1.3;}
+  .ev .nm b{font-weight:500;}
+  .ev .nm small{display:block; color:var(--mid); font-weight:300; font-size:8.5px; margin-top:1px;}
+
+  .gn{margin-bottom:8px;}
+  .gn b{font-size:9.5px; font-weight:500; line-height:1.25; display:block;}
+  .gn small{font-size:8.5px; color:var(--mid); font-weight:300;}
+
+  .nt{display:flex; gap:6px; margin-bottom:7px; font-size:9px; line-height:1.3;}
+  .nt .em{font-size:10px;}
+  .nt b{font-weight:500;}
+  .nt span{color:var(--mid); font-weight:300;}
+
+  .ppl{font-size:9px; line-height:1.35; margin-bottom:5px;}
+  .ppl b{font-weight:500;}
+  .ppl span{color:var(--mid); font-weight:300;}
+
+  .a5-quote{margin-top:auto; padding-top:10px; border-top:.5px solid var(--rule);}
+  .a5-quote q{font-family:'Fraunces',serif; font-style:italic; font-weight:300; font-size:13px; line-height:1.35; quotes:none;}
+  .a5-quote cite{display:block; font-family:'IBM Plex Mono',monospace; font-style:normal; font-size:7.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--light); margin-top:6px;}
+
+  .intent{background:var(--tint); border-left:1.5px solid var(--warm); padding:8px 9px 9px;}
+  .intent .seclabel{border:none; padding:0; margin-bottom:6px;}
+  .intent .il{border-bottom:.5px solid var(--rule); height:15px;}
+  .intent .pr{font-size:8.5px; color:var(--mid); font-weight:300; line-height:1.35; margin-bottom:7px;}
+
+  .a5-foot{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.12em; text-transform:uppercase; color:var(--light); padding-top:9px; margin-top:11px; border-top:.5px solid var(--rule);}
+</style>
+</head>
+<body>
+  <div class="pagehead">
+    <h1>The Gist, off the bedside printer</h1>
+    <p>Two re-imaginings · Tuesday, June 9 2026 · Portland, OR · for Riley</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- ============ RECEIPT ============ -->
+    <div class="col">
+      <div class="receipt-stack">
+        <div class="perf top"></div>
+        <div class="receipt">
+          <div class="r-center">
+            <div class="r-stars">★ &nbsp; ★ &nbsp; ★</div>
+            <div class="r-mast">THE GIST</div>
+            <div class="r-stamp">Your morning, on paper</div>
+          </div>
+          <hr class="dash">
+          <div class="r-center r-sub">
+            PORTLAND, OR · FOR RILEY<br>
+            TUE JUN 9 2026 · VOL.I NO.14<br>
+            <span class="r-stamp">PREPARED 05:47 · DELIVERED 06:00 PT</span>
+          </div>
+          <hr class="dash">
+
+          <div class="r-label">Weather</div>
+          <div class="r-weather">
+            <span class="r-temp">61°</span>
+            <span class="r-wnote">☀ Sun breaks this<br>afternoon. Light NW wind.</span>
+          </div>
+          <div class="r-fc">
+            <span><b>TUE</b>61° ☂60%</span>
+            <span><b>WED</b>67° ☀</span>
+            <span><b>THU</b>70° ☀</span>
+            <span><b>FRI</b>64° ⛅</span>
+          </div>
+          <hr class="dot">
+
+          <div class="r-label">Today</div>
+          <div class="r-row"><span class="r-time">08:00a</span><span class="r-evt"><b>Writing</b><small>Aim for 800 words before the inbox.</small></span></div>
+          <div class="r-row"><span class="r-time">11:30a</span><span class="r-evt"><b>Walk + coffee w/ Sam</b><small>Powell's, the usual corner.</small></span></div>
+          <div class="r-row"><span class="r-time">02:00p</span><span class="r-evt"><b>Advisor call</b><small>Bring the Ch.3 outline.</small></span></div>
+          <div class="r-row"><span class="r-time">06:30p</span><span class="r-evt"><b>Dinner — home</b></span></div>
+          <hr class="dot">
+
+          <div class="r-label">In the world</div>
+          <div class="r-bullet">Ocean reserve created, bigger than Nigeria. <small>Quiet win.</small></div>
+          <div class="r-bullet">Local library extends late hours for finals. <small>Your block.</small></div>
+          <hr class="dot">
+
+          <div class="r-label">Don't forget</div>
+          <div class="r-bullet">📧 Advisor — draft due <b>Friday</b>.</div>
+          <div class="r-bullet">📱 Dad texted twice. Reply today.</div>
+          <hr class="dash">
+
+          <div class="r-center">
+            <div class="r-quote">“The secret of getting ahead is getting started.”</div>
+            <div class="r-attr">— Mark Twain</div>
+          </div>
+          <hr class="dash">
+
+          <div class="r-label">One intention</div>
+          <div class="r-check">
+            <div class="r-line"></div>
+            <div class="r-line"></div>
+          </div>
+          <div class="r-check" style="margin-top:4px;">
+            <span class="bx"></span>Move your body, 20 min<br>
+            <span class="bx"></span>No screens until the walk
+          </div>
+          <hr class="dash">
+
+          <div class="barcode"></div>
+          <div class="r-foot">
+            MYGIST.APP · ISSUE 014<br>
+            ── [ 1 OF 1 ] ──<br>
+            SEE YOU TOMORROW, RILEY
+          </div>
+        </div>
+        <div class="perf"></div>
+      </div>
+      <div class="caption"><b>Receipt · 58&nbsp;mm thermal</b><br>monochrome · continuous roll</div>
+    </div>
+
+    <!-- ============ A5 ============ -->
+    <div class="col">
+      <div class="a5-wrap">
+        <div class="a5">
+          <div class="a5-topmeta">
+            <span>The Gist · for Riley</span>
+            <span>No. 014</span>
+          </div>
+          <div class="a5-mast">
+            <h1>The Gist</h1>
+            <div class="tag">Your morning,<br>on paper</div>
+          </div>
+          <div class="a5-topmeta" style="border:none; padding-top:6px;">
+            <span>Tuesday, June 9, 2026</span>
+            <span>Portland, OR · 06:00 PT</span>
+          </div>
+
+          <div class="a5-bars">
+            <div class="a5-weather">
+              <span class="t">61°</span>
+              <span class="c">Sun breaks this afternoon. Light NW wind.</span>
+            </div>
+            <div class="a5-fc">
+              <span><b>TUE</b>61°<br>☂60%</span>
+              <span><b>WED</b>67°<br>☀</span>
+              <span><b>THU</b>70°<br>☀</span>
+              <span><b>FRI</b>64°<br>⛅</span>
+            </div>
+          </div>
+          <div class="a5-bars" style="border-top:none; padding-top:7px;">
+            <div class="a5-rhythm">
+              <span>☾ <b>Waxing Gibbous 91%</b></span>
+              <span>Spring · <b>Day 81</b></span>
+              <span>Daylight <b>15h 22m</b></span>
+              <span>Solstice <b>in 12 days</b></span>
+            </div>
+          </div>
+
+          <div class="a5-lede">
+            <div class="a5-kicker">Good morning, Riley</div>
+            <div class="a5-head">The long days are here</div>
+            <div class="a5-para">The light now stretches past nine, and the page wants you early. You've got one clear writing block before the day asks anything of you — protect it. Everything after, the walk with Sam, the advisor call, the quiet evening, can hold the warmth of a morning that went the way you meant it to.</div>
+          </div>
+
+          <div class="a5-cols">
+            <div class="a5-c">
+              <div>
+                <div class="seclabel">Today's Schedule</div>
+                <div class="ev"><span class="tm">08:00a</span><span class="nm"><b>Writing</b><small>Aim for 800 words.</small></span></div>
+                <div class="ev"><span class="tm">11:30a</span><span class="nm"><b>Walk + coffee, Sam</b><small>Powell's corner.</small></span></div>
+                <div class="ev"><span class="tm">02:00p</span><span class="nm"><b>Advisor call</b><small>Bring Ch.3 outline.</small></span></div>
+                <div class="ev"><span class="tm">06:30p</span><span class="nm"><b>Dinner — home</b></span></div>
+              </div>
+              <div>
+                <div class="seclabel">Good News</div>
+                <div class="gn"><b>Ocean reserve created</b><small>Bigger than Nigeria — the largest this decade.</small></div>
+                <div class="gn"><b>Library extends late hours</b><small>Right on your block, through finals week.</small></div>
+              </div>
+            </div>
+
+            <div class="a5-c right">
+              <div>
+                <div class="seclabel">Life & People</div>
+                <div class="nt"><span class="em">📧</span><span><b>Advisor</b> — draft due Friday.</span></div>
+                <div class="nt"><span class="em">📱</span><span><b>Dad</b> texted twice; reply today.</span></div>
+                <div class="ppl"><b>Sam</b> <span>— two weeks since you really talked.</span></div>
+              </div>
+              <div class="intent">
+                <div class="seclabel">Morning Intention</div>
+                <div class="pr">What's the one thing that, if done, makes today enough?</div>
+                <div class="il"></div>
+                <div class="il"></div>
+                <div class="il"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="a5-quote">
+            <q>The secret of getting ahead is getting started.</q>
+            <cite>Mark Twain</cite>
+          </div>
+
+          <div class="a5-foot">
+            <span>The Gist · mygist.app</span>
+            <span>Waxing Gibbous · [ 1 of 1 ]</span>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>A5 · 148 × 210&nbsp;mm sheet</b><br>warm paper · single calm page</div>
+    </div>
+
+  </div>
+</body>
+</html>
