@@ -12,6 +12,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["firebase", "emulators:start"],
       "port": 5001
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["mockups/server.js"],
+      "port": 4321
     }
   ]
 }

@@ -286,6 +286,13 @@
   --leader: var(--border-strong);
 }
 
+/* Heading sits dead-centre over the paper: the 640px text column and the
+   centred specimen stage share the viewport centre, so centring the text
+   aligns it over the sheet. */
+.np > .sectionLabel {
+  text-align: center;
+}
+
 .npHeadline {
   margin: 0 0 var(--space-sm);
   font-family: var(--font-display);
@@ -294,14 +301,17 @@
   letter-spacing: -0.015em;
   line-height: 1.12;
   color: var(--ink-strong);
+  text-align: center;
 }
 
 .npIntro {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 540px;
   font-family: var(--font-display);
   font-size: 19px;
   line-height: 1.55;
   color: var(--ink);
+  text-align: center;
   em {
     font-style: italic;
   }
@@ -618,69 +628,6 @@
   }
   .bd {
     font-weight: 500;
-  }
-}
-
-/* ---- Page-two sliver ---- */
-
-.npPage2 {
-  position: absolute;
-  top: 1040px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 672px;
-  height: 120px;
-  overflow: hidden;
-  padding: 28px 62.4px;
-  background: var(--o-paper);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
-  font-family: "IBM Plex Sans", sans-serif;
-  font-weight: 300;
-  color: var(--o-ink);
-
-  .np2head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 2px solid var(--o-ink);
-    padding-bottom: 5px;
-    .t {
-      font-family: "Fraunces", serif;
-      font-weight: 700;
-      font-size: 17px;
-    }
-    .m {
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 7px;
-      color: var(--o-light);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-  }
-  .np2cols {
-    display: flex;
-    gap: 14px;
-    padding-top: 12px;
-    .c {
-      flex: 1;
-    }
-  }
-  .label {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 7.3px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--o-warm);
-    margin-bottom: 5px;
-  }
-  .sm {
-    font-size: 10px;
-    line-height: 1.4;
-    margin: 0;
-  }
-  .wl {
-    border-bottom: 0.5px solid var(--o-rule);
-    height: 14px;
   }
 }
 

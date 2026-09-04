@@ -21,12 +21,12 @@ interface NpFeature {
   styleUrls: ['./landing.component.scss'],
 })
 export class LandingComponent {
-  /** Native dimensions of the annotated stage (page + gutters + page-2 sliver). */
+  /** Native dimensions of the annotated stage (front-page sheet + side gutters). */
   private static readonly STAGE_W = 1500;
-  private static readonly STAGE_H = 1210;
+  private static readonly STAGE_H = 940;
   /** Native dimensions of the front-page sheet on its own (for the mobile thumb). */
   private static readonly PAGE_W = 672;
-  private static readonly PAGE_H = 980;
+  private static readonly PAGE_H = 930;
   /** Below this viewport width the leader lines get cramped → stacked layout. */
   private static readonly COMPACT_BELOW = 1200;
 
@@ -76,11 +76,6 @@ export class LandingComponent {
       n: 7, side: 'right', top: 640, leader: 664,
       title: 'The people you can’t lose track of',
       desc: 'Name who matters — your collaborator, your gallerist, your mom — and they thread through the morning.',
-    },
-    {
-      n: 8, side: 'right', top: 1066, leader: 1090,
-      title: 'And a second page',
-      desc: 'A quiet spread that asks nothing of you — body & mind, a practice arc, and ruled lines for your morning intention.',
     },
   ];
 

@@ -7,7 +7,10 @@ import { NYT_API_KEY } from './integrations/nytTopStories';
 import { ANTHROPIC_API_KEY } from './integrations/claudeUtils';
 import { generateNewspaperGist } from './integrations/claudeNewspaper';
 import { buildNewspaperHtml } from './integrations/newspaperTemplate';
-import { buildNewspaperEmailHtml, buildNewspaperEmailSubject } from './integrations/newspaperEmailTemplate';
+import {
+  buildNewspaperEmailHtml,
+  buildNewspaperEmailSubject,
+} from './integrations/newspaperEmailTemplate';
 import type { NewspaperTemplateInput } from './integrations/newspaperTypes';
 import { RESEND_API_KEY } from './integrations/emailDelivery';
 import { updateGistDeliveryStatus, buildUserDoc } from './firestoreUtils';
@@ -44,6 +47,7 @@ import {
 
 import { deliverByEmail } from './delivery/email';
 import { deliverByWeb } from './delivery/web';
+import { deliverByPrint } from './delivery/print';
 
 import type { ConnectorContext } from './connectors/types';
 import { weatherConnector } from './connectors/weather';
@@ -52,7 +56,10 @@ import { gmailConnector } from './connectors/gmail';
 import { newsConnector } from './connectors/news';
 import { moonConnector } from './connectors/moon';
 
-import { readMemoryContext, formatMemoryForPrompt } from './personalization/memoryReader';
+import {
+  readMemoryContext,
+  formatMemoryForPrompt,
+} from './personalization/memoryReader';
 import {
   observeCalendarPatterns,
   observeQualityScore,
@@ -80,9 +87,8 @@ export async function generateMorningGistForUser(
   // Keep the stored page count in lockstep with what buildNewspaperHtml will
   // actually render: concise readers get the one-page brief (page 1 only), so
   // delivery.pages must report 1 — the /today pill and admin dashboard read it.
-  const pages = user.prefs?.tone === 'concise'
-    ? 1
-    : estimatePages(user.prefs?.maxPages);
+  const pages =
+    user.prefs?.tone === 'concise' ? 1 : estimatePages(user.prefs?.maxPages);
 
   // Build connector context
   const connectorCtx: ConnectorContext = {
@@ -109,7 +115,13 @@ export async function generateMorningGistForUser(
       ]);
 
     // Log any connector failures
-    for (const r of [weatherResult, calendarResult, newsResult, emailResult, moonResult]) {
+    for (const r of [
+      weatherResult,
+      calendarResult,
+      newsResult,
+      emailResult,
+      moonResult,
+    ]) {
       if (r.status === 'failed') {
         logger.warn('Connector returned failed status.', {
           userId: user.uid,
@@ -153,7 +165,10 @@ export async function generateMorningGistForUser(
     // Track whether the calendar is unchanged from yesterday (informational; no longer
     // gates section reuse — the newspaper is regenerated each morning regardless).
     if (calendarUnchanged) {
-      logger.info('Calendar unchanged from existing doc.', { userId: user.uid, dateKey });
+      logger.info('Calendar unchanged from existing doc.', {
+        userId: user.uid,
+        dateKey,
+      });
     }
 
     // Read memory context for personalization
@@ -170,10 +185,15 @@ export async function generateMorningGistForUser(
 
     // Generate newspaper-format output — throws on failure (no silent fallback)
     const countdownPref = user.prefs?.countdown;
-    let countdownInput: { label: string; daysRemaining: number; targetDescription: string } | undefined;
+    let countdownInput:
+      | { label: string; daysRemaining: number; targetDescription: string }
+      | undefined;
     if (countdownPref?.targetDate) {
       const target = new Date(countdownPref.targetDate);
-      const daysRemaining = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      const daysRemaining = Math.max(
+        0,
+        Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      );
       countdownInput = {
         label: countdownPref.label,
         daysRemaining,
@@ -225,12 +245,17 @@ export async function generateMorningGistForUser(
         user.prefs?.executiveFunctionStatus === 'yes' ? 'yes' : undefined,
     });
 
-    const newspaperData: Record<string, unknown> = newspaperOutput as unknown as Record<string, unknown>;
+    const newspaperData: Record<string, unknown> =
+      newspaperOutput as unknown as Record<string, unknown>;
 
     // Increment issue count
-    await db.collection('users').doc(user.uid).update({
-      gistIssueCount: (user.gistIssueCount ?? 0) + 1,
-    }).catch(() => {});
+    await db
+      .collection('users')
+      .doc(user.uid)
+      .update({
+        gistIssueCount: (user.gistIssueCount ?? 0) + 1,
+      })
+      .catch(() => {});
 
     logger.info('Newspaper gist generated.', { userId: user.uid, dateKey });
 
@@ -265,7 +290,9 @@ export async function generateMorningGistForUser(
       // Data minimization (issue #177): gists hold personal data and only need
       // to live as long as the user reads today's brief. A Firestore TTL policy
       // on `expireAt` auto-deletes them after the retention window.
-      expireAt: Timestamp.fromMillis(Date.now() + GIST_RETENTION_DAYS * 86_400_000),
+      expireAt: Timestamp.fromMillis(
+        Date.now() + GIST_RETENTION_DAYS * 86_400_000,
+      ),
     };
 
     // Encrypt the personal-data fields at rest (issue #177): the Claude-generated
@@ -281,7 +308,9 @@ export async function generateMorningGistForUser(
         ...gist,
         dayItems: encryptJson(cleanDayItems),
         emailCards: encryptJson(cleanEmailCards),
-        ...(firstEvent !== undefined ? { firstEvent: encryptString(firstEvent) } : {}),
+        ...(firstEvent !== undefined
+          ? { firstEvent: encryptString(firstEvent) }
+          : {}),
         ...(newspaperData ? { newspaper: encryptJson(newspaperData) } : {}),
       },
       { merge: true },
@@ -298,7 +327,12 @@ export async function generateMorningGistForUser(
         let countdownRhythm: string | undefined;
         if (countdownPref?.targetDate) {
           const target = new Date(countdownPref.targetDate);
-          const daysLeft = Math.max(0, Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+          const daysLeft = Math.max(
+            0,
+            Math.ceil(
+              (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+            ),
+          );
           countdownRhythm = `${countdownPref.label} ${daysLeft} days`;
         }
 
@@ -316,11 +350,15 @@ export async function generateMorningGistForUser(
         const schedMin = user.delivery?.schedule?.minute ?? 0;
         const ampm = schedHour >= 12 ? 'PM' : 'AM';
         const displayHour = schedHour > 12 ? schedHour - 12 : schedHour || 12;
-        const tzAbbr = timezone.includes('Pacific') ? 'PT'
-          : timezone.includes('Central') ? 'CT'
-          : timezone.includes('Mountain') ? 'MT'
-          : timezone.includes('Eastern') ? 'ET'
-          : timezone.replace(/.*\//, '');
+        const tzAbbr = timezone.includes('Pacific')
+          ? 'PT'
+          : timezone.includes('Central')
+            ? 'CT'
+            : timezone.includes('Mountain')
+              ? 'MT'
+              : timezone.includes('Eastern')
+                ? 'ET'
+                : timezone.replace(/.*\//, '');
         const deliveryTime = `${displayHour}:${String(schedMin).padStart(2, '0')} ${ampm} ${tzAbbr}`;
 
         // Astronomical seasons (Northern Hemisphere): summer begins at the June
@@ -336,13 +374,25 @@ export async function generateMorningGistForUser(
         const winterStart = new Date(yr, 11, 21); // ~Dec 21 solstice
         let season: string;
         let seasonStart: Date;
-        if (today >= winterStart) { season = 'Winter'; seasonStart = winterStart; }
-        else if (today >= autumnStart) { season = 'Autumn'; seasonStart = autumnStart; }
-        else if (today >= summerStart) { season = 'Summer'; seasonStart = summerStart; }
-        else if (today >= springStart) { season = 'Spring'; seasonStart = springStart; }
-        else { season = 'Winter'; seasonStart = new Date(yr - 1, 11, 21); } // Jan–Mar → last Dec solstice
+        if (today >= winterStart) {
+          season = 'Winter';
+          seasonStart = winterStart;
+        } else if (today >= autumnStart) {
+          season = 'Autumn';
+          seasonStart = autumnStart;
+        } else if (today >= summerStart) {
+          season = 'Summer';
+          seasonStart = summerStart;
+        } else if (today >= springStart) {
+          season = 'Spring';
+          seasonStart = springStart;
+        } else {
+          season = 'Winter';
+          seasonStart = new Date(yr - 1, 11, 21);
+        } // Jan–Mar → last Dec solstice
         const dayOfSeason =
-          Math.floor((today.getTime() - seasonStart.getTime()) / 86_400_000) + 1;
+          Math.floor((today.getTime() - seasonStart.getTime()) / 86_400_000) +
+          1;
 
         newspaperTemplateInput = {
           ...(newspaperData as unknown as import('./integrations/newspaperTypes').NewspaperGistOutput),
@@ -391,6 +441,15 @@ export async function generateMorningGistForUser(
     }
 
     // ── Delivery routing ───────────────────────────────────────────────────
+    if (user.uid === '5i0kd7vb5mfEiCFF7QRoASHbVx72') {
+      const result = await deliverByPrint({
+        userId: user.uid,
+        newspaperInput: newspaperTemplateInput,
+        dateKey: dateKey,
+      });
+      finalStatus = result.status;
+    }
+
     if (method === 'email') {
       const result = await deliverByEmail({
         userId: user.uid,
@@ -404,7 +463,6 @@ export async function generateMorningGistForUser(
         newspaperInput: newspaperTemplateInput,
       });
       finalStatus = result.status;
-
     } else {
       const result = await deliverByWeb({ userId: user.uid, dateKey });
       finalStatus = result.status;
@@ -413,7 +471,6 @@ export async function generateMorningGistForUser(
     // Sync the gist doc's delivery.status for BOTH methods. The gist doc is the
     // single source of truth for delivery outcome.
     await updateGistDeliveryStatus(user.uid, dateKey, finalStatus);
-
   } catch (error) {
     finalStatus = 'failed';
     if (error instanceof Error) {
@@ -501,7 +558,8 @@ export const generateMorningGist = onSchedule(
     // Users already generated today only need a cheap nextDeliveryAt bump (no
     // LLM call) — fire those off without consuming a generation slot. The rest
     // run through a concurrency-limited generation pass.
-    const toGenerate: { user: UserDoc; todayKey: string; timezone: string }[] = [];
+    const toGenerate: { user: UserDoc; todayKey: string; timezone: string }[] =
+      [];
     let skipped = 0;
 
     dueSnap.forEach((docSnap) => {
@@ -516,9 +574,16 @@ export const generateMorningGist = onSchedule(
       if (data.lastGeneratedDate === todayKey) {
         skipped += 1;
         // Still update nextDeliveryAt so we don't re-query this user
-        db.collection('users').doc(uid).update({
-          nextDeliveryAt: computeNextDelivery(now, timezone, data.delivery?.schedule),
-        }).catch(() => {});
+        db.collection('users')
+          .doc(uid)
+          .update({
+            nextDeliveryAt: computeNextDelivery(
+              now,
+              timezone,
+              data.delivery?.schedule,
+            ),
+          })
+          .catch(() => {});
         return;
       }
 
@@ -528,8 +593,11 @@ export const generateMorningGist = onSchedule(
     // Cap concurrent Sonnet pipelines per tick to respect the Anthropic rate
     // budget. A failed user's slot is isolated (settled, not thrown) so it
     // doesn't sink the batch; they retry on the next tick.
-    await runWithConcurrency(toGenerate, GENERATION_CONCURRENCY, ({ user, todayKey, timezone }) =>
-      generateAndUpdateSchedule(user, now, todayKey, timezone),
+    await runWithConcurrency(
+      toGenerate,
+      GENERATION_CONCURRENCY,
+      ({ user, todayKey, timezone }) =>
+        generateAndUpdateSchedule(user, now, todayKey, timezone),
     );
 
     logger.info('Morning Gist scheduler tick finished', {
@@ -554,8 +622,11 @@ async function generateAndUpdateSchedule(
 
   // Mark today as generated + set next delivery time
   const schedule = user.delivery?.schedule;
-  await db.collection('users').doc(user.uid).update({
-    lastGeneratedDate: todayKey,
-    nextDeliveryAt: computeNextDelivery(now, timezone, schedule),
-  });
+  await db
+    .collection('users')
+    .doc(user.uid)
+    .update({
+      lastGeneratedDate: todayKey,
+      nextDeliveryAt: computeNextDelivery(now, timezone, schedule),
+    });
 }
